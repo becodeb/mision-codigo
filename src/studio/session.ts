@@ -77,6 +77,7 @@ export class StudioSession {
   private ended: 'win' | 'lose' | null = null;
   private ask: { question: string; resolve: (answer: string) => void } | null = null;
   private talking = false;
+  private sayToken = 0;
   private notice: string | null = null;
   private viewStepId: string | null = null;
   private celebrating: SessionSnapshot['celebrating'] = null;
@@ -649,11 +650,17 @@ export class StudioSession {
 
   /** Reads text aloud as Robi, even when the sound switch is off: the child asked for it. */
   async say(text: string, force = false): Promise<void> {
+    /* A newer line cuts this one off, and the older call must not turn the mouth or the sound switch back. */
+    const mine = ++this.sayToken;
     const was = this.doc.ui.sound;
     if (force) setSoundEnabled(true);
     this.talking = true;
     this.emit();
     try { await speak(text, { pitch: 1.12, cancel: true }); } catch { /* no voice */ }
+    if (mine !== this.sayToken) {
+      if (force) setSoundEnabled(this.doc.ui.sound);
+      return;
+    }
     if (force) setSoundEnabled(was);
     this.talking = false;
     this.emit();
