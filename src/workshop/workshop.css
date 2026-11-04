@@ -129,6 +129,9 @@
   display: flex;
   gap: 12px;
   align-items: stretch;
+  /* A grid item never shrinks below its content unless told: on a phone the «Borrar» button
+     used to widen the whole page. */
+  min-width: 0;
 }
 
 .n-input {
