@@ -130,7 +130,8 @@ export const tresVidas: GameDefinition = {
             'Todo arranca con la bandera verde. Lo que va adentro de "por siempre" se repite sin parar.',
             'Poné «mover con las flechas» adentro de «por siempre». Probá con velocidad 6.',
           ],
-          demo: 'a_forever',
+          demoScript: onFlag(forever(moveWithArrows(6))),
+          demoSprite: 'nova',
           example: [{ sprite: 'Nova', scripts: [onFlag(forever(moveWithArrows(6)))] }],
           check: (ctx) =>
             holdingAll(ctx, ['a_forever'], ['a_arrows']).some(({ sprite }) => ctx.stats.ranBy(sprite.id, 'arrows')) &&
@@ -146,7 +147,8 @@ export const tresVidas: GameDefinition = {
             'Tocá la bandera verde y mirá: la estrella tiene que bajar de verdad.',
           ],
           unlock: ['a_goto', 'a_changey', 'a_repeatuntil', 'v_random', 'v_lt', 'v_y'],
-          demo: 'a_goto',
+          demoScript: onFlag(goTo(randomBetween(-200, 200), 140), repeatUntil(lt(posY(), -150), changeY(-3))),
+          demoSprite: 'estrella',
           example: [
             {
               sprite: 'Estrella',
@@ -190,7 +192,8 @@ export const tresVidas: GameDefinition = {
             'Al principio del juego, usá «fijar … a …» para poner tu variable en 3.',
           ],
           unlock: ['a_setvar', 'v_var', 'a_changevar'],
-          demo: 'a_setvar',
+          demoScript: onFlag(setVar('vidas', 3), forever(moveWithArrows(6))),
+          demoSprite: 'nova',
           example: [{ sprite: 'Nova', scripts: [onFlag(setVar('vidas', 3), forever(moveWithArrows(6)))] }],
           check: (ctx) => setAtStart(ctx).some((s) => s.value >= 2 && s.value <= 9) && ctx.stats.ran('var'),
         },
@@ -204,7 +207,8 @@ export const tresVidas: GameDefinition = {
             'Dejá que se escape una estrella a propósito para ver cómo baja la variable.',
           ],
           unlock: ['a_ifelse'],
-          demo: 'a_ifelse',
+          demoScript: onFlag(forever(goTo(randomBetween(-200, 200), 140), repeatUntil(lt(posY(), -150), changeY(-3)), ifElse(touching('nova'), [addScore(1)], [changeVar('vidas', -1)]))),
+          demoSprite: 'estrella',
           example: [
             {
               sprite: 'Estrella',

@@ -62,7 +62,7 @@ export const cazaPulpi: GameDefinition = {
             'Probá otras reacciones: un sonido, una cara o un saltito.',
           ],
           unlock: ['a_sayfor', 'a_sound', 'a_face', 'a_jump'],
-          demo: 'a_sayfor',
+          demoScript: onClick(sayFor('¡Hola!', 1)),
           check: (ctx) => refsOfHat(ctx, 'a_click').some((r) => refHas(r, REACTIONS)) && ctx.stats.ranHat('click'),
         },
         {
@@ -71,7 +71,7 @@ export const cazaPulpi: GameDefinition = {
           text: 'Cada vez que atrapás a Pulpi tiene que valer un punto. Sumá «sumar 1 a puntos» abajo del clic y tocalo varias veces.',
           hints: ['El bloque de puntos va dentro del mismo programa del clic.'],
           unlock: ['a_addscore'],
-          demo: 'a_addscore',
+          demoScript: onClick(addScore(1)),
           check: (ctx) => refsOfHat(ctx, 'a_click').some((r) => refBlocks(r).some((b) => b.type === 'a_addscore' && numField(b, 'N') > 0)) && ctx.stats.maxScore >= 1,
         },
         {
@@ -80,7 +80,7 @@ export const cazaPulpi: GameDefinition = {
           text: 'Cada partida tiene que empezar con cero puntos. Con la bandera verde, fijá los puntos en 0. Después tocá la bandera.',
           hints: ['Hay un bloque «fijar puntos a». Ponele el número 0 y pegalo debajo de la bandera verde.'],
           unlock: ['a_flag', 'a_setscore'],
-          demo: 'a_setscore',
+          demoScript: onFlag(setScore(0)),
           check: (ctx) => refsOfHat(ctx, 'a_flag').some((r) => refBlocks(r).some((b) => b.type === 'a_setscore' && numField(b, 'N') === 0)) && ctx.stats.ranHat('flag'),
         },
         {
@@ -89,7 +89,7 @@ export const cazaPulpi: GameDefinition = {
           text: 'Un cazador de verdad no la tiene fácil: cuando lo atrapás, Pulpi se escapa a otro lugar. Usá «ir a posición aleatoria».',
           hints: ['Ponelo en el mismo programa del clic, después de sumar el punto.'],
           unlock: ['a_random'],
-          demo: 'a_random',
+          demoScript: onClick(addScore(1), goToRandom()),
           check: (ctx) => catchers(ctx).length > 0 && ctx.stats.ranHat('click') && ctx.stats.ran('move'),
         },
       ],

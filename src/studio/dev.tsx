@@ -37,9 +37,9 @@ const pictureGame: GameDefinition = {
       title: 'El héroe aparece',
       goal: 'Toby se presenta con un saludo.',
       steps: [
-        { id: 'p1-say', title: 'Que Toby salude', text: 'Arrastrá un bloque de decir debajo de la bandera y apretá Empezar.', hints: [], demo: 'f_say', check: (ctx) => ctx.stats.ran('say') },
+        { id: 'p1-say', title: 'Que Toby salude', text: 'Arrastrá un bloque de decir debajo de la bandera y apretá Empezar.', hints: [], demoScript: b.fFlag(b.fSay('HOLA')), check: (ctx) => ctx.stats.ran('say') },
         {
-          id: 'p1-walk', title: 'Que camine', text: 'Ahora Toby tiene que caminar hacia un costado.', unlock: ['f_right', 'f_left'], demo: 'f_right', hints: [],
+          id: 'p1-walk', title: 'Que camine', text: 'Ahora Toby tiene que caminar hacia un costado.', unlock: ['f_right', 'f_left'], demoScript: b.fFlag(b.fSay('HOLA'), b.fRight()), hints: [],
           check: (ctx) => ctx.stats.ran('move'),
         },
       ],

@@ -70,7 +70,7 @@ export const manejaNova: GameDefinition = {
           text: 'Armá el primer control: al presionar la tecla flecha derecha, Nova avanza hacia la derecha con «cambiar x en». Después apretá la flecha en el teclado.',
           hints: ['Los números positivos van a la derecha. Probá con 20.'],
           unlock: ['a_changex'],
-          demo: 'a_changex',
+          demoScript: onKey('ArrowRight', changeX(20)),
           check: (ctx) => nudges(ctx, 'ArrowRight', 'a_changex', 1) && ctx.stats.ranHat('key'),
         },
         {
@@ -78,7 +78,7 @@ export const manejaNova: GameDefinition = {
           title: 'Volar a la izquierda',
           text: 'Ahora el control de la flecha izquierda. Fijate qué número hace que Nova vaya para el otro lado.',
           hints: ['Para ir hacia la izquierda el número tiene que ser negativo, por ejemplo -20.'],
-          demo: 'a_changex',
+          demoScript: onKey('ArrowLeft', changeX(-20)),
           check: (ctx) => nudges(ctx, 'ArrowLeft', 'a_changex', -1) && ctx.stats.ranHat('key'),
         },
         {
@@ -87,7 +87,7 @@ export const manejaNova: GameDefinition = {
           text: 'Faltan las flechas de arriba y de abajo. Para subir y bajar se usa «cambiar y en».',
           hints: ['Subir es un número positivo y bajar es uno negativo.', 'Necesitás un programa para cada flecha.'],
           unlock: ['a_changey'],
-          demo: 'a_changey',
+          demoScript: [onKey('ArrowUp', changeY(20)), onKey('ArrowDown', changeY(-20))],
           check: (ctx) => nudges(ctx, 'ArrowUp', 'a_changey', 1) && nudges(ctx, 'ArrowDown', 'a_changey', -1) && ctx.stats.ranHat('key'),
         },
         {
@@ -96,7 +96,7 @@ export const manejaNova: GameDefinition = {
           text: 'La barra espaciadora todavía no hace nada. Dale un poder a Nova: un salto, un sonido, una cara... lo que quieras.',
           hints: ['En «al presionar tecla» elegí «espacio» con el menú.'],
           unlock: ['a_jump', 'a_sound', 'a_note', 'a_face'],
-          demo: 'a_jump',
+          demoScript: onKey(' ', jump()),
           check: (ctx) => keyScripts(ctx, ' ').some((r) => refHas(r, [...REACTIONS, ...PLACES])) && ctx.stats.ranHat('key'),
         },
       ],

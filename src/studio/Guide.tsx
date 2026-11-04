@@ -148,8 +148,8 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
         <button type="button" className="mc-gbtn" onClick={() => session.listen()}>
           <Icon html={ICON.sound} /> {session.spoken ? 'Escuchar de nuevo' : 'Escuchar'}
         </button>
-        {step.demo && !done && (
-          <button type="button" className="mc-gbtn primary" onClick={() => void session.demo(step.demo!)}>
+        {step.demoScript && !done && (
+          <button type="button" className="mc-gbtn primary" onClick={() => void session.demo(step)}>
             <Icon html={ICON.eye} /> Mostrame
           </button>
         )}
