@@ -381,8 +381,9 @@ export class Machine implements StageView {
   }
 
   touchingTarget(inst: SpriteInstance, target: string): boolean {
-    if (target === EDGE) return edgeHits(inst).any;
-    return this.instances.some((o) => o !== inst && o.spriteId === target && overlaps(inst, o));
+    const hit = target === EDGE ? edgeHits(inst).any : this.instances.some((o) => o !== inst && o.spriteId === target && overlaps(inst, o));
+    if (hit) this.stats.touch(inst.spriteId, target);
+    return hit;
   }
 
   /** Seconds since the green flag. */
@@ -399,6 +400,7 @@ export class Machine implements StageView {
   }
 
   setScore(value: number): void {
+    if (value < (this.score ?? 0)) this.stats.scoreDrops++;
     this.score = value;
     if (value > this.stats.maxScore) this.stats.maxScore = value;
     this.dirty = true;

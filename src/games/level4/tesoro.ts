@@ -44,8 +44,8 @@ function findMessages(ctx: StepContext): Set<string> {
 /**
  * Touch detectors that end up taking a point away and sending the explorer back, directly or through a message.
  * The detector must not be the one that rewards the treasure, and a message must be a different one from the treasure's,
- * with its receiving script already started: that is the proof that the penalty ran. A penalty written straight into a
- * «cuando toque» has no such proof, because the language does not record a point being taken away.
+ * with its receiving script already started. The check pairs it with the runtime stats: that detector's touch really
+ * happened and the score really went down.
  */
 function penalties(ctx: StepContext): { ref: ScriptRef; key: string }[] {
   const found = findMessages(ctx);
@@ -196,7 +196,7 @@ export const tesoro: GameDefinition = {
             { sprite: 'Guardia', scripts: [onFlag(forever(move(3), bounce(), ifThen(touching('explorador'), send('m2'))))] },
             { sprite: 'Explorador', scripts: [onReceive('m2', addScore(-1), goTo(START.x, START.y), sound('boing'))] },
           ],
-          check: (ctx) => penalties(ctx).length >= 1 && (ctx.stats.ran('touching') || ctx.stats.ranHat('touching')),
+          check: (ctx) => penalties(ctx).some(({ key }) => ctx.stats.touched(...(key.split('>') as [string, string]))) && ctx.stats.scoreDrops >= 1,
         },
         {
           id: 'segundo',

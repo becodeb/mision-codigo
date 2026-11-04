@@ -6,6 +6,7 @@
 export class StatsRecorder {
   private ops = new Map<string, number>();
   private hats = new Map<string, number>();
+  private touches = new Map<string, number>();
   /** Reached the win or lose block at least once. */
   won = false;
   lost = false;
@@ -13,6 +14,8 @@ export class StatsRecorder {
   maxScore = 0;
   /** The host entered show mode. Set with `Machine.setShown`. */
   shown = false;
+  /** Times the score went down (a penalty, or «fijar puntos» to a lower number). A new run starting from 0 is not one. */
+  scoreDrops = 0;
 
   op(category: string, spriteId: string): void {
     bump(this.ops, category);
@@ -22,6 +25,20 @@ export class StatsRecorder {
   hat(kind: string, spriteId: string): void {
     bump(this.hats, kind);
     bump(this.hats, `${spriteId}|${kind}`);
+  }
+
+  /**
+   * A touch that really happened: the program asked whether `sprite` touches `target` (a sprite id, or `EDGE`)
+   * and the answer was yes. Unlike `ran('touching')`, which only says the question was asked.
+   */
+  touch(spriteId: string, target: string): void {
+    bump(this.touches, `${spriteId}>${target}`);
+    bump(this.touches, '*');
+  }
+
+  /** Whether any touch happened, or with `spriteId` and `target`: that sprite touched that one (as seen from its own scripts). */
+  touched(spriteId?: string, target?: string): boolean {
+    return (this.touches.get(spriteId === undefined || target === undefined ? '*' : `${spriteId}>${target}`) ?? 0) > 0;
   }
 
   /** Times a block of the category ran, in any sprite. */
@@ -49,6 +66,8 @@ export class StatsRecorder {
   reset(): void {
     this.ops.clear();
     this.hats.clear();
+    this.touches.clear();
+    this.scoreDrops = 0;
     this.won = false;
     this.lost = false;
     this.maxScore = 0;

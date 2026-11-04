@@ -56,6 +56,41 @@ describe('guide checks that need the real thing', () => {
     g.machine.dispose();
   });
 
+  describe('tesoro: «castigo» needs a touch that really happened', () => {
+    const START = { x: -190, y: -130 };
+    const direct = (): ProjectProgram => {
+      const program = clone(tesoro.solution.program);
+      sprite(program, 'explorador').scripts = [
+        onFlag(setScore(0), goTo(START.x, START.y), forever(moveWithArrows(5))),
+        onTouching('tesoro', addScore(1), sound('magia'), send('m1')),
+        onTouching('guardia', addScore(-1), goTo(START.x, START.y), sound('boing')),
+      ];
+      return program;
+    };
+    const viaMessage = (): ProjectProgram => clone(tesoro.solution.program);
+
+    for (const [name, make] of [['straight into «cuando toque»', direct], ['through a message', viaMessage]] as const) {
+      it(`${name}: not at the flag, not by waiting, yes after the guard catches the explorer`, () => {
+        const program = make();
+        const g = new Game(program);
+        g.flag();
+        g.run(2500);
+        expect(passes(tesoro, 'castigo', g, program)).toBe(false);
+        const pilot = new Pilot(g, { hero: 'explorador', speed: 2.5, hazards: [] });
+        g.runUntil(() => {
+          const c = centerOf(g.sprite('guardia'));
+          pilot.steer(c.x, c.y);
+          return g.machine.stats.scoreDrops > 0;
+        }, 60_000);
+        pilot.release();
+        g.run(400);
+        expect(g.machine.stats.scoreDrops).toBeGreaterThan(0);
+        expect(passes(tesoro, 'castigo', g, program)).toBe(true);
+        g.machine.dispose();
+      });
+    }
+  });
+
   it('mascota-virtual: a cap far above the food does not count, and the real one does', () => {
     const program = clone(mascotaVirtual.solution.program);
     sprite(program, 'manzana').scripts = [
