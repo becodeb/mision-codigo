@@ -10,6 +10,9 @@ import type { GameDefinition, StepContext } from './types.ts';
 /** Literals come with the sockets, so they never need to be in a toolbox. */
 const IMPLICIT = new Set<string>(['v_num', 'v_text']);
 
+/** The data-point names the studio renders. A wrong name would silently point at nothing. */
+const POINTS = new Set(['flag', 'stop', 'show', 'add-sprite', 'sprites', 'backdrops', 'stage', 'workspace', 'toolbox', 'guide', 'sound', 'exit', 'keys', 'example']);
+
 function allowedBlocks(game: GameDefinition): Set<BlockType> {
   return new Set([...game.toolbox, ...stepsOf(game).flatMap((s) => s.unlock ?? [])]);
 }
@@ -40,6 +43,12 @@ describe('catalog', () => {
           expect(step.hints.length, step.id).toBeGreaterThanOrEqual(1);
           expect(step.demo, step.id).toBeUndefined();
         }
+      }
+    });
+
+    it('points only at parts of the studio that exist', () => {
+      for (const step of stepsOf(game)) {
+        if (step.point) expect(POINTS.has(step.point), step.point).toBe(true);
       }
     });
 
