@@ -8,7 +8,8 @@ import * as Es from 'blockly/msg/es';
 import { BACKDROPS, IMG, svgURI } from '../art/index.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { BLOCK_IMG } from './icons.ts';
-import { EDGE, type Option } from './options.ts';
+import { faceSVG } from '../art/face.ts';
+import { ENVELOPES, EDGE, FACES_PICTURE, type Option } from './options.ts';
 import { BLOCK_SPECS, type ArgSpec, type BlockSpec, type DynSource } from './spec.ts';
 import type { BlockType } from './catalog.ts';
 
@@ -134,6 +135,28 @@ function backdropImageOptions(): unknown[] {
   ]);
 }
 
+const ENVELOPE_COLOURS: Record<string, string> = { red: '#E5383B', blue: '#2F6FED', yellow: '#FFC107' };
+
+/** The picture tier never depends on an emoji font: faces and envelopes are drawn. */
+function faceImageOptions(): unknown[] {
+  const faceColour = '#241A4D';
+  return FACES_PICTURE.map(([, id]) => [
+    {
+      src: svgURI(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-30 -30 60 60"><circle r="27" fill="#FFD84D" stroke="#B8860B" stroke-width="3"/>${faceSVG(id, { ex: 9, ey: -4, er: 4, col: faceColour, my: 8, mw: 8 })}</svg>`),
+      width: 36, height: 36, alt: id,
+    }, id,
+  ]);
+}
+
+function envelopeImageOptions(): unknown[] {
+  return ENVELOPES.map(([name, id]) => [
+    {
+      src: svgURI(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 36"><rect x="2" y="3" width="44" height="30" rx="5" fill="${ENVELOPE_COLOURS[id] ?? '#999'}" stroke="#241A4D" stroke-width="2.5"/><path d="M4 7l20 14L44 7" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>`),
+      width: 42, height: 32, alt: name,
+    }, id,
+  ]);
+}
+
 function argJson(arg: ArgSpec): Record<string, unknown> {
   switch (arg.k) {
     case 'image': return { type: 'field_image', src: IMAGES[arg.img] ?? IMAGES.flag, width: arg.w, height: arg.w, alt: arg.alt };
@@ -147,6 +170,8 @@ function argJson(arg: ArgSpec): Record<string, unknown> {
         if (arg.options === 'backdropNames') return { type: 'field_dropdown', name: arg.name, options: Object.entries(BACKDROPS).map(([id, def]) => [def.name, id]) };
         return { type: 'field_dynamic', name: arg.name, source: arg.options };
       }
+      if (arg.options === FACES_PICTURE) return { type: 'field_dropdown', name: arg.name, options: faceImageOptions() };
+      if (arg.options === ENVELOPES) return { type: 'field_dropdown', name: arg.name, options: envelopeImageOptions() };
       return { type: 'field_dropdown', name: arg.name, options: arg.options.map(([label, value]) => [label, value]) };
   }
 }

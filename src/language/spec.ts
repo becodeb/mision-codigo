@@ -61,7 +61,7 @@ export const BLOCK_SPECS: Record<BlockType, BlockSpec> = {
   /* ---------- picture tier ---------- */
   f_flag: s('f_event', 'hat', '%1', [img('flag', 44, 'bandera verde')]),
   f_click: s('f_event', 'hat', '%1', [img('tap', 40, 'al tocarme')]),
-  f_recv: s('f_msg', 'hat', '%1 %2', [img('recv', 40, 'al recibir'), dd('C', ENVELOPES.map(([, v]) => [{ red: '🟥', blue: '🟦', yellow: '🟨' }[v] ?? v, v] as const))]),
+  f_recv: s('f_msg', 'hat', '%1 %2', [img('recv', 40, 'al recibir'), dd('C', ENVELOPES)]),
   f_say: s('f_look', 'stack', '%1 %2', [img('say', 40, 'decir'), dd('P', PHRASES)]),
   f_text: s('f_look', 'stack', '%1 %2', [img('write', 40, 'escribir'), txt('T', 'Hola')]),
   f_right: s('f_move', 'stack', '%1', [img('right', 42, 'derecha')]),
@@ -82,7 +82,7 @@ export const BLOCK_SPECS: Record<BlockType, BlockSpec> = {
   f_show: s('f_look', 'stack', '%1', [img('show', 40, 'aparecer')]),
   f_note: s('f_sound', 'stack', '%1 %2', [img('note', 38, 'nota'), dd('S', NOTES)]),
   f_random: s('f_move', 'stack', '%1', [img('random', 40, 'aparecer en cualquier lugar')]),
-  f_send: s('f_msg', 'stack', '%1 %2', [img('send', 40, 'enviar'), dd('C', ENVELOPES.map(([, v]) => [{ red: '🟥', blue: '🟦', yellow: '🟨' }[v] ?? v, v] as const))]),
+  f_send: s('f_msg', 'stack', '%1 %2', [img('send', 40, 'enviar'), dd('C', ENVELOPES)]),
 
   /* ---------- text tier: events ---------- */
   a_flag: t('events', 'a_events', 'hat', 'al presionar %1', [img('flagS', 24, 'bandera')]),
