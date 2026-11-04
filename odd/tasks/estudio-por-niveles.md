@@ -32,7 +32,9 @@ children, `niveles/` rewrite (kept as is, served as a static legacy page).
 - No internet needed during class: Blockly and fonts are bundled, not loaded from a CDN.
 - Raspberry Pi: `vitest --maxWorkers=2`, at most one writer at a time on this tree.
 - Never bind the server to `0.0.0.0` by default. `HOST` is explicit.
-- Children's names are personal data: never readable without the workshop code.
+- There is one workshop and no access code, by the owner's decision (2026-11-04). Anyone who reaches
+  the server can read the name list, so store first names only, and revisit this before any public
+  deploy.
 - No push, PR or merge without the owner asking. The remote belongs to another GitHub account.
 
 ## Workflow settings
@@ -176,17 +178,16 @@ Production serves the built client from the same process.
 
 Access model:
 
-- `WORKSHOP_CODE`: shared code written on the board. Required to read the name list.
-- Children pick their name by tapping (first graders cannot type it). No child password: the threat
-  is a classmate opening a project, which is acceptable in a supervised class.
+- The app opens directly on the name screen: a field that filters as the child types, above large
+  name buttons to tap, because first graders may not be able to type it. No child password: the
+  threat is a classmate opening a project, which is acceptable in a supervised class.
 - `ADMIN_PASSWORD`: teacher panel. Constant-time comparison and login rate limit.
 - Signed, httpOnly, `SameSite=Strict` cookies signed with `SESSION_SECRET`. The server refuses to
   start in production when a secret is missing.
 
 API:
 
-- `POST /api/session { code }`, `GET /api/session`, `DELETE /api/session`
-- `GET /api/students`, `POST /api/session/student { id }`
+- `GET /api/students`, `POST /api/session { studentId }`, `GET /api/session`, `DELETE /api/session`
 - `GET /api/projects`, `GET /api/projects/:gameId`, `PUT /api/projects/:gameId`
 - `POST /api/admin/session`, `DELETE /api/admin/session`
 - `GET|POST /api/admin/students`, `PATCH|DELETE /api/admin/students/:id`,
@@ -225,7 +226,7 @@ src/
       browser capture.
 - [ ] **T04 Backend.** Express, SQLite, sessions, all routes, tests. Route: delegated. Checks:
       typecheck, Vitest, real HTTP run.
-- [ ] **T05 Workshop flow.** Code, name picker, level chooser, autosave with offline fallback.
+- [ ] **T05 Workshop flow.** Name screen, level chooser, autosave with offline fallback.
       Route: delegated. Checks: typecheck, Vitest, build, browser capture.
 - [ ] **T06 Levels 1 and 2 catalog.** 8 games with guides and proofs. Route: delegated. Checks:
       Vitest proofs, browser capture of one game from each level.
@@ -239,7 +240,8 @@ src/
 
 ## Acceptance criteria
 
-- A child enters the code, taps their name and sees only their level's games plus the free project.
+- A child opens the app, enters or taps their name and sees only their level's games plus the free
+  project.
 - Each of the 23 games has at least 3 phases, the level's minimum steps, at least 3 challenges, and a
   passing headless proof.
 - Finishing a game offers the next one, so no child hits a dead end during a 60-minute class.
