@@ -68,12 +68,22 @@ function objectsThat(ctx: StepContext, test: (s: SpriteProgram) => boolean): Spr
   return ctx.program.sprites.filter((s) => isObject(s) && test(s));
 }
 
+/** The smallest goal that still leaves room for phases 2 and 3, which start at 5 and 10 points. */
+const MIN_GOAL = 12;
+
+/** A win behind a score of at least `MIN_GOAL`, so the game cannot end before the phases get their turn. */
 const winsOnScore = (ctx: StepContext): boolean =>
   scriptsOf(ctx).some(
     ({ script }) =>
       holds(script.body, ['a_win']) &&
-      ((script.hat.type === 'a_points' && Number(script.hat.fields.N) >= 3) ||
-        blocksInList(script.body).some((b) => GUARDS.includes(b.type) && !!b.inputs.C && holds([b.inputs.C], ['v_score']))),
+      ((script.hat.type === 'a_points' && Number(script.hat.fields.N) >= MIN_GOAL) ||
+        blocksInList(script.body).some(
+          (b) =>
+            GUARDS.includes(b.type) &&
+            !!b.inputs.C &&
+            holds([b.inputs.C], ['v_score']) &&
+            blocksInList([b.inputs.C]).some((x) => x.type === 'v_num' && Number(x.fields.V) >= MIN_GOAL - 1),
+        )),
   );
 
 export const contrarreloj: GameDefinition = {
@@ -99,7 +109,7 @@ export const contrarreloj: GameDefinition = {
           text: '¡Empieza Contrarreloj! Toby tiene que correr por todo el escenario. Hacé que se mueva con las flechas mientras dura el juego.',
           hints: [
             'Todo arranca con la bandera verde. Lo que va adentro de "por siempre" se repite sin parar.',
-            'Poné "moverse con las flechas" adentro del "por siempre". Probá con velocidad 5.',
+            'Poné «mover con las flechas» adentro de «por siempre». Probá con velocidad 5.',
           ],
           demo: 'a_forever',
           example: [{ sprite: 'Toby', scripts: [onFlag(forever(moveWithArrows(5)))] }],
@@ -113,7 +123,7 @@ export const contrarreloj: GameDefinition = {
           text: 'Creá una variable para guardar los segundos que quedan. Tiene que empezar en 30 cada vez que se aprieta la bandera.',
           hints: [
             'Creá la variable con el botón de variables. Un nombre como "tiempo" ayuda a acordarse.',
-            'Al principio del juego, "poner" la variable en 30. Lo vas a ver en un cartelito en el escenario.',
+            'Al principio del juego, usá «fijar … a …» para poner la variable en 30. Lo vas a ver en un cartelito en el escenario.',
           ],
           unlock: ['a_setvar', 'v_var', 'a_changevar'],
           demo: 'a_setvar',
@@ -126,8 +136,8 @@ export const contrarreloj: GameDefinition = {
           text: 'Que el reloj baje solo: un segundo después de otro, la variable pierde uno. Mirá cómo cambia el cartelito.',
           hints: [
             'Hay que repetir algo, y entre cada repetición esperar un segundo.',
-            'Lo que se repite es cambiar la variable en -1.',
-            'Esto va en un script aparte, que también empieza con la bandera verde. Así Toby se mueve mientras el reloj corre.',
+            'Lo que se repite es «sumar a … el valor …», con la variable del reloj y el valor -1.',
+            'Esto va en un programa aparte, que también empieza con la bandera verde. Así Toby se mueve mientras el reloj corre.',
           ],
           unlock: ['a_wait', 'a_repeatuntil', 'v_lt'],
           demo: 'a_wait',
@@ -157,7 +167,7 @@ export const contrarreloj: GameDefinition = {
           text: 'Cuando quedan menos de 6 segundos, Toby se asusta: que su cara cambie. Si el tiempo sube otra vez, vuelve a la normalidad.',
           hints: [
             'Hay que mirar el reloj todo el tiempo, no una sola vez.',
-            'Una elección "si… sino" decide la cara según un número comparado con la variable.',
+            'Una elección «si… si no» decide la cara según un número comparado con la variable.',
           ],
           unlock: ['a_ifelse', 'a_face'],
           example: [{ sprite: 'Toby', scripts: [onFlag(forever(ifElse(lt(variable('tiempo'), 6), [face('sorpresa')], [face('feliz')])))] }],
@@ -203,10 +213,10 @@ export const contrarreloj: GameDefinition = {
         {
           id: 'meta',
           title: 'La meta',
-          text: 'Para ganar hay que llegar a 15 puntos antes de que se acabe el tiempo. Ponele esa meta al juego.',
+          text: 'Para ganar hay que llegar a 15 puntos antes de que se acabe el tiempo. Ponele esa meta al juego y jugá hasta ganar.',
           hints: [
             'Hay un bloque que arranca solo cuando el puntaje llega a un número.',
-            'Adentro va "ganar". Para probarlo con paciencia podés ponerle una meta chica al principio.',
+            'Adentro va «ganar». Si querés probarlo más rápido podés bajar la meta, pero no a menos de 12: después vienen las fases 2 y 3.',
           ],
           unlock: ['a_points', 'a_win', 'v_score'],
           example: [{ sprite: 'Toby', scripts: [onPoints(15, win())] }],
@@ -217,7 +227,7 @@ export const contrarreloj: GameDefinition = {
           title: 'La moneda se escapa',
           text: 'Una moneda quieta es muy fácil. Hacé que se mueva sola a otro lugar cada tanto, aunque nadie la toque.',
           hints: [
-            'Un script aparte de la moneda, que se repite sin parar.',
+            'Un programa aparte de la moneda, que se repite sin parar.',
             'Esperar unos segundos, saltar a un lugar al azar y volver a empezar.',
           ],
           example: [{ sprite: 'Moneda', scripts: [onFlag(forever(wait(4), goToRandom()))] }],
@@ -259,7 +269,7 @@ export const contrarreloj: GameDefinition = {
           text: 'Si Toby toca el bonus mientras se ve, el reloj gana segundos y el bonus desaparece.',
           hints: [
             'Es otra condición "si toca", pero ahora lo que cambia es la variable del reloj.',
-            'Cambiar la variable en un número positivo la hace subir.',
+            'Sumarle un número positivo a la variable la hace subir.',
             'Para que desaparezca usá el bloque de esconder.',
           ],
           example: [{ sprite: 'Rayo', scripts: [onFlag(forever(ifThen(touching('heroe'), changeVar('tiempo', 3), hide())))] }],
@@ -355,11 +365,11 @@ export const contrarreloj: GameDefinition = {
         {
           id: 'final',
           title: 'Pantalla de victoria',
-          text: 'Cuando llegás a la meta: cambia el escenario y un cartel cuenta cuántos segundos te sobraron. Ojo: el reloj no puede seguir corriendo y hacerte perder en plena fiesta.',
+          text: 'Cuando llegás a la meta: cambia el escenario y un cartel cuenta cuántos segundos te sobraron. Ojo: el reloj no puede seguir corriendo y hacerte perder en plena fiesta. Ganá una partida nueva para comprobarlo.',
           hints: [
             'Antes de ganar, cambiá el escenario y hacé un cartel con "unir" para mezclar texto y la variable del reloj.',
-            'Hay un bloque que frena los otros scripts del mismo personaje. Ponelo primero.',
-            'Para probarlo, ganá la partida.',
+            'Hay un bloque que frena los otros programas del mismo personaje. Ponelo primero.',
+            'Para probarlo, ganá una partida nueva con el programa terminado. Con la meta en 12 es más fácil.',
           ],
           unlock: ['a_stopothers', 'v_join'],
           example: [
@@ -371,7 +381,8 @@ export const contrarreloj: GameDefinition = {
           check: (ctx) =>
             comesBefore(ctx, (b) => b.type === 'a_backdrop', ['a_win']) &&
             comesBefore(ctx, (b) => SAYS.includes(b.type) && holds([b], ['v_join']), ['a_win']) &&
-            ctx.stats.won,
+            // A win from an earlier version of the program does not count: editing the program resets the run.
+            ctx.machine.ended === 'win',
         },
       ],
     },
