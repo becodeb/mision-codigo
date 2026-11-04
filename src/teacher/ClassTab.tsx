@@ -36,7 +36,7 @@ export function ClassTab() {
         <h2 id="clase-activa">Clase activa</h2>
         <p>
           Los chicos ven los juegos de la clase activa para su nivel, además de los que ya empezaron y el proyecto libre. El
-          cambio se aplica la próxima vez que abran su lista de juegos.
+          cambio les llega en unos segundos si están en su lista de juegos; si están dentro de un juego, al volver a la lista.
         </p>
         <div className="t-segment" role="group" aria-label="Clase activa">
           {CLASS_IDS.map((classId) => (
