@@ -103,6 +103,15 @@ export class BlockEditor {
     }
     this.ws.clearUndo();
     this.resize();
+    this.keepLeftEdgeInView();
+  }
+
+  /** Saved blocks can sit left of the origin; the flyout takes the left of the view, so scroll until none is hidden behind it. */
+  private keepLeftEdgeInView(): void {
+    try {
+      const box = this.ws.getBlocksBoundingBox();
+      if (box.left < 0 && this.ws.getTopBlocks(false).length) this.ws.scroll(-box.left * this.ws.scale + 16, this.ws.scrollY);
+    } catch { /* an empty or detached workspace has nothing to show */ }
   }
 
   /** Clears the workspace while no sprite is selected. */
