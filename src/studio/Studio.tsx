@@ -166,7 +166,7 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
             }
           />
           {!picture && selected && (
-            <span className="mc-coords">{selected.name} · x: {Math.round(selected.x)} · y: {Math.round(selected.y)}</span>
+            <Coords session={session} id={selected.id} name={selected.name} x={selected.x} y={selected.y} />
           )}
 
           <div className="mc-panel mc-places" data-point="backdrops">
@@ -219,6 +219,25 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
       )}
     </div>
   );
+}
+
+/** The selected sprite's place under the stage. It follows the sprite while the game runs or while it is dragged. */
+function Coords({ session, id, name, x, y }: { session: StudioSession; id: string; name: string; x: number; y: number }) {
+  const read = (): { x: number; y: number } => {
+    const inst = session.machine?.instances.find((i) => i.id === id);
+    return { x: Math.round(inst ? inst.x : x), y: Math.round(inst ? inst.y : y) };
+  };
+  const [at, setAt] = useState(read);
+  useEffect(() => {
+    const tick = (): void => {
+      const next = read();
+      setAt((prev) => (prev.x === next.x && prev.y === next.y ? prev : next));
+    };
+    tick();
+    const timer = setInterval(tick, 100);
+    return () => clearInterval(timer);
+  }, [session, id, x, y]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <span className="mc-coords">{name} · x: {at.x} · y: {at.y}</span>;
 }
 
 function FreePrompt() {

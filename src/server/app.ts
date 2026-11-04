@@ -310,6 +310,8 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
   if (config.staticDir !== null && existsSync(join(config.staticDir, 'index.html'))) {
     const indexFile = join(config.staticDir, 'index.html');
     app.use(express.static(config.staticDir));
+    /* Browsers ask for /favicon.ico on their own; the icon is Robi's SVG. */
+    app.get('/favicon.ico', (_req, res) => res.redirect(302, '/favicon.svg'));
     app.use((req, res, next) => {
       const isDocument = (req.method === 'GET' || req.method === 'HEAD') && !/\.[a-z0-9]+$/i.test(req.path);
       if (isDocument) res.sendFile(indexFile);

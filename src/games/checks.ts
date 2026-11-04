@@ -169,6 +169,25 @@ export function runsOf(sprite: SpriteProgram, types: readonly BlockType[]): numb
   return sprite.scripts.reduce((n, sc) => n + count(sc.body), 0);
 }
 
+/* ---------- evidence that something really happened in a run ---------- */
+
+/** How far a measured quantity (see `StatsRecorder.sample`) ranged: largest minus smallest value seen. */
+export function spanOf(ctx: StepContext, key: string): number {
+  const s = ctx.stats.sampled(key);
+  return s ? s.max - s.min : 0;
+}
+
+/** Whether the sprite was really moved by its own blocks, along either axis, by at least `min` pixels. */
+export const travelled = (ctx: StepContext, spriteId: string, min = 20): boolean =>
+  spanOf(ctx, `x|${spriteId}`) >= min || spanOf(ctx, `y|${spriteId}`) >= min;
+
+/** Whether the sprite (or a clone of it, with `clones`) was seen falling at least `min` pixels down the stage. */
+export const fell = (ctx: StepContext, spriteId: string, clones: 'any' | 'clones' = 'any', min = 120): boolean =>
+  spanOf(ctx, `cy|${spriteId}`) >= min || (clones === 'any' && spanOf(ctx, `y|${spriteId}`) >= min);
+
+/** How many different values a variable took while the program ran. */
+export const varValues = (ctx: StepContext, name: string): number => ctx.stats.sampled(`var|${name}`)?.distinct ?? 0;
+
 /* ---------- helpers for the text-tier games (levels 3 and 4) ---------- */
 
 /** A script and the sprite that owns it. */

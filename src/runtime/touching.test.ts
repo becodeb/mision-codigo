@@ -102,3 +102,34 @@ describe('touching as a value', () => {
     expect(g.machine.touchingTarget(hero, 'star')).toBe(false);
   });
 });
+
+describe('stats that record what really happened', () => {
+  it('a touch is recorded only when the sprites overlap, not when the question is asked', () => {
+    const g = play(pair([onFlag(forever(ifThen(touching('star'), changeVar('hits', 1))))]));
+    g.run(300);
+    expect(g.machine.stats.ran('touching')).toBe(true);
+    expect(g.machine.stats.touched()).toBe(false);
+    expect(g.machine.stats.touched('hero', 'star')).toBe(false);
+    g.machine.moveInstance('hero', 0, 0);
+    g.run(100);
+    expect(g.machine.stats.touched()).toBe(true);
+    expect(g.machine.stats.touched('hero', 'star')).toBe(true);
+    expect(g.machine.stats.touched('star', 'hero')).toBe(false);
+  });
+
+  it('a touching hat records the touch it started from', () => {
+    const g = play(pair([onFlag(goTo(0, 0), wait(2)), onTouching('star', changeVar('hits', 1))]));
+    g.run(100);
+    expect(g.machine.stats.touched('hero', 'star')).toBe(true);
+  });
+
+  it('counts a score decrease, but not the first score of a run or a rise', () => {
+    const g = play(pair([onFlag(addScore(2), wait(0.3), addScore(-1), wait(0.3), addScore(-1))]));
+    g.run(100);
+    expect(g.machine.stats.scoreDrops).toBe(0);
+    g.run(400);
+    expect(g.machine.stats.scoreDrops).toBe(1);
+    g.run(400);
+    expect(g.machine.stats.scoreDrops).toBe(2);
+  });
+});

@@ -56,7 +56,14 @@ const realTime: TimeSource = {
 };
 
 export const GUIDE_KEYS = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', ' '] as const;
+const ARROW_KEYS: readonly string[] = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'];
 const SAVE_DELAY = 1000;
+/**
+ * A held arrow fires its «al presionar tecla» scripts again on our own clock. The keyboard's auto-repeat waits half
+ * a second before the first repeat and a touch button sends no repeat at all, so Nova would nudge once and stall.
+ */
+const REPEAT_DELAY = 140;
+const REPEAT_EVERY = 60;
 
 export class StudioSession {
   readonly game: GameDefinition | null;
@@ -90,6 +97,7 @@ export class StudioSession {
   private lastOffered = new Set<string>();
   private glowTypes = new Set<string>();
   private intervals: ReturnType<typeof setInterval>[] = [];
+  private repeaters = new Map<string, { delay: ReturnType<typeof setTimeout>; every: ReturnType<typeof setInterval> | null }>();
   private offs: (() => void)[] = [];
   private mounted = false;
   private lastSecondsSaved = 0;
@@ -205,8 +213,8 @@ export class StudioSession {
       this.offs.push(() => window.removeEventListener(type, input, { capture: true }));
     }
     const keydown = (e: KeyboardEvent): void => this.keyDown(e);
-    const keyup = (e: KeyboardEvent): void => this.machine?.keyUp(e.key);
-    const blur = (): void => this.machine?.clearKeys();
+    const keyup = (e: KeyboardEvent): void => this.releaseKey(e.key);
+    const blur = (): void => { this.releaseAllKeys(); this.machine?.clearKeys(); };
     const hidden = (): void => { if (document.visibilityState === 'hidden') this.flushSave(); };
     const failure = (e: ErrorEvent | PromiseRejectionEvent): void => this.fail('reason' in e ? e.reason : e.error);
     window.addEventListener('keydown', keydown);
@@ -239,6 +247,7 @@ export class StudioSession {
     this.flushSave();
     this.intervals.forEach(clearInterval);
     this.intervals = [];
+    this.releaseAllKeys();
     this.offs.forEach((off) => off());
     this.offs = [];
     if (this.celebrateTimer) clearTimeout(this.celebrateTimer);
@@ -403,6 +412,11 @@ export class StudioSession {
     if (this.ask) return;
     e.preventDefault();
     this.editor?.flushPending();
+    if (ARROW_KEYS.includes(e.key)) {
+      /* The browser's own repeats are ignored: the held key repeats on our clock. */
+      if (!e.repeat) this.holdKey(e.key);
+      return;
+    }
     m.keyDown(e.key, e.repeat);
   }
 
@@ -413,8 +427,37 @@ export class StudioSession {
     if (down) {
       this.clock.input();
       unlockAudio();
-      m.keyDown(key);
-    } else m.keyUp(key);
+      if (ARROW_KEYS.includes(key)) this.holdKey(key);
+      else m.keyDown(key);
+    } else this.releaseKey(key);
+  }
+
+  /** An arrow went down: fire it now and keep firing while it stays down. */
+  private holdKey(key: string): void {
+    const m = this.machine;
+    if (!m || this.repeaters.has(key)) return;
+    m.keyDown(key);
+    const entry: { delay: ReturnType<typeof setTimeout>; every: ReturnType<typeof setInterval> | null } = {
+      delay: setTimeout(() => {
+        entry.every = setInterval(() => this.machine?.keyDown(key, true), REPEAT_EVERY);
+      }, REPEAT_DELAY),
+      every: null,
+    };
+    this.repeaters.set(key, entry);
+  }
+
+  private releaseKey(key: string): void {
+    const entry = this.repeaters.get(key);
+    if (entry) {
+      clearTimeout(entry.delay);
+      if (entry.every) clearInterval(entry.every);
+      this.repeaters.delete(key);
+    }
+    this.machine?.keyUp(key);
+  }
+
+  private releaseAllKeys(): void {
+    for (const key of [...this.repeaters.keys()]) this.releaseKey(key);
   }
 
   private canDrag(id: string): boolean {
@@ -553,6 +596,7 @@ export class StudioSession {
 
   setBackdrop(id: string): void {
     this.doc.backdrop = id;
+    this.doc.ui.backdropChosen = true;
     playSfx('pop');
     this.applyProgram();
     this.renderer?.setBackdrop(id);
@@ -708,7 +752,7 @@ export class StudioSession {
   }
 
   get stepContext(): StepContext | null {
-    return this.machine ? { stats: this.machine.stats, program: this.program, machine: this.machine } : null;
+    return this.machine ? { stats: this.machine.stats, program: this.program, machine: this.machine, ui: { backdropChosen: this.doc.ui.backdropChosen } } : null;
   }
 
   private checkGuide(): void {

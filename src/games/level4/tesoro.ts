@@ -5,7 +5,7 @@ import {
   sayFor, score, send, setScore, sound, sprite, stopOthers, touching, win,
 } from '../../language/ir.ts';
 import type { ScriptRef } from '../checks.ts';
-import { PLACES, blocksInList, chosenBackdrop, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount } from '../checks.ts';
+import { PLACES, blocksInList, chosenBackdrop, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount, travelled } from '../checks.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import { Pilot, centerOf, touchingNow } from './autopilot.ts';
 
@@ -44,8 +44,8 @@ function findMessages(ctx: StepContext): Set<string> {
 /**
  * Touch detectors that end up taking a point away and sending the explorer back, directly or through a message.
  * The detector must not be the one that rewards the treasure, and a message must be a different one from the treasure's,
- * with its receiving script already started: that is the proof that the penalty ran. A penalty written straight into a
- * «cuando toque» has no such proof, because the language does not record a point being taken away.
+ * with its receiving script already started. The check pairs it with the runtime stats: that detector's touch really
+ * happened and the score really went down.
  */
 function penalties(ctx: StepContext): { ref: ScriptRef; key: string }[] {
   const found = findMessages(ctx);
@@ -77,10 +77,10 @@ export const tesoro: GameDefinition = {
         {
           id: 'escena',
           title: 'Elegí el lugar',
-          text: 'La búsqueda empieza en algún lugar. Elegí el escenario: tocá uno que no tenga el borde de color.',
-          hints: ['Mirá los escenarios de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
+          text: 'La búsqueda empieza en algún lugar. Elegí el escenario: tocá el que más te guste.',
+          hints: ['Mirá los escenarios de abajo. Tocá el que más te guste. Podés tocar cualquiera.'],
           point: 'backdrops',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
+          check: (ctx) => ctx.ui.backdropChosen,
         },
         {
           id: 'mover',
@@ -90,7 +90,7 @@ export const tesoro: GameDefinition = {
           unlock: ['a_forever', 'a_arrows'],
           demo: 'a_arrows',
           check: (ctx) =>
-            refsOfHat(ctx, 'a_flag').some((r) => nestedIn(r.script.body, 'a_forever').some((b) => b.type === 'a_arrows')) && ctx.stats.ran('arrows'),
+            refsOfHat(ctx, 'a_flag').some((r) => nestedIn(r.script.body, 'a_forever').some((b) => b.type === 'a_arrows') && ctx.stats.ranBy(r.sprite.id, 'arrows') && travelled(ctx, r.sprite.id)),
         },
         {
           id: 'tesoro',
@@ -196,7 +196,7 @@ export const tesoro: GameDefinition = {
             { sprite: 'Guardia', scripts: [onFlag(forever(move(3), bounce(), ifThen(touching('explorador'), send('m2'))))] },
             { sprite: 'Explorador', scripts: [onReceive('m2', addScore(-1), goTo(START.x, START.y), sound('boing'))] },
           ],
-          check: (ctx) => penalties(ctx).length >= 1 && (ctx.stats.ran('touching') || ctx.stats.ranHat('touching')),
+          check: (ctx) => penalties(ctx).some(({ key }) => ctx.stats.touched(...(key.split('>') as [string, string]))) && ctx.stats.scoreDrops >= 1,
         },
         {
           id: 'segundo',

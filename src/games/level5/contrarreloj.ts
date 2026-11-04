@@ -6,7 +6,7 @@ import type { BlockType } from '../../language/catalog.ts';
 import {
   addScore, backdrop, changeVar, div, face, forever, goToRandom, hide, ifElse, ifThen, join, lose, lt, moveWithArrows, onFlag, onPoints, project,
   randomBetween, repeatUntil, sayFor, setVar, show, sound, sprite, stopOthers, touching, variable, wait, win,
-  type SpriteProgram,
+  type Block, type SpriteProgram,
 } from '../../language/ir.ts';
 import { blocksInList, blocksOfSprite, isObject } from '../checks.ts';
 import type { Game } from '../../runtime/testing.ts';
@@ -231,10 +231,22 @@ export const contrarreloj: GameDefinition = {
             'Esperar unos segundos, saltar a un lugar al azar y volver a empezar.',
           ],
           example: [{ sprite: 'Moneda', scripts: [onFlag(forever(wait(4), goToRandom()))] }],
+          // The coin has to have really jumped by itself: its looping script ran the move again after waiting.
           check: (ctx) =>
-            objectsThat(ctx, (s) =>
-              blocksOfSprite(s).some((b) => LOOPS.includes(b.type) && inside(b).some((x) => x.type === 'a_wait') && inside(b).some(movesRandomly)),
-            ).some((s) => ctx.stats.ranBy(s.id, 'wait')),
+            objectsThat(ctx, () => true).some((s) =>
+              s.scripts.some((sc, i) =>
+                blocksInList(sc.body).some((b) => {
+                  if (!LOOPS.includes(b.type)) return false;
+                  const at = (test: (x: Block) => boolean) => b.body.findIndex((x) => blocksInList([x]).some(test));
+                  const wait = at((x) => x.type === 'a_wait');
+                  const move = at(movesRandomly);
+                  if (wait < 0 || move < 0) return false;
+                  // Waiting first, one jump already proves it; jumping first, it needs a second one.
+                  const jumps = ctx.stats.blockRuns(s.id, i, ['a_random', 'a_goto', 'a_setx']);
+                  return jumps >= (wait < move ? 1 : 2);
+                }),
+              ),
+            ),
         },
       ],
     },
@@ -255,11 +267,16 @@ export const contrarreloj: GameDefinition = {
           example: [
             { sprite: 'Rayo', scripts: [onFlag(hide(), forever(wait(randomBetween(4, 7)), goToRandom(), show(), wait(3), hide()))] },
           ],
+          // The bonus has to have really shown up and hidden again: it showed at least once, and hid after that.
           check: (ctx) =>
             objectsThat(ctx, (s) => {
               const blocks = blocksOfSprite(s);
+              const hidAtStart = s.scripts.reduce((n, sc) => n + sc.body.filter((x) => x.type === 'a_hide').length, 0);
               return (
-                ['a_show', 'a_hide', 'a_wait'].every((t) => blocks.some((b) => b.type === t)) && blocks.some(movesRandomly) && ctx.stats.ranBy(s.id, 'look')
+                ['a_show', 'a_hide', 'a_wait'].every((t) => blocks.some((b) => b.type === t)) &&
+                blocks.some(movesRandomly) &&
+                ctx.stats.blockRuns(s.id, undefined, ['a_show']) >= 1 &&
+                ctx.stats.blockRuns(s.id, undefined, ['a_hide']) > hidAtStart
               );
             }).length > 0,
         },
@@ -277,7 +294,7 @@ export const contrarreloj: GameDefinition = {
             const clock = countdownNames(ctx);
             return conditionals(ctx, ['v_touching'], raises, 'then').some(
               ({ sprite, block }) =>
-                isObject(sprite) && inside(block).some((b) => raises(b) && clock.includes(nameOf(b))) && ctx.stats.ranBy(sprite.id, 'var'),
+                isObject(sprite) && inside(block).some((b) => raises(b) && clock.includes(nameOf(b))) && ctx.stats.ranBy(sprite.id, 'var') && ctx.stats.touched(sprite.id, 'heroe'),
             );
           },
         },
@@ -314,7 +331,7 @@ export const contrarreloj: GameDefinition = {
             const clock = countdownNames(ctx);
             return conditionals(ctx, ['v_touching'], lowers, 'then').some(
               ({ sprite, block }) =>
-                isObject(sprite) && inside(block).some((b) => lowers(b) && clock.includes(nameOf(b))) && ctx.stats.ranBy(sprite.id, 'var'),
+                isObject(sprite) && inside(block).some((b) => lowers(b) && clock.includes(nameOf(b))) && ctx.stats.ranBy(sprite.id, 'var') && ctx.stats.touched(sprite.id, 'heroe'),
             );
           },
         },

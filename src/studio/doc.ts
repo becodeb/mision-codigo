@@ -34,6 +34,8 @@ export interface UiState {
   nextId: number;
   /** Whether the child already pressed «Terminé». */
   doneClicked: boolean;
+  /** The child tapped a place in the strip (any of them, the marked one too). Sticky. */
+  backdropChosen: boolean;
 }
 
 export interface ProjectDoc {
@@ -51,7 +53,7 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
 const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
 
-export const defaultUi = (): UiState => ({ sound: true, skipped: [], hints: {}, nextId: 1, doneClicked: false });
+export const defaultUi = (): UiState => ({ sound: true, skipped: [], hints: {}, nextId: 1, doneClicked: false, backdropChosen: false });
 
 export function starterCode(tier: 'picture' | 'text'): WorkspaceState {
   return { blocks: { languageVersion: 0, blocks: [{ type: tier === 'picture' ? 'f_flag' : 'a_flag', x: 30, y: 36 }] } };
@@ -106,7 +108,15 @@ export function parseDoc(raw: unknown, game: GameDefinition | null): ProjectDoc 
     variables: strs(raw.variables),
     lists: strs(raw.lists),
     selected,
-    ui: { sound: ui.sound !== false, skipped: strs(ui.skipped), hints, nextId: Math.max(1, num(ui.nextId, 1)), doneClicked: ui.doneClicked === true },
+    ui: {
+      sound: ui.sound !== false,
+      skipped: strs(ui.skipped),
+      hints,
+      nextId: Math.max(1, num(ui.nextId, 1)),
+      doneClicked: ui.doneClicked === true,
+      /* Projects saved before the flag existed: a place other than the game's own was surely tapped. */
+      backdropChosen: ui.backdropChosen === true || (typeof raw.backdrop === 'string' && raw.backdrop !== (game?.setup.backdrop || 'parque')),
+    },
   };
 }
 

@@ -8,7 +8,7 @@ import {
   project, repeat, sayFor, send, setVar, show, sound, sprite, stopOthers, variable, wait, waitUntil, win,
   type Block,
 } from '../../language/ir.ts';
-import { blocksInList, isObject } from '../checks.ts';
+import { blocksInList, isObject, varValues } from '../checks.ts';
 import type { Game } from '../../runtime/testing.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import {
@@ -142,10 +142,10 @@ export const mascotaVirtual: GameDefinition = {
         {
           id: 'casa',
           title: 'Su casa',
-          text: '¡Tu mascota virtual llegó! Primero elegí dónde vive: tocá un lugar que no tenga el borde de color.',
-          hints: ['Mirá los dibujitos de abajo. El que tiene borde de color ya está puesto. Elegí otro, el que más le guste a tu mascota.'],
+          text: '¡Tu mascota virtual llegó! Primero elegí dónde vive: tocá el lugar que más te guste.',
+          hints: ['Mirá los dibujitos de abajo. Tocá el que más le guste a tu mascota. Podés tocar cualquiera.'],
           point: 'backdrops',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
+          check: (ctx) => ctx.ui.backdropChosen,
         },
         {
           id: 'variables',
@@ -271,7 +271,8 @@ export const mascotaVirtual: GameDefinition = {
             { sprite: 'Nube', scripts: [onClick(setVar('durmiendo', 1), repeat(4, wait(1), changeVar('energia', 2)), setVar('durmiendo', 0))] },
             { sprite: 'Manzana', scripts: [onClick(ifThen(eq(variable('durmiendo'), 0), changeVar('comida', 3)))] },
           ],
-          check: (ctx) => stateVars(ctx).length > 0,
+          // The pet has to have slept at least once: the variable that remembers it took two different values.
+          check: (ctx) => stateVars(ctx).some((n) => varValues(ctx, n) >= 2),
         },
       ],
     },
@@ -300,12 +301,13 @@ export const mascotaVirtual: GameDefinition = {
           text: 'La cara tiene que cambiar para los dos lados: triste si le falta algo, contenta si está bien. Una cosa o la otra.',
           hints: ['«Si… si no» tiene un lugar para cada caso.', 'Ponele una cara distinta a cada camino.'],
           example: [{ sprite: 'Michi', scripts: [onFlag(forever(ifElse(lt(variable('comida'), 4), [face('triste')], [face('feliz')])))] }],
+          // The face has to have really changed both ways: it left the face it had and came back.
           check: (ctx) =>
-            placed(ctx).some(({ block: b }) => {
+            placed(ctx).some(({ sprite, block: b }) => {
               if (b.type !== 'a_ifelse' || !b.inputs.C || !holds([b.inputs.C], COMPARES)) return false;
               const yes = facesIn(b.body);
               const no = facesIn(b.elseBody);
-              return yes.length > 0 && no.length > 0 && yes.some((f) => !no.includes(f));
+              return yes.length > 0 && no.length > 0 && yes.some((f) => !no.includes(f)) && (ctx.stats.sampled(`face|${sprite.id}`)?.changes ?? 0) >= 2;
             }),
         },
         {
@@ -333,8 +335,9 @@ export const mascotaVirtual: GameDefinition = {
           check: (ctx) => {
             const asleep = stateVars(ctx);
             return holdingAll(ctx, LOOPS, BRANCHES, ['a_face']).some(
-              ({ block }) =>
+              ({ sprite, block }) =>
                 distinct(facesIn(inside(block))) >= 3 &&
+                (ctx.stats.sampled(`face|${sprite.id}`)?.distinct ?? 0) >= 3 &&
                 inside(block).filter((x) => BRANCHES.includes(x.type)).length >= 2 &&
                 // One of the choices asks about the variable that remembers who sleeps, and gives that case a face.
                 inside(block).some(
@@ -362,7 +365,8 @@ export const mascotaVirtual: GameDefinition = {
               ],
             },
           ],
-          check: (ctx) => moodVars(ctx).some((n) => valueOf(ctx, n) >= 1),
+          // The mood has to have really moved while the food and the energy went down.
+          check: (ctx) => moodVars(ctx).some((n) => varValues(ctx, n) >= 2),
         },
       ],
     },

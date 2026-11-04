@@ -10,7 +10,7 @@ import { arg, argNum, argStr } from './expr.ts';
 import { bounceOffEdges, clampXY, setDir } from './geometry.ts';
 import type { SpriteInstance } from './instance.ts';
 import type { Machine } from './machine.ts';
-import { MAX_LIST, clamp, cleanSpeech, ease, lerp, round6, toBool, toNum, toStr } from './values.ts';
+import { MAX_LIST, clamp, cleanSpeech, ease, lerp, round6, toBool, toNum, toStr, type Value } from './values.ts';
 
 export type Wake = () => boolean;
 export type Step = Generator<Wake | undefined, void, undefined>;
@@ -38,10 +38,14 @@ function* runBlock(m: Machine, th: Thread, b: Block): Step {
   const info = blockInfo(b.type);
   if (!info || info.kind !== 'command') return;
   for (const c of info.cats) m.stats.op(c, th.inst.spriteId);
+  m.stats.blockRun(th.inst.spriteId, scriptIndex(th), b.type);
   if (b.id) m.host.highlight(th.inst.spriteId, b.id, true);
   yield* execute(m, th, b);
   if (b.id) m.host.highlight(th.inst.spriteId, b.id, false);
 }
+
+/** Position of the thread's script among its sprite's scripts. */
+export const scriptIndex = (th: Thread): number => Number(th.key.slice(th.key.lastIndexOf(':') + 1));
 
 function* waitMs(m: Machine, ms: number): Step {
   if (ms <= 0) return;
@@ -65,6 +69,8 @@ function place(m: Machine, s: SpriteInstance, x: number, y: number): void {
   const [cx, cy] = clampXY(x, y);
   s.x = round6(cx);
   s.y = round6(cy);
+  m.stats.sample(`${s.isClone ? 'cy' : 'y'}|${s.spriteId}`, s.y);
+  m.stats.sample(`${s.isClone ? 'cx' : 'x'}|${s.spriteId}`, s.x);
   m.dirty = true;
 }
 
@@ -189,7 +195,13 @@ function* execute(m: Machine, th: Thread, b: Block): Step {
       yield;
       break;
     }
-    case 'a_changey': place(m, s, s.x, s.y + n('N')); yield; break;
+    case 'a_changey': {
+      const dy = n('N');
+      m.stats.sample(`changey|${s.spriteId}#${scriptIndex(th)}`, dy);
+      place(m, s, s.x, s.y + dy);
+      yield;
+      break;
+    }
     case 'a_setx': place(m, s, n('X'), s.y); yield; break;
     case 'a_sety': place(m, s, s.x, n('Y')); yield; break;
     case 'a_goto': place(m, s, n('X'), n('Y')); yield; break;
@@ -231,7 +243,12 @@ function* execute(m: Machine, th: Thread, b: Block): Step {
     case 'a_note': m.host.note(String(f.S)); yield; break;
 
     /* ---- control ---- */
-    case 'a_wait': yield* waitMs(m, n('N') * 1000); break;
+    case 'a_wait': {
+      const secs = n('N');
+      m.stats.sample(`wait|${s.spriteId}#${scriptIndex(th)}`, secs);
+      yield* waitMs(m, secs * 1000);
+      break;
+    }
     case 'f_repeat': case 'a_repeat': {
       const k = Math.min(REPEAT_CAP, Math.max(0, Math.floor(n('N'))));
       for (let i = 0; i < k && !th.dead; i++) {
@@ -268,8 +285,8 @@ function* execute(m: Machine, th: Thread, b: Block): Step {
     /* ---- points, variables, lists ---- */
     case 'a_setscore': m.setScore(n('N')); break;
     case 'a_addscore': m.setScore((m.score ?? 0) + n('N')); break;
-    case 'a_setvar': m.vars.set(String(f.NAME), arg(m, s, b, 'V')); m.dirty = true; break;
-    case 'a_changevar': m.vars.set(String(f.NAME), toNum(m.vars.get(String(f.NAME))) + n('V')); m.dirty = true; break;
+    case 'a_setvar': setVariable(m, String(f.NAME), arg(m, s, b, 'V')); break;
+    case 'a_changevar': setVariable(m, String(f.NAME), toNum(m.vars.get(String(f.NAME))) + n('V')); break;
     case 'a_listadd': {
       const list = m.listNamed(String(f.LIST));
       if (list.length < MAX_LIST) list.push(arg(m, s, b, 'V'));
@@ -307,6 +324,17 @@ function* execute(m: Machine, th: Thread, b: Block): Step {
 
 /** Objects have no face, so the face block leaves them alone. */
 function setFace(m: Machine, s: SpriteInstance, face: unknown): void {
-  if (s.art.kind === 'character') s.face = String(face ?? 'feliz');
+  if (s.art.kind === 'character') {
+    /* The face the sprite started with counts as the first one seen, so going back to it is a change. */
+    if (!m.stats.sampled(`face|${s.spriteId}`)) m.stats.sample(`face|${s.spriteId}`, s.face);
+    s.face = String(face ?? 'feliz');
+    m.stats.sample(`face|${s.spriteId}`, s.face);
+  }
+  m.dirty = true;
+}
+
+function setVariable(m: Machine, name: string, value: Value): void {
+  m.vars.set(name, value);
+  m.stats.sample(`var|${name}`, typeof value === 'number' ? value : String(value));
   m.dirty = true;
 }

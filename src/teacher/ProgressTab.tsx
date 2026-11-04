@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AdminProgressResponse, AdminStudent } from '../shared/api.ts';
 import * as adminApi from './adminApi.ts';
 import { GamesTable, NotStarted, ProgressTable } from './ProgressView.tsx';
-import { gameRows, groupsOf, notStarted, progressRows } from './progressView.ts';
+import { formatClock, gameRows, groupsOf, notStarted, progressRows } from './progressView.ts';
 import { errorMessage } from './StudentsTab.tsx';
 
 export const REFRESH_MS = 15_000;
@@ -70,7 +70,7 @@ export function ProgressTab() {
         <button className="t-btn" onClick={() => void refresh()}>Actualizar</button>
         <span className="t-muted" role="status">
           {updatedAt
-            ? `Se actualiza solo cada ${REFRESH_MS / 1000} segundos. Última vez: ${updatedAt.toLocaleTimeString('es-AR')}.`
+            ? `Se actualiza solo cada ${REFRESH_MS / 1000} segundos. Última vez: ${formatClock(updatedAt)}.`
             : 'Cargando…'}
         </span>
       </div>

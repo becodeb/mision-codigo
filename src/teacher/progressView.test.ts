@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GameDefinition } from '../games/types.ts';
 import type { AdminStudent, ProgressEntry } from '../shared/api.ts';
-import { formatMinutes, gameRows, gameTitle, groupsOf, notStarted, progressRows, stepTitle, totalSteps } from './progressView.ts';
+import { formatClock, formatMinutes, gameRows, gameTitle, groupsOf, notStarted, progressRows, stepTitle, totalSteps } from './progressView.ts';
 
 const tesoro = {
   id: 'tesoro',
@@ -114,5 +114,13 @@ describe('class lists', () => {
       '3.º A',
       '3.º B',
     ]);
+  });
+});
+
+describe('formatClock', () => {
+  it('uses a 24-hour clock with two digits everywhere', () => {
+    expect(formatClock(new Date(2026, 10, 4, 15, 5, 9))).toBe('15:05:09');
+    expect(formatClock(new Date(2026, 10, 4, 0, 0, 0))).toBe('00:00:00');
+    expect(formatClock(new Date(2026, 10, 4, 12, 30, 45))).toBe('12:30:45');
   });
 });

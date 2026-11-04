@@ -21,7 +21,7 @@ import type { GameDefinition } from './types.ts';
 const clone = (p: ProjectProgram): ProjectProgram => structuredClone(p);
 const sprite = (p: ProjectProgram, id: string) => p.sprites.find((s) => s.id === id)!;
 const passes = (game: GameDefinition, id: string, g: Game, program: ProjectProgram): boolean =>
-  stepsOf(game).find((s) => s.id === id)!.check({ stats: g.machine.stats, program, machine: g.machine });
+  stepsOf(game).find((s) => s.id === id)!.check({ stats: g.machine.stats, program, machine: g.machine, ui: { backdropChosen: true } });
 
 /** Presses the flag, lets a moment pass, optionally acts, then lets more time pass. */
 function play(program: ProjectProgram, ms: number, act?: (g: Game) => void): Game {
@@ -56,6 +56,41 @@ describe('guide checks that need the real thing', () => {
     g.machine.dispose();
   });
 
+  describe('tesoro: «castigo» needs a touch that really happened', () => {
+    const START = { x: -190, y: -130 };
+    const direct = (): ProjectProgram => {
+      const program = clone(tesoro.solution.program);
+      sprite(program, 'explorador').scripts = [
+        onFlag(setScore(0), goTo(START.x, START.y), forever(moveWithArrows(5))),
+        onTouching('tesoro', addScore(1), sound('magia'), send('m1')),
+        onTouching('guardia', addScore(-1), goTo(START.x, START.y), sound('boing')),
+      ];
+      return program;
+    };
+    const viaMessage = (): ProjectProgram => clone(tesoro.solution.program);
+
+    for (const [name, make] of [['straight into «cuando toque»', direct], ['through a message', viaMessage]] as const) {
+      it(`${name}: not at the flag, not by waiting, yes after the guard catches the explorer`, () => {
+        const program = make();
+        const g = new Game(program);
+        g.flag();
+        g.run(2500);
+        expect(passes(tesoro, 'castigo', g, program)).toBe(false);
+        const pilot = new Pilot(g, { hero: 'explorador', speed: 2.5, hazards: [] });
+        g.runUntil(() => {
+          const c = centerOf(g.sprite('guardia'));
+          pilot.steer(c.x, c.y);
+          return g.machine.stats.scoreDrops > 0;
+        }, 60_000);
+        pilot.release();
+        g.run(400);
+        expect(g.machine.stats.scoreDrops).toBeGreaterThan(0);
+        expect(passes(tesoro, 'castigo', g, program)).toBe(true);
+        g.machine.dispose();
+      });
+    }
+  });
+
   it('mascota-virtual: a cap far above the food does not count, and the real one does', () => {
     const program = clone(mascotaVirtual.solution.program);
     sprite(program, 'manzana').scripts = [
@@ -85,9 +120,20 @@ describe('guide checks that need the real thing', () => {
     sprite(program, 'mascota').scripts[4] = onFlag(
       forever(ifElse(lt(variable('animo'), 3), [face('triste')], [ifElse(lt(variable('animo'), 6), [face('enojo')], [face('feliz')])])),
     );
-    const lazy = play(program, 500);
+    /* Every mood in turn: asleep, sad, so-so, happy. The faces have to be seen, not only built. */
+    const moods = (g: Game): void => {
+      g.machine.vars.set('durmiendo', 1);
+      g.run(200);
+      g.machine.vars.set('durmiendo', 0);
+      for (const level of [1, 5, 9]) {
+        g.machine.vars.set('comida', level);
+        g.machine.vars.set('energia', level);
+        g.run(200);
+      }
+    };
+    const lazy = play(program, 100, moods);
     expect(passes(mascotaVirtual, 'cara-tres', lazy, program)).toBe(false);
-    const honest = play(clone(mascotaVirtual.solution.program), 500);
+    const honest = play(clone(mascotaVirtual.solution.program), 100, moods);
     expect(passes(mascotaVirtual, 'cara-tres', honest, mascotaVirtual.solution.program)).toBe(true);
     lazy.machine.dispose();
     honest.machine.dispose();
@@ -99,9 +145,11 @@ describe('guide checks that need the real thing', () => {
       hide(),
       forever(ifElse(lt(randomBetween(1, 10), 8), [createClone()], [createClone('bomba')]), wait(score())),
     );
-    const lazy = play(program, 300);
+    /* The score has to rise for the pause to get shorter; the first pause is long, the next one is not. */
+    const scored = (g: Game): void => g.machine.setScore(12);
+    const lazy = play(program, 4_000, scored);
     expect(passes(tresVidas, 'ritmo', lazy, program)).toBe(false);
-    const honest = play(clone(tresVidas.solution.program), 300);
+    const honest = play(clone(tresVidas.solution.program), 4_000, scored);
     expect(passes(tresVidas, 'ritmo', honest, tresVidas.solution.program)).toBe(true);
     lazy.machine.dispose();
     honest.machine.dispose();

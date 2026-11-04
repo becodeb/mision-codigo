@@ -66,10 +66,10 @@ export const miMascota: GameDefinition = {
         {
           id: 'casa',
           title: 'Su casa',
-          text: 'Ahora elegí dónde vive tu mascota. Tocá un lugar que no tenga el borde de color.',
-          hints: ['Mirá los dibujitos de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más le guste a tu mascota.'],
+          text: 'Ahora elegí dónde vive tu mascota. Tocá el lugar que más te guste.',
+          hints: ['Mirá los dibujitos de abajo. Tocá el que más le guste a tu mascota. Podés tocar cualquiera.'],
           point: 'backdrops',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
+          check: (ctx) => ctx.ui.backdropChosen,
         },
         {
           id: 'toque',
