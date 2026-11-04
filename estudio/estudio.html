@@ -53,7 +53,7 @@ svg.i .f { fill: currentColor; stroke: none; }
 .brand svg { width: 60px; height: 60px; flex: none; }
 .brand h1 { font-size: clamp(32px, 4.6vw, 52px); font-weight: 800; letter-spacing: -.01em; }
 .brand p { color: var(--ink-soft); font-size: 17px; }
-.modes { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; min-height: 0; }
+.modes { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .mode { display: flex; flex-direction: column; border-radius: 30px; overflow: hidden; background: var(--card); box-shadow: 0 8px 0 #F1D7B4; min-height: 440px; }
 .mode-art { flex: 1; min-height: 200px; position: relative; border-bottom: 4px solid var(--ink); }
 .mode-art svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -73,6 +73,70 @@ svg.i .f { fill: currentColor; stroke: none; }
 .linkbtn.armed { border-color: var(--stop); background: var(--stop); color: #fff; }
 .home-note { padding: 12px 16px; border-radius: 16px; background: #FFF1DA; font-size: 14px; color: var(--ink); }
 .home-note strong { font: 700 12px/1 var(--font-hud); letter-spacing: .1em; text-transform: uppercase; color: #B4580A; margin-right: 8px; }
+.brand { flex-wrap: wrap; }
+.brand-tools { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.projects { width: 100%; max-width: 1180px; margin: 0 auto; display: grid; gap: 12px; }
+.projects-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.projects-head h2 { font-size: 28px; font-weight: 800; margin-right: auto; }
+.proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.proj { background: var(--card); border: 3px solid var(--line); border-radius: 18px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.proj-thumb { display: block; width: 100%; padding: 0; border: 0; border-bottom: 3px solid var(--line); background: #fff; aspect-ratio: 4 / 3; }
+.proj-thumb svg { width: 100%; height: 100%; display: block; }
+.proj-body { padding: 10px 12px 12px; display: grid; gap: 6px; align-content: start; }
+.proj-title { font: 800 19px/1.15 var(--font-display); overflow-wrap: anywhere; }
+.proj-meta { font-size: 13px; color: var(--ink-soft); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.mode-tag { font: 700 11px/1 var(--font-hud); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 6px; background: var(--accent-soft); color: #8A4A0E; }
+.mode-tag.creador { background: var(--violet-soft); color: #4A2BAE; }
+.proj-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.sbtn { min-height: 38px; border-radius: 11px; border: 2px solid var(--line-2); background: #fff; color: var(--ink); padding: 0 11px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.sbtn svg { width: 18px; height: 18px; }
+.sbtn.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+.sbtn.armed { background: var(--stop); border-color: var(--stop); color: #fff; }
+.empty-note { color: var(--ink-soft); padding: 18px; border: 3px dashed var(--line-2); border-radius: 18px; text-align: center; grid-column: 1 / -1; }
+.field { display: grid; gap: 6px; font-weight: 700; }
+.field input { height: 52px; border-radius: 14px; border: 3px solid var(--line); padding: 0 14px; font: 700 20px/1 var(--font-body); background: #fff; color: var(--ink); min-width: 0; }
+.field input:focus { border-color: var(--accent); outline: none; }
+.field small { font-weight: 400; color: var(--ink-soft); }
+.code-input { text-transform: uppercase; letter-spacing: .25em; font-family: var(--font-hud) !important; }
+.msg-ok { color: var(--go-deep); font-weight: 700; font-size: 14px; }
+.msg-err { color: var(--stop-deep); font-weight: 700; font-size: 14px; }
+.share-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.share-opt { border: 3px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 8px; align-content: start; background: #fff; }
+.share-opt h4 { margin: 0; font: 800 19px/1.1 var(--font-display); }
+.share-opt p { font-size: 14px; color: var(--ink-soft); }
+.share-link { display: flex; gap: 8px; min-width: 0; }
+.share-link input { flex: 1; min-width: 0; height: 40px; border-radius: 10px; border: 2px solid var(--line); padding: 0 10px; font-size: 13px; background: #FBF8F2; color: var(--ink); }
+/* teacher panel */
+.teacher { display: flex; flex-direction: column; }
+.t-wrap { width: 100%; max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; padding-block: 18px 32px; }
+.t-class { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 22px; align-items: center; background: var(--card); border: 3px solid var(--line); border-radius: 22px; padding: 18px 20px; }
+.t-class.t-empty { grid-template-columns: minmax(0, 1fr); }
+.t-code { font: 700 clamp(38px, 5vw, 58px)/1 var(--font-hud); letter-spacing: .14em; background: var(--accent-soft); border-radius: 16px; padding: 14px 18px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.t-how { display: grid; gap: 10px; min-width: 0; }
+.t-how h3 { font-size: 26px; font-weight: 800; }
+.t-how ol { margin: 0; padding-left: 20px; }
+.t-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.t-stat { background: var(--card); border: 3px solid var(--line); border-radius: 16px; padding: 10px 16px; display: grid; gap: 2px; min-width: 140px; }
+.t-stat b { font: 800 32px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.t-stat span { font-size: 13px; color: var(--ink-soft); }
+.conn { font: 600 12px/1 var(--font-hud); letter-spacing: .08em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); white-space: nowrap; }
+.conn::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #C9C2DA; }
+.conn.on::before { background: var(--go); box-shadow: 0 0 0 4px rgba(45, 179, 74, .2); }
+.conn.err::before { background: var(--stop); }
+.kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.kid { background: var(--card); border: 3px solid var(--line); border-radius: 18px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+.kid.stuck { border-color: #F2B544; background: #FFF8E6; }
+.kid.done { border-color: var(--go); background: #EEFBEF; }
+.kid-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.kid-name { font: 800 21px/1.1 var(--font-display); overflow-wrap: anywhere; min-width: 0; }
+.kid-step { font-weight: 700; }
+.kid-meta { font-size: 13px; color: var(--ink-soft); }
+.kid-dots { display: flex; gap: 4px; flex-wrap: wrap; }
+.kid-dots i { width: 13px; height: 13px; border-radius: 50%; background: #E3DCCF; }
+.kid-dots i.on { background: var(--go); }
+.kid-dots i.cur { background: #fff; box-shadow: inset 0 0 0 3px var(--ink); }
+.t-note { font-size: 13px; color: var(--ink-soft); max-width: 90ch; }
+@media (max-width: 640px) { .t-class { grid-template-columns: minmax(0, 1fr); } .brand-tools { margin-left: 0; justify-content: flex-start; } }
 
 /* ---------- Editor ---------- */
 .editor { display: flex; flex-direction: column; }
@@ -134,7 +198,7 @@ svg.i .f { fill: currentColor; stroke: none; }
 .panel { background: var(--card); border: 3px solid var(--line); border-radius: 18px; padding: 10px 12px 12px; display: grid; gap: 8px; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .panel-head h4 { margin: 0; font: 800 17px/1 var(--font-display); }
-.bd-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.bd-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
 .bd { padding: 0; border: 3px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; aspect-ratio: 4 / 3; display: block; position: relative; }
 .bd svg { width: 100%; height: 100%; display: block; }
 .bd.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
@@ -266,6 +330,7 @@ svg.i .f { fill: currentColor; stroke: none; }
         <h1>Estudio de Historias</h1>
         <p>Cada chico arma su propia escena, historieta o juego con bloques</p>
       </div>
+      <div class="brand-tools"><button class="sbtn" id="btn-join"></button><button class="sbtn" id="btn-teacher"></button></div>
     </header>
     <div class="modes">
       <article class="mode facil">
@@ -275,7 +340,7 @@ svg.i .f { fill: currentColor; stroke: none; }
           <h2>Mi primera historia</h2>
           <p>Bloques con dibujos y voz. Eligen lugar y personajes, qué dicen, cómo se mueven y cómo se sienten. Robi los guía paso a paso.</p>
           <span class="chips"><span class="chip">Personajes que hablan</span><span class="chip">Moverse</span><span class="chip">Emociones</span><span class="chip">Conversación</span></span>
-          <div class="mode-actions"><button class="cta" data-open="facil">Empezar</button><button class="linkbtn" data-reset="facil" hidden>Empezar de nuevo</button></div>
+          <div class="mode-actions"><button class="cta" data-new="facil">Nuevo proyecto</button></div>
         </div>
       </article>
       <article class="mode creador">
@@ -285,11 +350,15 @@ svg.i .f { fill: currentColor; stroke: none; }
           <h2>Historieta o juego</h2>
           <p>Bloques como los de Scratch: diálogos escritos por ellos, mensajes entre personajes, control con el teclado, puntos y cambios de escena.</p>
           <span class="chips"><span class="chip">Diálogos</span><span class="chip">Mensajes</span><span class="chip">Teclado</span><span class="chip">Puntos</span><span class="chip">Escenas</span></span>
-          <div class="mode-actions"><button class="cta" data-open="creador">Empezar</button><button class="linkbtn" data-reset="creador" hidden>Empezar de nuevo</button></div>
+          <div class="mode-actions"><button class="cta" data-new="creador">Nuevo proyecto</button></div>
         </div>
       </article>
     </div>
-    <p class="home-note"><strong>Docentes</strong>Cada proyecto se guarda solo en el navegador de esa compu. El botón «Modo libre» del editor saca la guía y habilita todos los bloques.</p>
+    <section class="projects" aria-labelledby="proj-h">
+      <div class="projects-head"><h2 id="proj-h">Mis proyectos</h2><label class="sbtn" for="file-open" tabindex="0" id="file-label"></label><input type="file" id="file-open" accept=".json,application/json" hidden></div>
+      <div class="proj-grid" id="proj-grid"></div>
+    </section>
+    <p class="home-note"><strong>Docentes</strong>Los proyectos se guardan en el navegador de cada compu. Para llevarlos a otra, usen «Guardar y compartir» en el editor: se descargan como archivo o se copian como link. «Modo libre» saca la guía y habilita todos los bloques. El «Panel docente» muestra en vivo en qué paso va cada chico.</p>
   </section>
 
   <section class="screen editor" id="scr-editor" hidden>
@@ -297,6 +366,7 @@ svg.i .f { fill: currentColor; stroke: none; }
       <button class="ibtn" id="btn-home" aria-label="Volver al inicio"></button>
       <div class="title"><span class="eyebrow" id="ed-mode"></span><h2 id="ed-title">Mi historia</h2></div>
       <div class="tools">
+        <button class="pill" id="btn-share"></button>
         <button class="pill" id="btn-libre" aria-pressed="false"></button>
         <button class="ibtn" id="btn-sound" aria-pressed="true"></button>
       </div>
@@ -337,6 +407,15 @@ svg.i .f { fill: currentColor; stroke: none; }
     </div>
   </section>
 
+  <section class="screen teacher" id="scr-teacher" hidden>
+    <header class="topbar gutter">
+      <button class="ibtn" id="t-home" aria-label="Volver al inicio"></button>
+      <div class="title"><span class="eyebrow">Docentes</span><h2>Panel de la clase</h2></div>
+      <span class="conn" id="t-conn" role="status">Sin clase</span>
+    </header>
+    <div class="gutter"><div class="t-wrap" id="t-wrap"></div></div>
+  </section>
+
   <div class="modal" id="modal" hidden><div class="modal-card" id="modal-card" role="dialog" aria-modal="true"></div></div>
   <div class="show" id="show" hidden>
     <div class="show-bar gutter"><h2 id="show-title">Mi historia</h2><button class="btn-flag" id="show-flag" style="flex:none;padding:0 22px" aria-label="Empezar"></button><button class="btn-stop" id="show-stop" aria-label="Detener"></button><button class="ibtn" id="show-close" aria-label="Cerrar pantalla grande"></button></div>
@@ -367,11 +446,23 @@ function mk(tag, attrs = {}, html = '') { const e = document.createElementNS(NS,
 
 /* ================= storage ================= */
 const KEY = 'estudio-historias:v1';
+function uid(n = 10) {
+  const a = 'abcdefghijkmnpqrstuvwxyz23456789'; let s = '';
+  try { crypto.getRandomValues(new Uint32Array(n)).forEach(x => { s += a[x % a.length]; }); } catch (e) { for (let i = 0; i < n; i++) s += a[Math.floor(Math.random() * a.length)]; }
+  return s;
+}
 let DB = (() => {
-  const base = { projects: { facil: null, creador: null }, sound: true };
+  const base = { list: [], sound: true, me: { id: uid(), name: '' }, cls: null, teacher: null };
   try {
     const d = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (d && typeof d === 'object') { base.projects = Object.assign(base.projects, d.projects || {}); base.sound = d.sound !== false; }
+    if (d && typeof d === 'object') {
+      base.sound = d.sound !== false;
+      if (Array.isArray(d.list)) base.list = d.list.filter(p => p && (p.mode === 'facil' || p.mode === 'creador') && Array.isArray(p.sprites));
+      if (d.me && d.me.id) base.me = { id: String(d.me.id), name: String(d.me.name || '') };
+      if (d.cls && d.cls.code) base.cls = { code: String(d.cls.code) };
+      if (d.teacher && d.teacher.code) base.teacher = { code: String(d.teacher.code) };
+      if (d.projects) Object.values(d.projects).forEach(p => { if (p && Array.isArray(p.sprites) && (p.sprites.length || p.backdropChosen)) base.list.push(Object.assign({ id: uid(), title: '', author: '', updated: Date.now() }, p)); });
+    }
   } catch (e) { /* storage unavailable */ }
   return base;
 })();
@@ -421,6 +512,20 @@ const SFX = {
   magia() { [784, 988, 1175, 1568, 1976].forEach((f, i) => tone(f, .25, { type: 'triangle', vol: .09, at: i * .07 })); },
   boing() { tone(180, .4, { vol: .16, slide: 640 }); },
   bip() { [0, .12, .24].forEach((at, i) => tone([880, 660, 990][i], .08, { type: 'square', vol: .05, at })); },
+  risa() { [0, .17, .34, .51].forEach((at, i) => { tone(560 - i * 35, .12, { type: 'sawtooth', vol: .05, at, slide: 400 - i * 25 }); noise(.07, { vol: .05, freq: 1800, at }); }); },
+  campana() { [880, 1320, 2210].forEach((f, i) => tone(f, 1.5 - i * .35, { vol: .11 / (i + 1) })); },
+  silbato() {
+    const c = ac(); if (!c) return;
+    const t0 = c.currentTime, o = c.createOscillator(), l = c.createOscillator(), lg = c.createGain(), g = c.createGain();
+    o.frequency.value = 2100; l.frequency.value = 28; lg.gain.value = 140; l.connect(lg).connect(o.frequency);
+    g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.07, t0 + .03); g.gain.setValueAtTime(.07, t0 + .45); g.gain.exponentialRampToValueAtTime(.0001, t0 + .56);
+    o.connect(g).connect(c.destination); o.start(t0); l.start(t0); o.stop(t0 + .6); l.stop(t0 + .6);
+  },
+  rugido() { noise(.9, { vol: .45, freq: 480 }); tone(95, .9, { type: 'sawtooth', vol: .1, slide: 55 }); },
+  pajaros() { [0, .11, .48, .6, .72].forEach(at => tone(2300, .08, { vol: .07, at, slide: 3500 })); },
+  fanfarria() { [[523, 0, .11], [523, .13, .11], [523, .26, .11], [659, .39, .2], [784, .62, .5]].forEach(([f, at, d]) => tone(f, d, { type: 'sawtooth', vol: .06, at })); },
+  explosion() { noise(1.3, { vol: .6, freq: 650 }); tone(70, 1, { vol: .2, slide: 30 }); },
+  beso() { noise(.05, { vol: .3, freq: 3000, type: 'highpass' }); tone(900, .14, { vol: .06, slide: 1600, at: .03 }); },
 };
 function sfx(name) { if (!DB.sound) return; try { SFX[name] && SFX[name](); } catch (e) { /* ignore */ } }
 
@@ -468,6 +573,13 @@ const ICON = {
   guide: I('<path d="M4 5h11a5 5 0 0 1 5 5v9H9a5 5 0 0 1-5-5z"/><path d="M8 10h8M8 14h5"/>'),
   free: I('<path d="M5 19l4-1 10-10-3-3L6 15z"/><path d="M14 7l3 3"/>'),
   code: I('<path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/>'),
+  share: I('<circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4"/>'),
+  download: I('<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>'),
+  upload: I('<path d="M12 16V5M7 9.5l5-5 5 5M5 20h14"/>'),
+  copy: I('<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>'),
+  trash: I('<path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/>'),
+  users: I('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.8a3.5 3.5 0 0 1 0 6.4M18 14a6.5 6.5 0 0 1 3.5 6"/>'),
+  board: I('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20l4-4 4 4M7 8h6M7 11h9"/>'),
   flagw: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="2.6" height="18" rx="1.3" fill="#fff"/><path d="M7.6 4.6c4-2.4 7 2 12-.4v9c-5 2.4-8-2-12 .4z" fill="#fff"/></svg>',
 };
 const IMG = {
@@ -596,6 +708,93 @@ const CHARS = {
       <circle cx="-19" cy="-74" r="5" fill="#9B4FE8"/><circle cx="16" cy="-80" r="4" fill="#9B4FE8"/><circle cx="24" cy="-62" r="3" fill="#9B4FE8"/>
       <g transform="translate(0 -50)"><circle cx="-18" cy="6" r="5" fill="#FF7FA8" opacity=".55"/><circle cx="18" cy="6" r="5" fill="#FF7FA8" opacity=".55"/><g class="face">${f}</g></g>`,
   },
+  lumi: {
+    name: 'Lumi', what: 'unicornio', h: 110, r: 38, pitch: 1.6, rate: 1, sound: 'magia',
+    face: { ex: 8, ey: -6, er: 4.2, my: 13, mw: 5 },
+    art: f => `<path d="M-26 -32 C -48 -32 -52 -10 -40 -2" stroke="#B08BFF" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M-27 -36 C -46 -42 -52 -22 -46 -14" stroke="#FF9EC7" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <rect x="-24" y="-16" width="10" height="18" rx="4" fill="#F4E6F0"/><rect x="-24" y="-3" width="10" height="5" rx="2" fill="#B08BFF"/>
+      <rect x="6" y="-16" width="10" height="18" rx="4" fill="#F4E6F0"/><rect x="6" y="-3" width="10" height="5" rx="2" fill="#B08BFF"/>
+      <ellipse cx="-4" cy="-29" rx="28" ry="19" fill="#FFF6FB" stroke="#E8D3F0" stroke-width="2"/>
+      <g transform="translate(14 -60)">
+        <path d="M-25 8 C -32 -12 -16 -30 2 -24 C -10 -18 -18 -6 -15 12 Z" fill="#B08BFF"/><path d="M-27 18 C -34 4 -28 -6 -21 -4 C -23 6 -21 12 -15 22Z" fill="#FF9EC7"/>
+        <path d="M-16 -14 L-12 -33 L-3 -19Z" fill="#FFF6FB" stroke="#E8D3F0" stroke-width="2"/>
+        <circle r="23" fill="#FFF6FB" stroke="#E8D3F0" stroke-width="2"/>
+        <path d="M3 -21 L9 -48 L15 -19Z" fill="#FFD84D" stroke="#E6B800" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 -28 l8 -3 M6 -36 l6 -2" stroke="#E6B800" stroke-width="1.5"/>
+        <path d="M-8 -21 C -2 -30 10 -29 13 -21 C 5 -24 -1 -20 -6 -13Z" fill="#B08BFF"/>
+        <ellipse cx="7" cy="10" rx="13" ry="9" fill="#FFE3F0"/><circle cx="4" cy="8" r="1.6" fill="#C08AA8"/><circle cx="11" cy="8" r="1.6" fill="#C08AA8"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
+  boo: {
+    name: 'Boo', what: 'fantasma', h: 92, r: 34, pitch: 1.3, rate: .9, sound: 'risa',
+    face: { ex: 10, ey: -2, er: 5, my: 10, mw: 7 },
+    art: f => `<ellipse cx="-33" cy="-40" rx="8" ry="6" fill="#F7F8FF" stroke="#C9D1EE" stroke-width="2"/><ellipse cx="33" cy="-40" rx="8" ry="6" fill="#F7F8FF" stroke="#C9D1EE" stroke-width="2"/>
+      <path d="M-30 -10 V-58 A30 30 0 0 1 30 -58 V-10 Q22 -18 15 -10 Q8 -2 0 -10 Q-8 -18 -15 -10 Q-22 -2 -30 -10Z" fill="#F7F8FF" stroke="#C9D1EE" stroke-width="2.5" stroke-linejoin="round"/>
+      <g transform="translate(0 -58)"><circle cx="-17" cy="8" r="5" fill="#FF9EC7" opacity=".5"/><circle cx="17" cy="8" r="5" fill="#FF9EC7" opacity=".5"/><g class="face">${f}</g></g>`,
+  },
+  coni: {
+    name: 'Coni', what: 'coneja', h: 120, r: 36, pitch: 1.5, rate: 1.05, sound: 'boing',
+    face: { ex: 8, ey: -3, er: 4.2, my: 13, mw: 4 },
+    art: f => `<g transform="translate(12 -62)">
+        <g transform="rotate(-10 -6 -22)"><ellipse cx="-6" cy="-40" rx="7.5" ry="22" fill="#F1EDF5" stroke="#D6CFE0" stroke-width="2"/><ellipse cx="-6" cy="-38" rx="3.5" ry="15" fill="#FFB8C9"/></g>
+        <g transform="rotate(14 8 -22)"><ellipse cx="8" cy="-40" rx="7.5" ry="22" fill="#F1EDF5" stroke="#D6CFE0" stroke-width="2"/><ellipse cx="8" cy="-38" rx="3.5" ry="15" fill="#FFB8C9"/></g>
+      </g>
+      <circle cx="-28" cy="-24" r="8" fill="#fff" stroke="#D6CFE0" stroke-width="2"/>
+      <ellipse cx="-14" cy="-3" rx="11" ry="5" fill="#E2DCEA"/><ellipse cx="12" cy="-3" rx="11" ry="5" fill="#E2DCEA"/>
+      <ellipse cx="-2" cy="-26" rx="24" ry="22" fill="#F1EDF5" stroke="#D6CFE0" stroke-width="2"/><ellipse cx="2" cy="-22" rx="13" ry="14" fill="#fff"/>
+      <g transform="translate(12 -62)">
+        <circle r="23" fill="#F1EDF5" stroke="#D6CFE0" stroke-width="2"/>
+        <circle cx="-14" cy="7" r="4.5" fill="#FF9EC7" opacity=".55"/><circle cx="14" cy="7" r="4.5" fill="#FF9EC7" opacity=".55"/>
+        <path d="M-2.5 5 h5 l-2.5 3z" fill="#FF7FA8"/>
+        <path d="M-10 6 h-11 M10 6 h11" stroke="#241A4D" stroke-width="1.3" stroke-linecap="round" opacity=".45"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
+  pipo: {
+    name: 'Pipo', what: 'pingüino', h: 84, r: 34, pitch: 1.2, rate: 1.05, sound: 'silbato',
+    face: { ex: 7, ey: -2, er: 3.6, my: 13, mw: 3 },
+    art: f => `<ellipse cx="-10" cy="-2" rx="9" ry="4" fill="#FF9A3C"/><ellipse cx="10" cy="-2" rx="9" ry="4" fill="#FF9A3C"/>
+      <path d="M-25 -54 q-15 18 -7 36 q7 -10 9 -26z" fill="#243052"/><path d="M25 -54 q15 18 7 36 q-7 -10 -9 -26z" fill="#243052"/>
+      <ellipse cx="0" cy="-42" rx="27" ry="38" fill="#2E3A5C"/>
+      <ellipse cx="2" cy="-34" rx="18" ry="27" fill="#fff"/>
+      <path d="M-22 -52 q22 10 44 0 v7 q-22 10 -44 0z" fill="#F0524F"/><path d="M14 -48 l6 16 h-8z" fill="#F0524F"/>
+      <g transform="translate(2 -66)">
+        <ellipse cx="0" cy="0" rx="16" ry="11" fill="#fff"/>
+        <path d="M-5 4 h10 l-5 6z" fill="#FFB020"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
+  juli: {
+    name: 'Juli', what: 'nena', h: 100, r: 32, pitch: 1.4, rate: 1, sound: 'risa',
+    face: { ex: 8, ey: 2, er: 3.4, my: 11, mw: 5 },
+    art: f => `<rect x="-12" y="-24" width="9" height="24" rx="4" fill="#FFD7B5"/><rect x="3" y="-24" width="9" height="24" rx="4" fill="#FFD7B5"/>
+      <rect x="-15" y="-6" width="13" height="7" rx="3" fill="#7C4DFF"/><rect x="2" y="-6" width="13" height="7" rx="3" fill="#7C4DFF"/>
+      <rect x="-26" y="-55" width="8" height="25" rx="4" fill="#FFD7B5" transform="rotate(14 -22 -55)"/><rect x="18" y="-55" width="8" height="25" rx="4" fill="#FFD7B5" transform="rotate(-14 22 -55)"/>
+      <path d="M-24 -18 L-15 -56 H15 L24 -18 Q0 -12 -24 -18Z" fill="#FF6FA5"/><path d="M-15 -56 H15 L13 -48 H-13Z" fill="#FFB3D1"/>
+      <g transform="translate(0 -77)">
+        <circle cx="-26" cy="-2" r="9" fill="#5A3420"/><circle cx="26" cy="-2" r="9" fill="#5A3420"/>
+        <path d="M-31 -12 l8 5 l-8 5z M31 -12 l-8 5 l8 5z" fill="#FFC93C"/>
+        <circle r="22" fill="#FFD7B5"/>
+        <path d="M-23 0 C -24 -27 24 -27 23 0 C 18 -13 6 -15 0 -10 C -6 -15 -18 -13 -23 0Z" fill="#5A3420"/>
+        <circle cx="-12" cy="9" r="3.5" fill="#FF9AA8" opacity=".55"/><circle cx="12" cy="9" r="3.5" fill="#FF9AA8" opacity=".55"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
+  tomi: {
+    name: 'Tomi', what: 'nene', h: 102, r: 32, pitch: 1.15, rate: 1, sound: 'fanfarria',
+    face: { ex: 8, ey: 2, er: 3.4, my: 11, mw: 5 },
+    art: f => `<rect x="-13" y="-28" width="11" height="28" rx="4" fill="#3D5A9E"/><rect x="2" y="-28" width="11" height="28" rx="4" fill="#3D5A9E"/>
+      <rect x="-15" y="-6" width="14" height="7" rx="3" fill="#fff" stroke="#C9D1EE" stroke-width="1.5"/><rect x="1" y="-6" width="14" height="7" rx="3" fill="#fff" stroke="#C9D1EE" stroke-width="1.5"/>
+      <rect x="-26" y="-55" width="9" height="26" rx="4.5" fill="#C98D63" transform="rotate(10 -22 -55)"/><rect x="17" y="-55" width="9" height="26" rx="4.5" fill="#C98D63" transform="rotate(-10 22 -55)"/>
+      <rect x="-18" y="-57" width="36" height="33" rx="10" fill="#2DB34A"/><path d="M-18 -44 H18" stroke="#fff" stroke-width="4" opacity=".7"/>
+      <g transform="translate(0 -78)">
+        <circle r="22" fill="#C98D63"/>
+        <path d="M-22 -2 C -22 -20 22 -20 22 -2 C 14 -9 -14 -9 -22 -2Z" fill="#2A1B12"/>
+        <path d="M-22 -8 C -21 -31 21 -31 22 -8Z" fill="#F0524F"/><path d="M12 -10 h20 a4 4 0 0 1 0 7 h-20z" fill="#C93D3D"/><circle cx="0" cy="-27" r="3" fill="#C93D3D"/>
+        <circle cx="-12" cy="9" r="3.5" fill="#E07A6A" opacity=".45"/><circle cx="12" cy="9" r="3.5" fill="#E07A6A" opacity=".45"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
 };
 const charArt = (id, em = 'feliz') => { const c = CHARS[id]; return c.art(faceSVG(em, c.face)); };
 const charThumb = (id, em = 'feliz') => `<svg viewBox="-60 -134 120 140" aria-hidden="true">${charArt(id, em)}</svg>`;
@@ -663,6 +862,47 @@ const BACKDROPS = {
     <path d="M0 0 H96 C 76 120 106 220 66 300 L0 300Z" fill="#D6334E"/><path d="M30 0 C 26 120 40 220 20 300 M60 0 C 54 120 70 220 46 300" stroke="#A82640" stroke-width="5" fill="none"/>
     <path d="M480 0 H384 C 404 120 374 220 414 300 L480 300Z" fill="#D6334E"/><path d="M450 0 C 454 120 440 220 460 300 M420 0 C 426 120 410 220 434 300" stroke="#A82640" stroke-width="5" fill="none"/>
     <path d="M0 0 H480 V34 ${Array.from({ length: 12 }, (_, i) => `Q${470 - i * 40} 56 ${460 - i * 40} 34`).join(' ')} Q10 56 0 34Z" fill="#C42A45"/><path d="M0 30 H480" stroke="#FFC93C" stroke-width="4"/>` },
+  playa: { name: 'Playa', svg: p => `<defs><linearGradient id="${p}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8FD8FF"/><stop offset="1" stop-color="#E6F7FF"/></linearGradient></defs>
+    <rect width="480" height="360" fill="url(#${p}a)"/><circle cx="400" cy="60" r="28" fill="#FFD84D"/><circle cx="400" cy="60" r="40" fill="#FFD84D" opacity=".25"/>
+    <g fill="#fff"><ellipse cx="170" cy="56" rx="30" ry="10"/><ellipse cx="188" cy="48" rx="18" ry="11"/></g>
+    <rect y="180" width="480" height="80" fill="#3BB3E6"/><path d="M0 200 q20 -8 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 M0 228 q20 -8 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#fff" stroke-width="3" fill="none" opacity=".55"/>
+    <path d="M0 252 Q120 238 240 250 T480 246 V360 H0Z" fill="#F4DCA0"/>
+    <path d="M70 330 C 72 280 82 230 104 196" stroke="#8A5A30" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M104 196 q-40 -12 -64 12 q30 -8 64 -12z M104 196 q30 -26 66 -12 q-36 0 -66 12z M104 196 q-6 -36 22 -54 q-12 30 -22 54z M104 196 q-30 -28 -58 -22 q32 4 58 22z" fill="#3FA34D"/>
+    <path d="M360 300 V214" stroke="#8A5A30" stroke-width="4"/><path d="M310 216 Q360 168 410 216Z" fill="#F0524F"/><path d="M335 216 Q360 168 385 216Z" fill="#fff"/>
+    <path d="M200 316 h26 l-4 22 h-18z" fill="#3D8BFF"/><path d="M204 316 q9 -14 18 0" stroke="#3D8BFF" stroke-width="2.5" fill="none"/><circle cx="420" cy="320" r="6" fill="#FFB27A"/>` },
+  nieve: { name: 'Nieve', svg: p => `<defs><linearGradient id="${p}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4EA"/><stop offset="1" stop-color="#EAF4FB"/></linearGradient></defs>
+    <rect width="480" height="360" fill="url(#${p}a)"/>
+    <path d="M0 230 L90 110 L170 230Z" fill="#DCE8F5"/><path d="M90 110 L66 142 L80 138 L90 150 L102 136 L114 142Z" fill="#fff"/>
+    <path d="M120 240 L250 70 L380 240Z" fill="#C9DAEE"/><path d="M250 70 L214 118 L234 112 L250 128 L266 112 L286 118Z" fill="#fff"/>
+    <path d="M320 240 L420 120 L520 240Z" fill="#DCE8F5"/>
+    <path d="M0 250 Q120 230 240 248 T480 242 V360 H0Z" fill="#fff"/><path d="M0 300 Q160 288 300 300 T480 296" stroke="#D4E2F0" stroke-width="6" fill="none"/>
+    ${[[40, 250], [430, 246], [455, 262]].map(([x, y]) => `<g transform="translate(${x} ${y})"><rect x="-4" y="-6" width="8" height="12" fill="#6B4A2E"/><path d="M0 -70 L-24 -6 H24Z" fill="#2E7A4A"/><path d="M0 -70 L-12 -38 L0 -44 L12 -38Z" fill="#fff"/></g>`).join('')}
+    <g transform="translate(380 292)"><circle r="20" fill="#fff" stroke="#D4E2F0" stroke-width="2"/><circle cy="-30" r="14" fill="#fff" stroke="#D4E2F0" stroke-width="2"/><circle cx="-4" cy="-33" r="2" fill="#241A4D"/><circle cx="5" cy="-33" r="2" fill="#241A4D"/><path d="M0 -29 l10 3 l-10 2z" fill="#FF8A3D"/><path d="M-12 -18 h24" stroke="#F0524F" stroke-width="4"/></g>
+    ${stars(23, 40, 240).replace(/r="[\d.]+"/g, 'r="2.4"')}` },
+  selva: { name: 'Selva', svg: p => `<defs><linearGradient id="${p}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FD38C"/><stop offset="1" stop-color="#2E8B57"/></linearGradient></defs>
+    <rect width="480" height="360" fill="url(#${p}a)"/>
+    ${[[30, 120, 70, 30, '#2E7A4A'], [140, 90, 60, -20, '#3FA34D'], [300, 110, 80, 25, '#2E7A4A'], [430, 80, 70, -30, '#3FA34D'], [220, 170, 60, 10, '#4CB65A'], [80, 200, 50, -15, '#4CB65A'], [390, 190, 60, 20, '#4CB65A']].map(([x, y, r, a, c]) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * .45}" fill="${c}" transform="rotate(${a} ${x} ${y})"/>`).join('')}
+    <path d="M60 0 C 70 60 50 110 64 170 M200 0 C 190 50 214 90 204 140 M380 0 C 392 70 370 120 384 160" stroke="#3A7A2A" stroke-width="5" fill="none"/>
+    ${[[64, 80], [204, 60], [384, 90]].map(([x, y]) => `<ellipse cx="${x + 8}" cy="${y}" rx="9" ry="5" fill="#5CC14F" transform="rotate(30 ${x + 8} ${y})"/>`).join('')}
+    <path d="M0 270 Q120 254 240 266 T480 260 V360 H0Z" fill="#6B4A2E"/><path d="M0 276 Q120 262 240 272 T480 268" stroke="#4CB65A" stroke-width="12" fill="none"/>
+    ${[[110, 296, '#FF6FA5'], [330, 304, '#FFC93C'], [430, 290, '#FF8A3D']].map(([x, y, c]) => `<g transform="translate(${x} ${y})">${[0, 72, 144, 216, 288].map(a => `<ellipse cx="0" cy="-7" rx="4" ry="7" fill="${c}" transform="rotate(${a})"/>`).join('')}<circle r="3.5" fill="#FFE07A"/></g>`).join('')}` },
+  aula: { name: 'Aula', svg: () => `<rect width="480" height="360" fill="#FFF1D6"/><rect y="250" width="480" height="110" fill="#C9A27A"/>${[0, 1, 2, 3, 4].map(i => `<path d="M0 ${266 + i * 20} H480" stroke="#B48A62" stroke-width="2"/>`).join('')}<rect y="244" width="480" height="8" fill="#B48A62"/>
+    <rect x="100" y="50" width="250" height="150" rx="6" fill="#8A5A30"/><rect x="110" y="60" width="230" height="130" rx="3" fill="#2F5D4A"/>
+    <text x="130" y="105" font-family="Baloo 2, sans-serif" font-weight="700" font-size="26" fill="#fff" opacity=".9">2 + 2 = 4</text>
+    <path d="M140 140 q20 -20 40 0 t40 0" stroke="#FFE07A" stroke-width="3" fill="none"/><circle cx="290" cy="130" r="18" fill="none" stroke="#FF9EC7" stroke-width="3"/><path d="M280 128 l6 6 l12 -12" stroke="#fff" stroke-width="3" fill="none"/>
+    <rect x="200" y="200" width="60" height="6" rx="3" fill="#E0C9A8"/>
+    <circle cx="410" cy="70" r="24" fill="#fff" stroke="#241A4D" stroke-width="4"/><path d="M410 70 V56 M410 70 L420 76" stroke="#241A4D" stroke-width="3" stroke-linecap="round"/>
+    <rect x="390" y="120" width="70" height="90" rx="4" fill="#A8E0FF" stroke="#fff" stroke-width="6"/><path d="M425 120 V210 M390 165 H460" stroke="#fff" stroke-width="5"/>
+    <rect x="20" y="120" width="60" height="80" rx="4" fill="#FF6FA5" opacity=".85"/><rect x="28" y="130" width="44" height="22" rx="3" fill="#fff" opacity=".7"/>` },
+  granja: { name: 'Granja', svg: p => `<defs><linearGradient id="${p}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ED3FF"/><stop offset="1" stop-color="#E2F5FF"/></linearGradient></defs>
+    <rect width="480" height="360" fill="url(#${p}a)"/><circle cx="80" cy="64" r="28" fill="#FFD84D"/>
+    <path d="M0 210 C 100 170 220 190 300 206 S 430 186 480 196 V360 H0Z" fill="#A7E28C"/><rect y="244" width="480" height="116" fill="#7DCB63"/>
+    <rect x="290" y="128" width="130" height="118" fill="#D6334E"/><path d="M280 132 L355 76 L430 132Z" fill="#A82640"/><path d="M290 132 L355 84 L420 132" stroke="#fff" stroke-width="5" fill="none"/>
+    <rect x="330" y="176" width="50" height="70" fill="#fff"/><path d="M330 176 L380 246 M380 176 L330 246" stroke="#D6334E" stroke-width="5"/>
+    <rect x="340" y="100" width="30" height="24" fill="#fff"/><path d="M355 100 v24 M340 112 h30" stroke="#A82640" stroke-width="3"/>
+    ${[0, 1, 2, 3, 4, 5, 6, 7].map(i => `<rect x="${10 + i * 34}" y="232" width="8" height="36" rx="2" fill="#F5E6C8"/>`).join('')}<path d="M6 244 H262 M6 258 H262" stroke="#F5E6C8" stroke-width="6"/>
+    <g transform="translate(150 300)"><ellipse rx="34" ry="20" fill="#F2C94C"/><path d="M-30 -6 H30 M-32 6 H32" stroke="#D9A82E" stroke-width="3"/></g>` },
 };
 
 /* ================= home art ================= */
@@ -681,12 +921,15 @@ const HAS_BLOCKLY = typeof window.Blockly !== 'undefined';
 const PHRASES = [
   ['👋 ¡Hola!', 'HOLA'], ['😊 ¿Cómo te llamás?', 'NOMBRE'], ['🤝 ¿Querés ser mi amigo?', 'AMIGO'], ['⚽ ¡Vamos a jugar!', 'JUGAR'],
   ['🍰 ¡Tengo hambre!', 'HAMBRE'], ['😂 ¡Ja, ja, ja!', 'RISA'], ['😮 ¡Guau!', 'GUAU'], ['😱 ¡Qué miedo!', 'MIEDO'],
-  ['🆘 ¡Ayuda!', 'AYUDA'], ['🙏 ¡Gracias!', 'GRACIAS'], ['❤️ ¡Te quiero!', 'QUIERO'], ['👍 ¡Sí!', 'SI'], ['👎 ¡No!', 'NO'], ['👋 ¡Chau!', 'CHAU'],
+  ['🆘 ¡Ayuda!', 'AYUDA'], ['🙏 ¡Gracias!', 'GRACIAS'], ['❤️ ¡Te quiero!', 'QUIERO'], ['👍 ¡Sí!', 'SI'], ['👎 ¡No!', 'NO'],
+  ['🎂 ¡Feliz cumpleaños!', 'CUMPLE'], ['☀️ ¡Buenos días!', 'DIAS'], ['🌙 ¡Buenas noches!', 'NOCHES'], ['😋 ¡Qué rico!', 'RICO'],
+  ['🗺️ ¡Me perdí!', 'PERDI'], ['😴 Tengo sueño', 'SUENO'], ['🎉 ¡Sorpresa!', 'SORPRESA'], ['🏆 ¡Lo logramos!', 'LOGRAMOS'], ['👋 ¡Chau!', 'CHAU'],
 ];
 const PHRASE = Object.fromEntries(PHRASES.map(([t, k]) => [k, t]));
 const FACES_E = [['😀', 'feliz'], ['😂', 'risa'], ['😢', 'triste'], ['😮', 'sorpresa'], ['😠', 'enojo'], ['😴', 'dormido']];
 const FACES_T = [['feliz', 'feliz'], ['muerta/o de risa', 'risa'], ['triste', 'triste'], ['sorprendida/o', 'sorpresa'], ['enojada/o', 'enojo'], ['dormida/o', 'dormido']];
-const SOUNDS_E = [['🐱 miau', 'miau'], ['🐶 guau', 'guau'], ['👏 aplausos', 'aplauso'], ['🥁 tambor', 'tambor'], ['✨ magia', 'magia'], ['🦘 boing', 'boing'], ['🤖 bip', 'bip']];
+const SOUNDS_E = [['🐱 miau', 'miau'], ['🐶 guau', 'guau'], ['👏 aplausos', 'aplauso'], ['🥁 tambor', 'tambor'], ['✨ magia', 'magia'], ['🦘 boing', 'boing'], ['🤖 bip', 'bip'],
+  ['😂 risa', 'risa'], ['🔔 campana', 'campana'], ['📣 silbato', 'silbato'], ['🦖 rugido', 'rugido'], ['🐦 pajaritos', 'pajaros'], ['🎺 fanfarria', 'fanfarria'], ['💥 explosión', 'explosion'], ['😘 beso', 'beso']];
 const MSGS = [['tu turno', 'm1'], ['siguiente', 'm2'], ['empezar', 'm3'], ['fin', 'm4']];
 const KEYS = [['flecha derecha', 'ArrowRight'], ['flecha izquierda', 'ArrowLeft'], ['flecha arriba', 'ArrowUp'], ['flecha abajo', 'ArrowDown'], ['espacio', ' ']];
 const DIRS = [['la derecha', '90'], ['la izquierda', '-90'], ['arriba', '0'], ['abajo', '180']];
@@ -862,10 +1105,15 @@ const stats = { ops: new Set(), hats: new Set() };
 const ran = op => stats.ops.has(op);
 const ranBy = (id, op) => stats.ops.has(id + '|' + op);
 const ranHat = k => stats.hats.has(k);
-function newProject(m) { return { mode: m, backdrop: 'parque', backdropChosen: false, sprites: [], sel: null, step: 0, done: [], libre: false, shown: false, nextId: 1 }; }
+function newProject(m) { return { id: uid(), mode: m, title: '', author: '', remixOf: '', updated: Date.now(), backdrop: 'parque', backdropChosen: false, sprites: [], sel: null, step: 0, done: [], libre: false, shown: false, nextId: 1 }; }
 const spriteById = id => P.sprites.find(s => s.id === id);
 const selSprite = () => P && spriteById(P.sel);
-function saveProject() { DB.projects[mode] = P; persist(); }
+function saveProject() {
+  if (!P) return;
+  P.updated = Date.now();
+  if (!DB.list.includes(P)) DB.list.unshift(P);
+  persist();
+}
 
 /* ================= runtime ================= */
 const RT = { gen: 0, threads: 0, active: {}, state: {}, keys: new Set(), score: null, backdrop: 'parque' };
@@ -885,7 +1133,7 @@ function chain(b) { const out = []; while (b) { out.push(node(b)); b = b.next &&
 function node(b) { const inp = b.inputs || {}; const body = k => chain(inp[k] && inp[k].block); return { id: b.id, type: b.type, f: b.fields || {}, body: body('DO') }; }
 function scriptsOf(s) {
   const tops = (s.code && s.code.blocks && s.code.blocks.blocks) || [];
-  return tops.filter(t => HATS[t.type]).map(t => ({ hat: HATS[t.type], f: t.fields || {}, id: t.id, body: chain(t.next && t.next.block) }));
+  return tops.filter(t => HATS[t.type]).map((t, i) => ({ hat: HATS[t.type], f: t.fields || {}, id: t.id || 'h' + i, body: chain(t.next && t.next.block) }));
 }
 function flushCode() {
   const s = selSprite();
@@ -1116,8 +1364,8 @@ stage.addEventListener('pointerup', () => {
   else saveProject();
 });
 document.addEventListener('keydown', e => {
-  if (!P || $('#scr-editor').hidden) return;
   if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal('esc'); else if (!$('#show').hidden) closeShow(); return; }
+  if (!P || $('#scr-editor').hidden) return;
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable || (t.closest && t.closest('.blocklyWidgetDiv, .blocklyDropDownDiv')))) return;
   if (!KEYS.some(k => k[1] === e.key)) return;
@@ -1131,25 +1379,27 @@ document.addEventListener('keyup', e => RT.keys.delete(e.key));
 window.addEventListener('blur', () => RT.keys.clear());
 
 /* ================= editor ================= */
-function openEditor(m) {
+function openEditor(p) {
   ac();
-  mode = m;
-  P = DB.projects[m] || newProject(m);
-  DB.projects[m] = P; saveProject();
+  closeModal(null);
+  P = p; mode = p.mode;
+  saveProject();
   stats.ops.clear(); stats.hats.clear();
-  $('#scr-home').hidden = true; $('#scr-editor').hidden = false;
-  $('#ed-mode').textContent = m === 'facil' ? 'Modo fácil · 1.º y 2.º grado' : 'Modo creador · 3.º, 4.º y 5.º grado';
-  $('#ed-title').textContent = m === 'facil' ? 'Mi primera historia' : 'Mi historieta o juego';
-  $('#coords').hidden = m !== 'creador';
-  $('#code-hint').textContent = m === 'facil' ? 'Arrastrá bloques desde la izquierda' : 'Elegí una categoría y arrastrá bloques';
+  $('#scr-home').hidden = true; $('#scr-teacher').hidden = true; $('#scr-editor').hidden = false;
+  $('#ed-mode').textContent = (mode === 'facil' ? 'Modo fácil · 1.º y 2.º grado' : 'Modo creador · 3.º, 4.º y 5.º grado') + (DB.cls ? ' · Clase ' + DB.cls.code : '');
+  $('#ed-title').textContent = titleOf(P);
+  $('#coords').hidden = mode !== 'creador';
+  $('#code-hint').textContent = mode === 'facil' ? 'Arrastrá bloques desde la izquierda' : 'Elegí una categoría y arrastrá bloques';
   RT.gen++; RT.threads = 0;
   resetRuntime(); buildSprites(); renderBackdrops(); renderSprites();
   mountWorkspace();
   renderGuide(true);
   syncToggles();
+  report();
 }
 function goHome() {
   stopAll(); flushCode(); if (P) saveProject();
+  if (P && !P.sprites.length && !P.backdropChosen) { const gone = P; DB.list = DB.list.filter(p => p !== gone); persist(); }
   closeModal(null); closeShow(true);
   if (resizeObs) { resizeObs.disconnect(); resizeObs = null; }
   if (ws) { try { ws.dispose(); } catch (e) { /* ignore */ } ws = null; }
@@ -1157,6 +1407,7 @@ function goHome() {
   P = null; mode = null;
   $('#scr-editor').hidden = true; $('#scr-home').hidden = false;
   renderHome();
+  report();
 }
 function unlockedFacil() {
   if (P.libre || P.step >= STEPS.facil.length) return FACIL_ORDER.slice();
@@ -1348,9 +1599,9 @@ function renderGuide(speakIt = false) {
 }
 function goStep(i) {
   P.step = clamp(i, 0, curSteps().length); saveProject();
-  refreshToolbox(); renderGuide(true); scheduleCheck();
+  refreshToolbox(); renderGuide(true); scheduleCheck(); report();
 }
-function toggleLibre() { P.libre = !P.libre; saveProject(); refreshToolbox(); renderGuide(!P.libre); }
+function toggleLibre() { P.libre = !P.libre; saveProject(); refreshToolbox(); renderGuide(!P.libre); report(); }
 async function checkStep() {
   if (!P || P.libre || completing) return;
   const steps = curSteps(); if (P.step >= steps.length) return;
@@ -1365,7 +1616,7 @@ async function checkStep() {
   await sleep(1700);
   completing = false;
   if (!P) return;
-  P.step++; saveProject(); refreshToolbox();
+  P.step++; saveProject(); refreshToolbox(); report();
   if (P.step >= steps.length) { renderGuide(); finale(); }
   else { renderGuide(true); scheduleCheck(); }
 }
@@ -1472,9 +1723,9 @@ function openModal({ cls = '', html = '', actions = [], onOpen = null }) {
   m.hidden = false;
   return new Promise(res => {
     modalResolve = res;
-    $$('[data-i]', card).forEach(b => b.addEventListener('click', () => closeModal(actions[+b.dataset.i].key)));
+    $$('[data-i]', card).forEach(b => b.addEventListener('click', () => { const a = actions[+b.dataset.i]; if (a.check && !a.check(card)) return; closeModal(a.key); }));
     if (onOpen) onOpen(card);
-    setTimeout(() => { const pb = card.querySelector('.mbtn.primary, .pick'); if (pb) pb.focus({ preventScroll: true }); }, 60);
+    setTimeout(() => { const pb = card.querySelector('input:not([readonly]), .pick, .mbtn.primary'); if (pb && card.contains(document.activeElement) === false) pb.focus({ preventScroll: true }); }, 60);
   });
 }
 function closeModal(val) { const m = $('#modal'); if (m.hidden) return; m.hidden = true; const r = modalResolve; modalResolve = null; if (r) r(val); }
@@ -1483,7 +1734,8 @@ $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeM
 /* ================= presentation ================= */
 function openShow() {
   flushCode();
-  $('#show-title').textContent = mode === 'facil' ? 'Mi primera historia' : 'Mi historieta o juego';
+  const by = P.author || P.remixOf;
+  $('#show-title').textContent = titleOf(P) + (by ? ' · de ' + by : '');
   $('#show-slot').appendChild($('#stage-box'));
   $('#show').hidden = false;
   P.shown = true; saveProject(); scheduleCheck();
@@ -1513,13 +1765,350 @@ function confetti() {
   requestAnimationFrame(fr);
 }
 
+/* ================= projects: list, files and links ================= */
+const PUBLIC_URL = 'https://federicoantoninagel-del.github.io/mision-codigo/estudio/';
+const BASE = (location.protocol === 'file:' || /github\.io$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) ? location.href.split('#')[0] : PUBLIC_URL;
+const defaultTitle = m => m === 'creador' ? 'Mi historieta o juego' : 'Mi primera historia';
+const titleOf = p => (p && p.title) || defaultTitle(p && p.mode);
+const slug = s => (String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'historia').slice(0, 40);
+function fmtDate(t) { try { return new Date(t).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+function projThumb(p, prefix) {
+  const bd = BACKDROPS[p.backdrop] || BACKDROPS.parque;
+  const spr = p.sprites.map((s, i) => {
+    const sc = (+s.size || 100) / 100, flip = i > 0 && s.x > 0 ? -1 : 1;
+    return `<g transform="translate(${240 + (+s.x || 0)} ${180 - (+s.y || 0)}) scale(${flip * sc} ${sc})">${charArt(CHARS[s.char] ? s.char : 'michi')}</g>`;
+  }).join('');
+  return `<svg viewBox="0 0 480 360" aria-hidden="true">${bd.svg(prefix)}${spr}</svg>`;
+}
+function stripIds(o) {
+  if (Array.isArray(o)) return o.map(stripIds);
+  if (o && typeof o === 'object') { const r = {}; for (const k in o) if (k !== 'id') r[k] = stripIds(o[k]); return r; }
+  return o;
+}
+function exportData(p, compact = false) {
+  const { mode: m, title, author, remixOf, backdrop, backdropChosen, sel, step, done, libre, shown, nextId } = p;
+  return { app: 'estudio-historias', v: 1, project: { mode: m, title, author, remixOf, backdrop, backdropChosen, sel, step, done, libre, shown, nextId,
+    sprites: p.sprites.map(s => ({ id: s.id, char: s.char, name: s.name, x: Math.round(s.x), y: Math.round(s.y), size: s.size, code: compact && s.code ? stripIds(s.code) : s.code })) } };
+}
+function importProject(obj) {
+  const src = obj && obj.app === 'estudio-historias' && obj.project;
+  if (!src || (src.mode !== 'facil' && src.mode !== 'creador') || !Array.isArray(src.sprites)) return null;
+  const p = newProject(src.mode);
+  p.title = String(src.title || '').slice(0, 40);
+  p.author = String(src.author || '').slice(0, 24);
+  p.remixOf = String(src.remixOf || '').slice(0, 24);
+  p.backdrop = BACKDROPS[src.backdrop] ? src.backdrop : 'parque';
+  p.backdropChosen = !!src.backdropChosen;
+  p.sprites = src.sprites.slice(0, 30).map((s, i) => ({
+    id: typeof s.id === 'string' && /^s\d+$/.test(s.id) ? s.id : 's' + (i + 1),
+    char: CHARS[s.char] ? s.char : 'michi',
+    name: String(s.name || (CHARS[s.char] || CHARS.michi).name).slice(0, 16),
+    x: clamp(+s.x || 0, -HW, HW), y: clamp(+s.y || 0, -HH, HH), size: clamp(+s.size || 100, 10, 300),
+    code: s.code && typeof s.code === 'object' ? s.code : null,
+  }));
+  if (new Set(p.sprites.map(s => s.id)).size !== p.sprites.length) p.sprites.forEach((s, i) => { s.id = 's' + (i + 1); });
+  p.nextId = Math.max(Number(src.nextId) || 1, 1, ...p.sprites.map(s => +s.id.slice(1) + 1));
+  p.sel = p.sprites.some(s => s.id === src.sel) ? src.sel : (p.sprites[0] ? p.sprites[0].id : null);
+  const steps = STEPS[p.mode];
+  p.step = clamp(Math.floor(+src.step || 0), 0, steps.length);
+  p.done = Array.isArray(src.done) ? src.done.filter(d => steps.some(s => s.id === d)) : [];
+  p.libre = !!src.libre; p.shown = !!src.shown;
+  return p;
+}
+const b64url = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64url = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+async function encodeProject(p) {
+  const bytes = new TextEncoder().encode(JSON.stringify(exportData(p, true)));
+  if ('CompressionStream' in window) {
+    const z = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+    return 'z' + b64url(z);
+  }
+  return 'u' + b64url(bytes);
+}
+async function decodeProject(s) {
+  let bytes = unb64url(s.slice(1));
+  if (s[0] === 'z') bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+const fileName = p => `historia-${slug(titleOf(p))}${p.author ? '-' + slug(p.author) : ''}.json`;
+async function saveFile(filename, text) {
+  if (window.claude && typeof window.claude.use === 'function') {
+    try { const dl = await window.claude.use('downloads'); if (dl) { await dl.save({ filename, data: text }); return 'ok'; } }
+    catch (e) { return e && e.code === 'declined' ? 'declined' : 'error'; }
+  }
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+    return 'ok';
+  } catch (e) { return 'error'; }
+}
+function enterSubmits(card) {
+  $$('input', card).forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const b = card.querySelector('.mbtn.primary'); if (b) b.click(); } }));
+}
+async function askNames(p) {
+  let author = '', title = '';
+  if (p.mode === 'facil') robiSay('¿Cómo te llamás? Escribí tu nombre.');
+  const k = await openModal({
+    html: `<h3>¿De quién es esta historia?</h3><p class="lead">Antes de guardarla o compartirla, contanos quién la hizo.</p>
+      <label class="field">Tu nombre<input id="nm-author" maxlength="24" autocomplete="off" value="${esc(p.author || DB.me.name || '')}"><small>Alcanza con tu nombre de pila.</small></label>
+      <label class="field">Nombre de la historia<input id="nm-title" maxlength="40" autocomplete="off" value="${esc(p.title || '')}" placeholder="${esc(defaultTitle(p.mode))}"></label>
+      <span class="msg-err" id="nm-err" role="alert"></span>`,
+    actions: [{ key: 'cancel', label: 'Cancelar' }, { key: 'ok', label: 'Seguir', icon: 'next', primary: true, check: card => {
+      author = $('#nm-author', card).value.trim(); title = $('#nm-title', card).value.trim();
+      if (!author) { $('#nm-err', card).textContent = 'Escribí tu nombre para seguir.'; $('#nm-author', card).focus(); return false; }
+      return true;
+    } }],
+    onOpen: enterSubmits,
+  });
+  hush();
+  if (k !== 'ok') return false;
+  p.author = author; p.title = title; p.updated = Date.now();
+  if (!DB.me.name) DB.me.name = author;
+  persist();
+  if (p === P) { $('#ed-title').textContent = titleOf(p); report(); }
+  return true;
+}
+async function shareFlow() {
+  if (!P) return;
+  flushCode(); saveProject();
+  if (!(await askNames(P))) return;
+  let link = '';
+  try { link = BASE + '#p.' + await encodeProject(P); } catch (e) { link = ''; }
+  const long = link.length > 7000;
+  await openModal({
+    html: `<h3>Guardar y compartir</h3><p class="lead">«${esc(titleOf(P))}», de ${esc(P.author)}, ya quedó guardada en esta compu, en «Mis proyectos». Para llevarla a otra compu o mostrársela a alguien:</p>
+      <div class="share-opts">
+        <div class="share-opt"><h4>Descargar archivo</h4><p>Guardalo en un pendrive, en el Drive o en la carpeta de la clase. En otra compu se abre con «Abrir archivo», en la pantalla de inicio.</p><div><button class="sbtn primary" id="sh-dl">${ICON.download} Descargar</button></div><span id="sh-dl-msg" class="msg-ok" role="status"></span></div>
+        <div class="share-opt"><h4>Link para compartir</h4><p>Quien abra el link ve tu historia y puede hacer su propia versión.${long ? ' Este link es largo: si un chat lo corta, mejor descargá el archivo.' : ''}</p>${link ? `<div class="share-link"><input id="sh-link" readonly value="${esc(link)}" aria-label="Link de la historia"><button class="sbtn primary" id="sh-copy">${ICON.copy} Copiar</button></div>` : '<p class="msg-err">Este navegador no pudo armar el link. Descargá el archivo.</p>'}<span id="sh-msg" class="msg-ok" role="status"></span></div>
+      </div>`,
+    actions: [{ key: 'ok', label: 'Listo', icon: 'check', primary: true }],
+    onOpen: card => {
+      $('#sh-dl', card).addEventListener('click', async () => {
+        const r = await saveFile(fileName(P), JSON.stringify(exportData(P)));
+        const m = $('#sh-dl-msg', card);
+        m.className = r === 'ok' ? 'msg-ok' : 'msg-err';
+        m.textContent = r === 'ok' ? 'Listo: buscalo en la carpeta Descargas.' : r === 'declined' ? 'Descarga cancelada.' : 'Este navegador no deja descargar. Usá el link.';
+      });
+      const cp = $('#sh-copy', card);
+      if (cp) cp.addEventListener('click', () => {
+        const inp = $('#sh-link', card), msg = $('#sh-msg', card);
+        const fallback = () => { inp.focus(); inp.select(); msg.textContent = 'Ya está seleccionado: copialo con Ctrl+C.'; };
+        try { navigator.clipboard.writeText(inp.value).then(() => { msg.textContent = 'Link copiado. Pegalo donde quieras compartirlo.'; }, fallback); } catch (e) { fallback(); }
+      });
+    },
+  });
+}
+function openFile(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    let p = null;
+    try { p = importProject(JSON.parse(String(r.result))); } catch (e) { p = null; }
+    if (!p) { openModal({ html: '<h3>No se pudo abrir</h3><p class="lead">Ese archivo no es un proyecto del Estudio de Historias.</p>', actions: [{ key: 'ok', label: 'Entendido', primary: true }] }); return; }
+    DB.list.unshift(p); persist(); openEditor(p);
+  };
+  r.readAsText(file);
+}
+async function openShared(enc) {
+  let p = null;
+  try { p = importProject(await decodeProject(enc)); } catch (e) { p = null; }
+  if (!p) { openModal({ html: '<h3>No se pudo abrir el link</h3><p class="lead">Puede que el link haya llegado cortado. Pedile a quien te lo pasó que te mande el archivo.</p>', actions: [{ key: 'ok', label: 'Entendido', primary: true }] }); return; }
+  const k = await openModal({
+    html: `<div style="border:3px solid var(--ink);border-radius:14px;overflow:hidden;aspect-ratio:4/3">${projThumb(p, 'sh-')}</div><h3>${esc(titleOf(p))}</h3><p class="lead">${p.author ? 'Una historia de ' + esc(p.author) + '. ' : ''}Mirala y después, si querés, hacé tu propia versión: se guarda en «Mis proyectos».</p>`,
+    actions: [{ key: 'cancel', label: 'Ahora no' }, { key: 'ok', label: 'Ver la historia', icon: 'next', primary: true }],
+  });
+  if (k !== 'ok') return;
+  p.remixOf = p.author || p.remixOf; p.author = ''; p.libre = true;
+  DB.list.unshift(p); persist();
+  openEditor(p); setTimeout(openShow, 400);
+}
+
+/* ================= class: join and progress reports (ntfy.sh) ================= */
+const NTFY = 'https://ntfy.sh/';
+const topicOf = code => 'mision-codigo-' + code.toLowerCase();
+const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+function genCode() { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; crypto.getRandomValues(new Uint32Array(6)).forEach(x => { s += a[x % a.length]; }); return s; }
+function renderJoin() {
+  const b = $('#btn-join');
+  b.innerHTML = DB.cls ? `${ICON.users}<span>Clase ${esc(DB.cls.code)} · ${esc(DB.me.name)}</span>` : `${ICON.users}<span>Unirme a una clase</span>`;
+}
+async function joinFlow(prefill = '') {
+  let code = '', name = '';
+  const actions = [{ key: 'cancel', label: 'Cancelar' }];
+  if (DB.cls && !prefill) actions.push({ key: 'leave', label: 'Salir de la clase' });
+  actions.push({ key: 'ok', label: 'Unirme', icon: 'check', primary: true, check: card => {
+    code = normCode($('#jn-code', card).value); name = $('#jn-name', card).value.trim();
+    const err = $('#jn-err', card);
+    if (code.length !== 6) { err.textContent = 'El código tiene 6 letras y números. Copialo del pizarrón.'; $('#jn-code', card).focus(); return false; }
+    if (!name) { err.textContent = 'Escribí tu nombre.'; $('#jn-name', card).focus(); return false; }
+    return true;
+  } });
+  const k = await openModal({
+    html: `<h3>Unirme a una clase</h3><p class="lead">Con el código que te da tu docente, tu docente puede ver en qué paso de la guía vas.</p>
+      <label class="field">Código de la clase<input id="jn-code" class="code-input" maxlength="6" autocomplete="off" value="${esc(normCode(prefill || (DB.cls && DB.cls.code) || ''))}" placeholder="ABC123"></label>
+      <label class="field">Tu nombre<input id="jn-name" maxlength="24" autocomplete="off" value="${esc(DB.me.name || '')}"><small>Tu nombre de pila, para que tu docente te reconozca.</small></label>
+      <span class="msg-err" id="jn-err" role="alert"></span>`,
+    actions,
+    onOpen: card => {
+      enterSubmits(card);
+      const ci = $('#jn-code', card);
+      ci.addEventListener('input', () => { ci.value = normCode(ci.value); });
+      if (ci.value.length === 6) setTimeout(() => $('#jn-name', card).focus(), 90);
+    },
+  });
+  if (k === 'leave') { DB.cls = null; persist(); renderJoin(); return; }
+  if (k !== 'ok') return;
+  DB.cls = { code }; DB.me.name = name; repLastBody = ''; persist(); renderJoin();
+  if (P) $('#ed-mode').textContent = $('#ed-mode').textContent.replace(/ · Clase \w+$/, '') + ' · Clase ' + code;
+  report();
+}
+let repTimer = null, repLast = 0, repPending = null, repLastBody = '', repHold = 0;
+function payload() {
+  const base = { v: 1, kid: DB.me.id, name: DB.me.name.slice(0, 24) };
+  if (!P) return { ...base, mode: null, step: 0, total: 0, title: 'Todavía no abrió un proyecto' };
+  const steps = STEPS[mode], st = Math.min(P.step, steps.length);
+  return { ...base, mode, step: st, total: steps.length, title: st < steps.length ? steps[st].title : 'Terminó la guía', libre: !!P.libre, proj: titleOf(P).slice(0, 40) };
+}
+function report() {
+  if (!DB.cls || !DB.me.name) return;
+  const body = JSON.stringify(payload());
+  if (body === repLastBody) return;
+  repPending = body; scheduleReport();
+}
+function scheduleReport() {
+  clearTimeout(repTimer);
+  repTimer = setTimeout(sendReport, Math.max(0, repLast + 20000 - Date.now(), repHold - Date.now()));
+}
+async function sendReport() {
+  if (!repPending || !DB.cls) return;
+  const body = repPending; repPending = null; repLast = Date.now();
+  try {
+    const r = await fetch(NTFY + topicOf(DB.cls.code), { method: 'POST', body });
+    if (r.ok) { repLastBody = body; return; }
+    repHold = Date.now() + (r.status === 429 ? 120000 : 30000);
+  } catch (e) { repHold = Date.now() + 30000; }
+  if (!repPending) repPending = body;
+  scheduleReport();
+}
+
+/* ================= teacher panel ================= */
+let tES = null, kids = {}, tTick = null;
+const T_NOTE = '<p class="t-note">El progreso viaja por ntfy.sh, un servicio público y gratuito. Solo se envían el nombre que escribe cada chico, el modo y el paso de la guía; los proyectos no salen de cada compu. Cualquiera que conozca el código podría ver esa lista, y ntfy.sh la borra sola a las 12 horas. Si toda la escuela sale a internet por la misma conexión, ntfy.sh acepta unas 250 actualizaciones por día.</p>';
+const ago = ms => { const m = Math.round(ms / 60000); return m < 1 ? 'menos de un minuto' : m === 1 ? '1 minuto' : m + ' minutos'; };
+function setConn(cls, text) { const c = $('#t-conn'); c.className = 'conn ' + cls; c.textContent = text; }
+function openTeacher() {
+  closeModal(null);
+  $('#scr-home').hidden = true; $('#scr-editor').hidden = true; $('#scr-teacher').hidden = false;
+  kids = {}; renderTeacher();
+  if (DB.teacher) connectTeacher();
+}
+function closeTeacher() {
+  if (tES) { tES.close(); tES = null; }
+  clearInterval(tTick); tTick = null;
+  $('#scr-teacher').hidden = true; $('#scr-home').hidden = false; renderHome();
+}
+function connectTeacher() {
+  if (tES) { tES.close(); tES = null; }
+  if (!('EventSource' in window)) { setConn('err', 'Este navegador no puede conectarse'); return; }
+  setConn('', 'Conectando…');
+  const es = new EventSource(NTFY + topicOf(DB.teacher.code) + '/sse?since=12h');
+  tES = es;
+  es.onopen = () => setConn('on', 'En vivo');
+  es.onerror = () => setConn('err', 'Sin conexión, reintentando…');
+  es.onmessage = ev => {
+    let m, d;
+    try { m = JSON.parse(ev.data); if (m.event && m.event !== 'message') return; d = JSON.parse(m.message); } catch (e) { return; }
+    if (!d || d.v !== 1 || typeof d.kid !== 'string' || typeof d.name !== 'string') return;
+    const t = (+m.time || Date.now() / 1000) * 1000, prev = kids[d.kid];
+    if (prev && prev.at > t) return;
+    d.at = t; d.since = prev && prev.mode === d.mode && prev.step === d.step ? prev.since : t;
+    kids[d.kid] = d; renderKids();
+  };
+  clearInterval(tTick); tTick = setInterval(renderKids, 15000);
+}
+function renderTeacher() {
+  const wrap = $('#t-wrap');
+  if (!DB.teacher) {
+    setConn('', 'Sin clase');
+    wrap.innerHTML = `<div class="t-class t-empty"><div class="t-how"><h3>Creá una clase para seguir el progreso</h3>
+      <p>Se genera un código de 6 letras y números. Cada chico lo escribe en «Unirme a una clase» junto con su nombre, y acá ves en vivo en qué paso de la guía va.</p>
+      <div><button class="cta" id="t-create">Crear clase</button></div></div></div>${T_NOTE}`;
+    $('#t-create').addEventListener('click', () => { DB.teacher = { code: genCode() }; persist(); kids = {}; renderTeacher(); connectTeacher(); });
+    return;
+  }
+  const code = DB.teacher.code, link = BASE + '#clase.' + code;
+  wrap.innerHTML = `<div class="t-class"><div><span class="eyebrow">Código de la clase</span><div class="t-code">${esc(code)}</div></div>
+    <div class="t-how"><b>Cómo se suman los chicos</b><ol><li>Entran a <b>${esc(BASE.replace(/^https?:\/\//, '').replace(/index\.html$/, ''))}</b></li><li>Tocan «Unirme a una clase».</li><li>Escriben el código <b>${esc(code)}</b> y su nombre.</li></ol>
+      <span>O les pasás este link, que ya trae el código:</span>
+      <div class="share-link"><input id="t-link" readonly value="${esc(link)}" aria-label="Link para sumarse a la clase"><button class="sbtn primary" id="t-copy">${ICON.copy} Copiar</button></div>
+      <div class="proj-actions"><button class="sbtn" id="t-new">Empezar otra clase</button><span class="msg-ok" id="t-msg" role="status"></span></div></div></div>
+    <div class="t-stats" id="t-stats"></div><div class="kids" id="kids"></div>${T_NOTE}`;
+  $('#t-copy').addEventListener('click', () => {
+    const inp = $('#t-link');
+    try { navigator.clipboard.writeText(inp.value).then(() => { $('#t-msg').textContent = 'Link copiado.'; }, () => { inp.select(); $('#t-msg').textContent = 'Copialo con Ctrl+C.'; }); } catch (e) { inp.select(); }
+  });
+  const nb = $('#t-new');
+  nb.addEventListener('click', () => {
+    if (!nb.classList.contains('armed')) { nb.classList.add('armed'); nb.textContent = '¿Seguro? Se genera otro código'; setTimeout(() => { if (nb.isConnected) { nb.classList.remove('armed'); nb.textContent = 'Empezar otra clase'; } }, 3000); return; }
+    DB.teacher = { code: genCode() }; persist(); kids = {}; renderTeacher(); connectTeacher();
+  });
+  renderKids();
+}
+function renderKids() {
+  const box = $('#kids'); if (!box) return;
+  const now = Date.now(), list = Object.values(kids).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  const isFin = k => (+k.total || 0) > 0 && (+k.step || 0) >= +k.total;
+  const isStuck = k => (+k.total || 0) > 0 && !isFin(k) && now - k.since > 6 * 60000;
+  $('#t-stats').innerHTML = [[list.length, list.length === 1 ? 'chico conectado' : 'chicos conectados'], [list.filter(isFin).length, 'terminaron la guía'], [list.filter(isStuck).length, 'hace más de 6 min en el mismo paso']]
+    .map(([n, l]) => `<div class="t-stat"><b>${n}</b><span>${l}</span></div>`).join('');
+  box.innerHTML = list.length ? list.map(k => {
+    const total = Math.min(+k.total || 0, 20), step = Math.min(+k.step || 0, total), fin = isFin(k), stuck = isStuck(k);
+    const dots = Array.from({ length: total }, (_, i) => `<i class="${i < step ? 'on' : i === step ? 'cur' : ''}"></i>`).join('');
+    const tag = k.mode === 'facil' ? '<span class="mode-tag">Fácil</span>' : k.mode === 'creador' ? '<span class="mode-tag creador">Creador</span>' : '';
+    const line = !total ? esc(k.title || 'Todavía no empezó') : fin ? 'Terminó la guía' : `Paso ${step + 1} de ${total} · ${esc(k.title || '')}`;
+    const meta = (stuck ? `En este paso hace ${ago(now - k.since)}` : `Última novedad hace ${ago(now - k.at)}`) + (k.proj ? ` · «${esc(String(k.proj))}»` : '') + (k.libre && !fin ? ' · modo libre' : '');
+    return `<div class="kid${fin ? ' done' : stuck ? ' stuck' : ''}"><div class="kid-top"><span class="kid-name">${esc(k.name)}</span>${tag}</div><span class="kid-step">${line}</span>${total ? `<span class="kid-dots">${dots}</span>` : ''}<span class="kid-meta">${meta}</span></div>`;
+  }).join('') : '<p class="empty-note">Todavía no se sumó nadie. Cuando un chico entre con el código, aparece acá.</p>';
+}
+
+/* ================= links that open something (#p. / #clase. / #docente) ================= */
+async function handleHash() {
+  let h = '';
+  try { h = decodeURIComponent(location.hash.slice(1)); } catch (e) { h = location.hash.slice(1); }
+  if (!h) return;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
+  if (h.startsWith('p.')) await openShared(h.slice(2));
+  else if (h.startsWith('clase.')) joinFlow(h.slice(6));
+  else if (h === 'docente') openTeacher();
+}
+
 /* ================= home & wiring ================= */
 function renderHome() {
-  ['facil', 'creador'].forEach(m => {
-    const p = DB.projects[m], has = p && (p.sprites.length || p.backdropChosen);
-    $(`[data-open="${m}"]`).textContent = has ? 'Seguir mi proyecto' : 'Empezar';
-    const r = $(`[data-reset="${m}"]`); r.hidden = !has; r.classList.remove('armed'); r.textContent = 'Empezar de nuevo';
-  });
+  renderJoin();
+  const g = $('#proj-grid');
+  const list = DB.list.slice().sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  g.innerHTML = list.length ? list.map(p => {
+    const by = p.author ? 'de ' + esc(p.author) : p.remixOf ? 'versión de la de ' + esc(p.remixOf) : '';
+    return `<article class="proj">
+      <button class="proj-thumb" data-openp="${esc(p.id)}" aria-label="Abrir ${esc(titleOf(p))}">${projThumb(p, 'pt' + p.id + '-')}</button>
+      <div class="proj-body"><span class="proj-title">${esc(titleOf(p))}</span>
+        <span class="proj-meta"><span class="mode-tag ${p.mode === 'creador' ? 'creador' : ''}">${p.mode === 'creador' ? 'Creador' : 'Fácil'}</span>${by ? by + ' ·' : ''} ${esc(fmtDate(p.updated))}</span>
+        <div class="proj-actions"><button class="sbtn primary" data-openp="${esc(p.id)}">Abrir</button><button class="sbtn" data-dl="${esc(p.id)}">${ICON.download} Descargar</button><button class="sbtn" data-delp="${esc(p.id)}" aria-label="Borrar ${esc(titleOf(p))}">${ICON.trash}</button></div>
+      </div></article>`;
+  }).join('') : '<p class="empty-note">Todavía no hay proyectos en esta compu. Empezá uno nuevo arriba o abrí un archivo que hayas descargado.</p>';
+  const find = id => DB.list.find(p => p.id === id);
+  $$('[data-openp]', g).forEach(b => b.addEventListener('click', () => { const p = find(b.dataset.openp); if (p) openEditor(p); }));
+  $$('[data-dl]', g).forEach(b => b.addEventListener('click', async () => {
+    const p = find(b.dataset.dl); if (!p) return;
+    if (!p.author && !(await askNames(p))) return;
+    await saveFile(fileName(p), JSON.stringify(exportData(p)));
+    renderHome();
+  }));
+  $$('[data-delp]', g).forEach(b => b.addEventListener('click', () => {
+    if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = '¿Borrar?'; setTimeout(() => { if (b.isConnected) { b.classList.remove('armed'); b.innerHTML = ICON.trash; } }, 3000); return; }
+    DB.list = DB.list.filter(p => p.id !== b.dataset.delp); persist(); renderHome();
+  }));
 }
 function syncToggles() {
   const so = $('#btn-sound');
@@ -1528,11 +2117,17 @@ function syncToggles() {
   so.setAttribute('aria-label', DB.sound ? 'Voces y sonidos activados' : 'Voces y sonidos apagados');
 }
 function wire() {
-  $$('[data-open]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.open)));
-  $$('[data-reset]').forEach(b => b.addEventListener('click', () => {
-    if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = '¿Seguro? Se borra el proyecto'; setTimeout(() => { if (b.classList.contains('armed')) renderHome(); }, 3000); return; }
-    DB.projects[b.dataset.reset] = null; persist(); renderHome();
-  }));
+  $$('[data-new]').forEach(b => b.addEventListener('click', () => { const p = newProject(b.dataset.new); if (DB.me.name) p.author = DB.me.name; DB.list.unshift(p); openEditor(p); }));
+  $('#btn-join').addEventListener('click', () => joinFlow());
+  $('#btn-teacher').innerHTML = `${ICON.board}<span>Panel docente</span>`;
+  $('#btn-teacher').addEventListener('click', openTeacher);
+  $('#t-home').innerHTML = ICON.home;
+  $('#t-home').addEventListener('click', closeTeacher);
+  $('#file-label').innerHTML = `${ICON.upload}<span>Abrir archivo</span>`;
+  $('#file-label').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#file-open').click(); } });
+  $('#file-open').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; openFile(f); });
+  $('#btn-share').innerHTML = `${ICON.share}<span>Guardar y compartir</span>`;
+  $('#btn-share').addEventListener('click', shareFlow);
   $('#btn-home').innerHTML = ICON.home;
   $('#btn-home').setAttribute('aria-label', 'Volver al inicio');
   $('#btn-home').addEventListener('click', goHome);
@@ -1565,7 +2160,10 @@ async function boot() {
   wire();
   renderHome();
   try { await Promise.race([Promise.all([document.fonts.load('800 16px "Baloo 2"'), document.fonts.load('700 13px "Atkinson Hyperlegible"')]), sleep(1500)]); } catch (e) { /* fonts optional */ }
+  persist();
+  handleHash();
 }
+window.addEventListener('hashchange', () => { if (location.hash.length > 1) handleHash(); });
 boot();
 })();
 </script>
