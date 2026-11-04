@@ -68,6 +68,8 @@
 .mc-gactions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 330px; }
 .mc-gbtn { min-height: 48px; border-radius: 14px; border: 2px solid #A9CDE8; background: #fff; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; font: 800 17px/1.1 var(--font-display); color: #1F5DBD; }
 .mc-gbtn .mc-icon svg { width: 20px; height: 20px; }
+.mc-listen { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #A9CDE8; background: #fff; color: #1F5DBD; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; padding: 0; }
+.mc-listen .mc-icon svg { width: 20px; height: 20px; }
 .mc-gbtn.primary { background: #1F5DBD; border-color: #1F5DBD; color: #fff; }
 .mc-challenges { margin: 10px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; max-width: 900px; }
 .mc-challenges li { background: #fff; border: 2px solid #F1D7B4; border-radius: 14px; padding: 8px 12px; display: grid; gap: 2px; }

@@ -134,7 +134,10 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
           <ol className="mc-hints">
             {hintsRevealed.map((h, i) => (
               <li key={i}>
-                <b>Pista {i + 1}.</b> {h}
+                <b>Pista {i + 1}.</b> {h}{' '}
+                <button type="button" className="mc-listen" aria-label={`Escuchar la pista ${i + 1}`} title="Escuchar" onClick={() => session.listenHint(i)}>
+                  <Icon html={ICON.sound} />
+                </button>
               </li>
             ))}
           </ol>
@@ -142,11 +145,9 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
         {exampleShown && <Example session={session} scripts={step.example!} />}
       </div>
       <div className="mc-gactions">
-        {session.spoken && (
-          <button type="button" className="mc-gbtn" onClick={() => session.listen()}>
-            <Icon html={ICON.sound} /> Escuchar de nuevo
-          </button>
-        )}
+        <button type="button" className="mc-gbtn" onClick={() => session.listen()}>
+          <Icon html={ICON.sound} /> {session.spoken ? 'Escuchar de nuevo' : 'Escuchar'}
+        </button>
         {step.demo && !done && (
           <button type="button" className="mc-gbtn primary" onClick={() => void session.demo(step.demo!)}>
             <Icon html={ICON.eye} /> Mostrame

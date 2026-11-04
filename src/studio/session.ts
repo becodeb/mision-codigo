@@ -636,7 +636,7 @@ export class StudioSession {
     this.speakStepIfSpoken();
   }
 
-  /** Spoken guide on levels 1 and 2. */
+  /** The guide reads each step on its own on levels 1 and 2. Levels 3 to 5 read only when asked. */
   get spoken(): boolean {
     return this.level <= 2;
   }
@@ -659,9 +659,17 @@ export class StudioSession {
     this.emit();
   }
 
+  /** Reads the step on screen. Available on every level. */
   listen(): void {
     const flat = this.viewedStep;
     if (flat) void this.say(flat.step.text, true);
+  }
+
+  /** Reads one revealed hint of the step on screen. Available on every level. */
+  listenHint(index: number): void {
+    const flat = this.viewedStep;
+    const hint = flat?.step.hints[index];
+    if (hint) void this.say(hint, true);
   }
 
   /** Pressing «Mostrame» or «¿Dónde?» counts as help, so a step with no hints can be moved past after it. */
