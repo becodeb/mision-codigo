@@ -6,22 +6,18 @@ import type { BlockType } from '../../language/catalog.ts';
 import {
   addScore, backdrop, changeVar, div, face, forever, goToRandom, hide, ifElse, ifThen, join, lose, lt, moveWithArrows, onFlag, onPoints, project,
   randomBetween, repeatUntil, sayFor, setVar, show, sound, sprite, stopOthers, touching, variable, wait, win,
-  type Block, type SpriteProgram,
+  type SpriteProgram,
 } from '../../language/ir.ts';
 import { blocksInList, blocksOfSprite, isObject } from '../checks.ts';
 import type { Game } from '../../runtime/testing.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import {
-  BRANCHES, COMPARES, GUARDS, LOOPS, SAYS, belowStart, comesBefore, conditionals, declared, holdingAll, holds, inside, literal, losesOnZero, lowers, nameOf,
+  BRANCHES, COMPARES, GUARDS, LOOPS, SAYS, belowStart, comesBefore, conditionals, declared, holdingAll, holds, inside, literal, losesOnZero, lowers, movesRandomly, nameOf,
   placed, raises, readNames, scriptsOf, setAtStart, startOf, valueOf,
 } from './logic.ts';
 import { releaseArrows, steer, walkTo } from './play.ts';
 
 const SETUP = project('parque', [sprite('heroe', 'toby', [], { x: 0, y: -100, size: 80, name: 'Toby' })]);
-
-const RANDOM_PLACE: BlockType[] = ['a_goto', 'a_setx'];
-
-const movesRandomly = (b: Block): boolean => b.type === 'a_random' || (RANDOM_PLACE.includes(b.type) && holds([b], ['v_random']));
 
 /** Names of the variables that go down inside a loop that waits: the clock. */
 function countdownNames(ctx: StepContext): string[] {

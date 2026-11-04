@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ProofGame, proveGame } from '../proof.ts';
+import { Game } from '../../runtime/testing.ts';
+import { proveGame } from '../proof.ts';
 import { tresVidas } from './tres-vidas.ts';
 
 describe('tres-vidas', () => {
   it('a child who does nothing does not win', () => {
-    const g = new ProofGame(tresVidas, tresVidas.solution.program);
+    const g = new Game(tresVidas.solution.program);
     g.flag();
     g.run(120_000);
     expect(g.machine.stats.won).toBe(false);

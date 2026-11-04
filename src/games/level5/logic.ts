@@ -65,6 +65,10 @@ export function conditionals(ctx: StepContext, cond: readonly BlockType[], branc
   });
 }
 
+/** Blocks that send a sprite to a random place: «ir a azar», or «ir a» / «poner x» with a random number. */
+export const movesRandomly = (b: Block): boolean =>
+  b.type === 'a_random' || ((b.type === 'a_goto' || b.type === 'a_setx') && holds([b], ['v_random']));
+
 /* ---------- numbers and variables ---------- */
 
 export function literal(b: Block | undefined): number | undefined {
@@ -130,8 +134,12 @@ export function loweredNames(ctx: StepContext): string[] {
   return [...new Set(placed(ctx).filter(({ block }) => lowers(block)).map(({ block }) => nameOf(block)))].filter((n) => declared(ctx).includes(n));
 }
 
-/** Variables with a starting number that now hold less than that, in the current run. */
+/**
+ * Variables with a starting number that now hold less than that, in the current run. A run only counts
+ * once a few frames passed: right after the flag every variable is still 0, before the program sets it.
+ */
 export function belowStart(ctx: StepContext): string[] {
+  if (!(ctx.machine.running || ctx.machine.ended) || ctx.machine.timerSeconds() < 0.2) return [];
   return declared(ctx).filter((n) => {
     const start = startOf(ctx, n);
     return start !== undefined && valueOf(ctx, n) < start;
