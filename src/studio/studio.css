@@ -64,11 +64,11 @@
 .mc-steptext { font-size: 17px; max-width: 70ch; margin-top: 2px; }
 .mc-phase-done { margin-top: 6px; font: 800 18px/1.2 var(--font-display); color: var(--go-deep); }
 .mc-hints { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; max-width: 70ch; }
-.mc-hints li { background: #fff; border: 2px solid #CFE6F7; border-radius: 12px; padding: 6px 12px; }
+.mc-hints li { background: #fff; border: 2px solid #CFE6F7; border-radius: 12px; padding: 4px 10px; font-size: 16px; line-height: 1.35; }
 .mc-gactions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 330px; }
 .mc-gbtn { min-height: 48px; border-radius: 14px; border: 2px solid #A9CDE8; background: #fff; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; font: 800 17px/1.1 var(--font-display); color: #1F5DBD; }
 .mc-gbtn .mc-icon svg { width: 20px; height: 20px; }
-.mc-listen { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #A9CDE8; background: #fff; color: #1F5DBD; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; padding: 0; }
+.mc-listen { width: 34px; height: 34px; border-radius: 12px; border: 2px solid #A9CDE8; background: #fff; color: #1F5DBD; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; padding: 0; }
 .mc-listen .mc-icon svg { width: 20px; height: 20px; }
 .mc-gbtn.primary { background: #1F5DBD; border-color: #1F5DBD; color: #fff; }
 .mc-challenges { margin: 10px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; max-width: 900px; }
@@ -226,8 +226,9 @@
   .mc-studio { height: 100dvh; min-height: 0; }
   .mc-topbar { padding-top: 6px; padding-bottom: 6px; flex: none; }
   .mc-ibtn { width: 44px; height: 44px; }
-  .mc-guide { padding-top: 8px; padding-bottom: 8px; flex: none; }
-  .mc-main { flex: 1 1 0; min-height: 440px; grid-template-columns: minmax(0, 1fr) clamp(320px, 38vw, 500px); padding-top: 8px; padding-bottom: 10px; }
+  .mc-guide { padding-top: 8px; padding-bottom: 8px; flex: none; max-height: 44dvh; overflow-y: auto; }
+  .mc-example-ws { height: clamp(120px, 20dvh, 190px); }
+  .mc-main { flex: 1 1 0; min-height: 380px; grid-template-columns: minmax(0, 1fr) clamp(320px, 38vw, 500px); padding-top: 8px; padding-bottom: 10px; }
   .mc-code { min-height: 0; }
   .mc-side { min-height: 0; display: grid; grid-template-rows: auto minmax(150px, 1fr) auto auto; gap: 10px; padding-bottom: 0; }
   .mc-stage-slot { container-type: size; min-height: 0; }
