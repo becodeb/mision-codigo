@@ -48,10 +48,10 @@ export const cazaPulpi: GameDefinition = {
         {
           id: 'fondo',
           title: 'Elegí dónde es la cacería',
-          text: 'Pulpi se esconde en algún lugar. Elegí el escenario de la cacería: tocá uno que no tenga el borde de color.',
-          hints: ['Mirá los escenarios de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
+          text: 'Pulpi se esconde en algún lugar. Elegí el escenario de la cacería: tocá el que más te guste.',
+          hints: ['Mirá los escenarios de abajo. Tocá el que más te guste. Podés tocar cualquiera.'],
           point: 'backdrops',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
+          check: (ctx) => ctx.ui.backdropChosen,
         },
         {
           id: 'reaccion',

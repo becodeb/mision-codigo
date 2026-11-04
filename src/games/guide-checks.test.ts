@@ -21,7 +21,7 @@ import type { GameDefinition } from './types.ts';
 const clone = (p: ProjectProgram): ProjectProgram => structuredClone(p);
 const sprite = (p: ProjectProgram, id: string) => p.sprites.find((s) => s.id === id)!;
 const passes = (game: GameDefinition, id: string, g: Game, program: ProjectProgram): boolean =>
-  stepsOf(game).find((s) => s.id === id)!.check({ stats: g.machine.stats, program, machine: g.machine });
+  stepsOf(game).find((s) => s.id === id)!.check({ stats: g.machine.stats, program, machine: g.machine, ui: { backdropChosen: true } });
 
 /** Presses the flag, lets a moment pass, optionally acts, then lets more time pass. */
 function play(program: ProjectProgram, ms: number, act?: (g: Game) => void): Game {

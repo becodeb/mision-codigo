@@ -51,10 +51,10 @@ export const chispa: GameDefinition = {
         {
           id: 'escena',
           title: 'Elegí el lugar',
-          text: 'Chispa vive en algún lugar. Elegí el escenario: tocá uno que no tenga el borde de color.',
-          hints: ['Mirá los escenarios de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
+          text: 'Chispa vive en algún lugar. Elegí el escenario: tocá el que más te guste.',
+          hints: ['Mirá los escenarios de abajo. Tocá el que más te guste. Podés tocar cualquiera.'],
           point: 'backdrops',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
+          check: (ctx) => ctx.ui.backdropChosen,
         },
         {
           id: 'heroe',

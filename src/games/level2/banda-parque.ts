@@ -53,10 +53,10 @@ export const bandaParque: GameDefinition = {
         {
           id: 'escena',
           title: 'Elegí el lugar y el músico',
-          text: '¡Vamos a armar una banda! Primero elegí un lugar con los dibujitos de abajo: tiene que ser otro, que no tenga el borde de color. Después tocá el botón con el más y elegí a tu primer músico.',
-          hints: ['Los dos pasos son importantes: un lugar distinto al marcado y un músico.'],
+          text: '¡Vamos a armar una banda! Primero tocá el lugar que más te guste en los dibujitos de abajo. Después tocá el botón con el más y elegí a tu primer músico.',
+          hints: ['Los dos pasos son importantes: tocar un lugar (cualquiera) y elegir un músico.'],
           point: 'add-sprite',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop && spriteCount(ctx) > SETUP.sprites.length,
+          check: (ctx) => ctx.ui.backdropChosen && spriteCount(ctx) > SETUP.sprites.length,
         },
         {
           id: 'tocar',

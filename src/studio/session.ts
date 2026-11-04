@@ -553,6 +553,7 @@ export class StudioSession {
 
   setBackdrop(id: string): void {
     this.doc.backdrop = id;
+    this.doc.ui.backdropChosen = true;
     playSfx('pop');
     this.applyProgram();
     this.renderer?.setBackdrop(id);
@@ -708,7 +709,7 @@ export class StudioSession {
   }
 
   get stepContext(): StepContext | null {
-    return this.machine ? { stats: this.machine.stats, program: this.program, machine: this.machine } : null;
+    return this.machine ? { stats: this.machine.stats, program: this.program, machine: this.machine, ui: { backdropChosen: this.doc.ui.backdropChosen } } : null;
   }
 
   private checkGuide(): void {

@@ -5,7 +5,7 @@ import { Game } from '../runtime/testing.ts';
 import { GAMES, MIN_STEPS } from './catalog.ts';
 import { blocksOfProject } from './checks.ts';
 import { proveGame, stepsOf } from './proof.ts';
-import type { GameDefinition, StepContext } from './types.ts';
+import { NO_UI, type GameDefinition, type StepContext } from './types.ts';
 
 /** Literals come with the sockets, so they never need to be in a toolbox. */
 const IMPLICIT = new Set<string>(['v_num', 'v_text']);
@@ -18,7 +18,7 @@ function allowedBlocks(game: GameDefinition): Set<BlockType> {
 }
 
 function contextOf(game: GameDefinition, runner: Game): StepContext {
-  return { stats: runner.machine.stats, program: game.setup, machine: runner.machine };
+  return { stats: runner.machine.stats, program: game.setup, machine: runner.machine, ui: NO_UI };
 }
 
 describe('catalog', () => {
@@ -76,6 +76,19 @@ describe('catalog', () => {
       const passed = stepsOf(game).filter((s) => s.check(ctx)).map((s) => s.id);
       runner.machine.dispose();
       expect(passed).toEqual([]);
+    });
+
+    it('lets a child pass a pick-a-place step by tapping any place, the marked one included', () => {
+      const places = stepsOf(game).filter((s) => s.point === 'backdrops');
+      const runner = new Game(game.setup);
+      const base = contextOf(game, runner);
+      for (const step of places) {
+        expect(step.check(base), step.id).toBe(false);
+        const tapped = step.check({ ...base, ui: { backdropChosen: true } });
+        /* Only banda-parque asks for a musician too. */
+        expect(tapped, step.id).toBe(game.id === 'banda-parque' ? false : true);
+      }
+      runner.machine.dispose();
     });
 
     it('does not finish a phase by only pressing the flag on the starter', () => {

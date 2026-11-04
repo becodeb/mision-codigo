@@ -59,10 +59,10 @@ export const manejaNova: GameDefinition = {
         {
           id: 'espacio',
           title: 'Elegí el espacio',
-          text: 'Nova es astronauta, así que necesita un lugar para volar. Elegí el escenario del espacio: tocá uno de los lugares.',
-          hints: ['Mirá los dibujitos de abajo y elegí el que parezca el espacio.'],
+          text: 'Nova es astronauta, así que necesita un lugar para volar. Elegí el escenario del espacio: tocá el que más te guste.',
+          hints: ['Mirá los dibujitos de abajo. Tocá el que más te guste, el que parezca el espacio. Podés tocar cualquiera.'],
           point: 'backdrops',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
+          check: (ctx) => ctx.ui.backdropChosen,
         },
         {
           id: 'derecha',

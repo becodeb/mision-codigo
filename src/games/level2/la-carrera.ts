@@ -74,10 +74,10 @@ export const laCarrera: GameDefinition = {
         {
           id: 'pista',
           title: 'Elegí la pista',
-          text: '¡Hoy hay una carrera! Primero elegí dónde es la pista: tocá un lugar que no tenga el borde de color.',
-          hints: ['Mirá los dibujitos de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
+          text: '¡Hoy hay una carrera! Primero elegí dónde es la pista: tocá el lugar que más te guste.',
+          hints: ['Mirá los dibujitos de abajo. Tocá el que más te guste. Podés tocar cualquiera.'],
           point: 'backdrops',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
+          check: (ctx) => ctx.ui.backdropChosen,
         },
         {
           id: 'corredores',

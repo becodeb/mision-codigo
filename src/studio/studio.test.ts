@@ -46,7 +46,7 @@ describe('guide tracker', () => {
     const counted: GameDefinition = { ...game, phases: [{ ...game.phases[0], steps: [{ ...game.phases[0].steps[0], check: (ctx) => { calls++; return ctx.stats.ran('say'); } }, game.phases[0].steps[1]] }, game.phases[1]] };
     const tracker = new GuideTracker(counted, {}, at('2026-11-04T16:00:00.000Z'));
     const g = new Game(b.project('parque', [b.sprite('a', 'toby', [b.onFlag(b.say('hola'))])]));
-    const ctx = { stats: g.machine.stats, program: g.machine.program, machine: g.machine };
+    const ctx = { stats: g.machine.stats, program: g.machine.program, machine: g.machine, ui: { backdropChosen: false } };
     expect(tracker.evaluate(ctx)).toEqual([]);
     g.flag();
     g.run(1500);
@@ -64,7 +64,7 @@ describe('guide tracker', () => {
     const odd: GameDefinition = { ...game, phases: [{ ...game.phases[0], steps: [{ ...game.phases[0].steps[0], check: () => { throw new Error('bad check'); } }, { ...game.phases[0].steps[1], check: () => true }] }, game.phases[1]] };
     const tracker = new GuideTracker(odd);
     const g = new Game(b.project('parque', []));
-    const fresh = tracker.evaluate({ stats: g.machine.stats, program: g.machine.program, machine: g.machine });
+    const fresh = tracker.evaluate({ stats: g.machine.stats, program: g.machine.program, machine: g.machine, ui: { backdropChosen: false } });
     expect(fresh.map((f) => f.step.id)).toEqual(['s2']);
     expect(tracker.active?.step.id).toBe('s1');
     g.machine.dispose();
@@ -179,6 +179,18 @@ describe('project document', () => {
     expect(doc.sprites[0]).toMatchObject({ name: 'Michi', size: 100, visible: true, code: null });
     expect(doc.selected).toBe('z');
     expect(doc.ui.nextId).toBe(1);
+  });
+
+  it('keeps the tapped-a-place flag, and infers it for older projects that already changed place', () => {
+    const doc = newDoc(game);
+    expect(doc.ui.backdropChosen).toBe(false);
+    doc.ui.backdropChosen = true;
+    expect(parseDoc(JSON.parse(JSON.stringify(doc)), game)!.ui.backdropChosen).toBe(true);
+    const untouched = JSON.parse(JSON.stringify(newDoc(game)));
+    delete untouched.ui.backdropChosen;
+    expect(parseDoc(untouched, game)!.ui.backdropChosen).toBe(false);
+    const moved = { ...untouched, backdrop: 'mar' };
+    expect(parseDoc(moved, game)!.ui.backdropChosen).toBe(true);
   });
 
   it('adds sprites with fresh ids, unique names and a starter hat', () => {

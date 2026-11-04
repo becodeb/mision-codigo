@@ -55,10 +55,10 @@ export const presentacion: GameDefinition = {
         {
           id: 'lugar',
           title: 'Elegí el lugar',
-          text: '¡Hola! Soy Robi. Hoy vas a inventar tu propia historia. Primero elegí dónde pasa: tocá un lugar que no tenga el borde de color.',
-          hints: ['Mirá los dibujitos de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
+          text: '¡Hola! Soy Robi. Hoy vas a inventar tu propia historia. Primero elegí dónde pasa: tocá el lugar que más te guste.',
+          hints: ['Mirá los dibujitos de abajo. Tocá el que más te guste. Podés tocar cualquiera.'],
           point: 'backdrops',
-          check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
+          check: (ctx) => ctx.ui.backdropChosen,
         },
         {
           id: 'heroe',

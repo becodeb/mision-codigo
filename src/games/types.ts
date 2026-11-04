@@ -17,7 +17,17 @@ export interface StepContext {
   program: ProjectProgram;
   /** Live state of the current run: variables, lists, score, backdrop, instances. */
   machine: Machine;
+  /** Sticky facts about the studio that the program cannot show. */
+  ui: StepUi;
 }
+
+export interface StepUi {
+  /** The child tapped a place in the strip, any place, the marked one included. Never goes back to false. */
+  backdropChosen: boolean;
+}
+
+/** A context for code that has no studio: nothing was tapped. */
+export const NO_UI: StepUi = { backdropChosen: false };
 
 export interface GameStep {
   /** Unique within the game. Also stored as class data, so do not rename after a class. */
