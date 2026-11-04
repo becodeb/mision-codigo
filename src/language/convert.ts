@@ -154,6 +154,16 @@ export function blocklyToIr(state: WorkspaceState | null | undefined): Script[] 
   return scripts;
 }
 
+/** Stacks that hang from no hat, each a list of blocks from its top. Loose value blocks are left out. */
+export function looseStacks(state: WorkspaceState | null | undefined): Block[][] {
+  const out: Block[][] = [];
+  for (const top of state?.blocks?.blocks ?? []) {
+    if (!isKnown(top.type) || isHat(top.type) || BLOCK_SPECS[top.type].shape === 'value') continue;
+    out.push(irChain(top));
+  }
+  return out;
+}
+
 /** Every block of a script list, hats and value inputs included, for counting and tests. */
 export function flattenScripts(scripts: readonly Script[]): Block[] {
   const out: Block[] = [];

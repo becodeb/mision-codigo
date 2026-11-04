@@ -698,6 +698,7 @@ export class StudioSession {
       art: s.art,
       kind: art[s.art]?.kind ?? '',
       scripts: s.id === this.doc.selected && this.editor ? this.editor.scripts() : scriptsOf(s),
+      loose: s.id === this.doc.selected && this.editor ? this.editor.looseStacks() : [],
     }));
   }
 

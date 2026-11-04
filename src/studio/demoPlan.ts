@@ -1,8 +1,10 @@
 /**
  * What the hand shows on «Mostrame», decided with no DOM. A step declares the program it wants (`demoScript`);
- * this compares it with what the child has built and returns the next missing thing, and only that:
- * the sprite to pick, the event block to bring, the next block to add, or how to try the result.
- * The animation lives in demo.ts and never edits the project.
+ * this walks it depth first against what the child has built and returns the next missing piece, and only that:
+ * the sprite to pick, the event block to bring, a block to add, a loose block of the child's to put where it
+ * belongs, or how to try the result. Trying (flag, tap, key) comes only as the last gesture of the piece that
+ * completes the program, or alone when nothing is missing. The animation lives in demo.ts and never edits the
+ * project.
  */
 import { KEYS } from '../language/options.ts';
 import type { Block, Script } from '../language/ir.ts';
@@ -15,6 +17,8 @@ export interface Slot {
   /** Id of the workspace block that owns the connection. */
   parent: string | undefined;
   kind: SlotKind;
+  /** Type of that block, for the words. */
+  parentType?: string;
 }
 
 export interface SpriteView {
@@ -24,6 +28,8 @@ export interface SpriteView {
   /** `character`, `object`... from the art catalogue. */
   kind: string;
   scripts: readonly Script[];
+  /** Stacks that hang from no event block, each a list of blocks from its top. */
+  loose?: readonly (readonly Block[])[];
 }
 
 export interface DemoGoal {
@@ -35,14 +41,25 @@ export interface DemoGoal {
   each?: boolean;
 }
 
+/** How to try the program once this piece is in. */
+export interface Completes {
+  hat: Block;
+  spriteId: string;
+}
+
 export type DemoPlan =
   | { kind: 'add-sprite'; reason: 'none' | 'missing' }
   | { kind: 'select-sprite'; spriteId: string; name: string }
   /** The event block is not there (or its program cannot take the next block): bring a new one. */
-  | { kind: 'hat'; hat: Block; reason: 'missing' | 'blocked' }
-  | { kind: 'block'; block: Block; slot: Slot }
+  | { kind: 'hat'; hat: Block; reason: 'missing' | 'blocked'; completes: Completes | null }
+  /** Bring a block from the toolbox to the slot. */
+  | { kind: 'block'; block: Block; slot: Slot; completes: Completes | null }
+  /** The child already has that block, loose or in the wrong place: drag it to the slot. */
+  | { kind: 'move'; block: Block; slot: Slot; completes: Completes | null }
   /** Everything wanted is built: show how to try it. */
   | { kind: 'try'; hat: Block; spriteId: string };
+
+type Piece = Extract<DemoPlan, { kind: 'hat' | 'block' | 'move' }>;
 
 /* ---------- matching a wanted script against a built one ---------- */
 
@@ -52,6 +69,8 @@ const isTerminal = (type: string): boolean => {
 };
 
 const bodyOf = (type: string): boolean => (BLOCK_SPECS as Record<string, unknown>)[type] !== undefined && hasBody(type as Parameters<typeof hasBody>[0]);
+
+const isEmptyBlock = (b: Block): boolean => !b.body.length && !b.elseBody.length;
 
 function typesIn(list: readonly Block[], into = new Set<string>()): Set<string> {
   for (const b of list) {
@@ -85,6 +104,8 @@ interface Fit {
   missing: Missing | null;
   /** How many wanted blocks are already built, nested ones included. */
   matched: number;
+  /** Ids of the built blocks that count as wanted ones. */
+  claimed: string[];
 }
 
 function fit(want: readonly Block[], built: readonly Block[], container: Slot): Fit {
@@ -103,6 +124,7 @@ function fit(want: readonly Block[], built: readonly Block[], container: Slot): 
   }
 
   let matched = matchOf.filter((m) => m >= 0).length;
+  const claimed: string[] = [];
   let missing: Missing | null = null;
   for (let i = 0; i < want.length; i++) {
     const w = want[i];
@@ -111,13 +133,15 @@ function fit(want: readonly Block[], built: readonly Block[], container: Slot): 
       continue;
     }
     const b = built[matchOf[i]];
+    if (b.id) claimed.push(b.id);
     if (!bodyOf(w.type)) continue;
-    const inner = fit(w.body, b.body, { parent: b.id, kind: 'do' });
-    const other = w.elseBody.length || b.elseBody.length ? fit(w.elseBody, b.elseBody, { parent: b.id, kind: 'else' }) : { missing: null, matched: 0 };
+    const inner = fit(w.body, b.body, { parent: b.id, kind: 'do', parentType: b.type });
+    const other = w.elseBody.length || b.elseBody.length ? fit(w.elseBody, b.elseBody, { parent: b.id, kind: 'else', parentType: b.type }) : { missing: null, matched: 0, claimed: [] };
     matched += inner.matched + other.matched;
+    claimed.push(...inner.claimed, ...other.claimed);
     if (!missing) missing = inner.missing ?? other.missing;
   }
-  return { missing, matched };
+  return { missing, matched, claimed };
 }
 
 /** Where the wanted block `i` goes: after the built block of the wanted one before it, or else right before the one after it, or else at the bottom. */
@@ -125,19 +149,20 @@ function missingAt(want: readonly Block[], built: readonly Block[], matchOf: rea
   const block = want[i];
   let after = -1;
   for (let j = i - 1; j >= 0 && after < 0; j--) if (matchOf[j] >= 0) after = matchOf[j];
+  const under = (b: Block): Slot => ({ parent: b.id, kind: 'next', parentType: b.type });
   let slot: Slot;
   let atEnd: boolean;
   if (after >= 0) {
-    slot = { parent: built[after].id, kind: 'next' };
+    slot = under(built[after]);
     atEnd = after === built.length - 1;
   } else {
     let before = -1;
     for (let j = i + 1; j < want.length && before < 0; j++) if (matchOf[j] >= 0) before = matchOf[j];
     if (before >= 0) {
-      slot = before > 0 ? { parent: built[before - 1].id, kind: 'next' } : container;
+      slot = before > 0 ? under(built[before - 1]) : container;
       atEnd = false;
     } else if (built.length) {
-      slot = { parent: built[built.length - 1].id, kind: 'next' };
+      slot = under(built[built.length - 1]);
       atEnd = true;
     } else {
       slot = container;
@@ -155,26 +180,62 @@ function sameEvent(want: Block, hat: Block): boolean {
   return true;
 }
 
-/** Plans one wanted script against the built ones. `null` means it is all there. */
-function planScript(want: Script, built: readonly Script[]): DemoPlan | null {
-  const sameType = built.filter((s) => s.hat.type === want.hat.type);
+/**
+ * Built blocks the child could drag to the slot: a loose block on its own, or an empty C block that is the last
+ * of its list somewhere nothing asks for it (under another event, in another container). Full containers and
+ * plain blocks inside other programs are left alone: they are somebody's work.
+ */
+function movable(want: Block, sprite: SpriteView, claimed: ReadonlySet<string>): Block | null {
+  const free = (b: Block): boolean => !!b.id && b.type === want.type && !claimed.has(b.id) && (!bodyOf(b.type) || isEmptyBlock(b));
+  for (const stack of sprite.loose ?? []) if (stack.length === 1 && free(stack[0])) return stack[0];
+  const search = (list: readonly Block[]): Block | null => {
+    for (let i = 0; i < list.length; i++) {
+      const b = list[i];
+      const inner = search(b.body) ?? search(b.elseBody);
+      if (inner) return inner;
+      if (i === list.length - 1 && bodyOf(b.type) && free(b)) return b;
+    }
+    return null;
+  };
+  for (const sc of sprite.scripts) {
+    const found = search(sc.body);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Plans one wanted script against a sprite. `null` means it is all there; `claimed` collects the built blocks that count. */
+function planScript(want: Script, sprite: SpriteView, claimed: Set<string>): Piece | null {
+  const sameType = sprite.scripts.filter((s) => s.hat.type === want.hat.type);
   let candidates = sameType.filter((s) => sameEvent(want.hat, s.hat));
   /* A key hat dropped and not set yet counts as the one being built. */
   if (!candidates.length) candidates = sameType.filter((s) => s.body.length === 0 && want.hat.type === 'a_key');
-  if (!candidates.length) return { kind: 'hat', hat: want.hat, reason: 'missing' };
+  if (!candidates.length) return { kind: 'hat', hat: want.hat, reason: 'missing', completes: null };
 
-  const fits = candidates.map((s, order) => ({ s, order, ...fit(want.body, s.body, { parent: s.hat.id, kind: 'next' }) }));
-  if (fits.some((f) => !f.missing)) return null;
+  const fits = candidates.map((s, order) => ({ s, order, ...fit(want.body, s.body, { parent: s.hat.id, kind: 'next', parentType: s.hat.type }) }));
+  const done = fits.find((f) => !f.missing);
+  if (done) {
+    if (done.s.hat.id) claimed.add(done.s.hat.id);
+    done.claimed.forEach((c) => claimed.add(c));
+    return null;
+  }
   const usable = fits.filter((f) => !f.missing!.blocked);
-  if (!usable.length) return { kind: 'hat', hat: want.hat, reason: 'blocked' };
+  if (!usable.length) return { kind: 'hat', hat: want.hat, reason: 'blocked', completes: null };
   usable.sort((a, b) => b.matched - a.matched || a.order - b.order);
   const best = usable[0];
-  return { kind: 'block', block: best.missing!.block, slot: best.missing!.slot };
+  if (best.s.hat.id) claimed.add(best.s.hat.id);
+  best.claimed.forEach((c) => claimed.add(c));
+  const { block, slot } = best.missing!;
+  const mine = movable(block, sprite, claimed);
+  return mine ? { kind: 'move', block: mine, slot, completes: null } : { kind: 'block', block, slot, completes: null };
 }
 
-function planSprite(goal: DemoGoal, sprite: SpriteView): DemoPlan | null {
+function planSprite(goal: DemoGoal, sprite: SpriteView): Piece | null {
+  const claimed = new Set<string>();
+  /* Claim what the complete scripts already use before looking for blocks to move, so none of them is taken apart. */
+  for (const want of goal.scripts) planScript(want, sprite, claimed);
   for (const want of goal.scripts) {
-    const plan = planScript(want, sprite.scripts);
+    const plan = planScript(want, sprite, claimed);
     if (plan) return plan;
   }
   return null;
@@ -183,8 +244,7 @@ function planSprite(goal: DemoGoal, sprite: SpriteView): DemoPlan | null {
 /** Whether a sprite is the one a step names: by id, by art or by art kind. */
 export const spriteMatches = (ref: string) => (s: { id: string; art: string; kind: string }): boolean => s.id === ref || s.art === ref || s.kind === ref;
 
-/** The next thing to show, given the program as it is now. */
-export function planDemo(goal: DemoGoal, sprites: readonly SpriteView[], selectedId: string | null): DemoPlan {
+function planCore(goal: DemoGoal, sprites: readonly SpriteView[], selectedId: string | null): DemoPlan {
   if (!sprites.length) return { kind: 'add-sprite', reason: 'none' };
   if (!goal.scripts.length) return { kind: 'add-sprite', reason: 'none' };
   const pool = goal.sprite ? sprites.filter(spriteMatches(goal.sprite)) : [...sprites];
@@ -206,9 +266,107 @@ export function planDemo(goal: DemoGoal, sprites: readonly SpriteView[], selecte
   return { kind: 'try', hat: goal.scripts[0].hat, spriteId: who.id };
 }
 
+/* ---------- doing what a plan shows, on plain data ---------- */
+
+let simId = 0;
+
+type Editable = { scripts: Script[]; loose?: Block[][] };
+
+/** Removes a loose or nested block and returns it. */
+function takeBlock(sprite: Editable, id: string | undefined): Block | null {
+  if (!id) return null;
+  for (const stack of sprite.loose ?? []) {
+    const i = stack.findIndex((b) => b.id === id);
+    if (i >= 0) return stack.splice(i, 1)[0];
+  }
+  const visit = (list: Block[]): Block | null => {
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].id === id) return list.splice(i, 1)[0];
+      const inner = visit(list[i].body) ?? visit(list[i].elseBody);
+      if (inner) return inner;
+    }
+    return null;
+  };
+  for (const sc of sprite.scripts) {
+    const found = visit(sc.body);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Puts a plan's block where it says, on a sprite's data. The tests use it to play the child; planDemo uses it to see whether a piece completes the program. */
+export function applyPlan(sprite: Editable, plan: DemoPlan): void {
+  if (plan.kind === 'hat') {
+    sprite.scripts.push({ hat: { ...structuredClone(plan.hat), id: `sim${++simId}`, body: [], elseBody: [] }, body: [] });
+    return;
+  }
+  if (plan.kind !== 'block' && plan.kind !== 'move') return;
+  let piece: Block;
+  if (plan.kind === 'move') {
+    const taken = takeBlock(sprite, plan.block.id);
+    if (!taken) throw new Error(`the plan moves a block that is not there: ${String(plan.block.id)}`);
+    piece = taken;
+  } else {
+    /* What the toolbox hands over is the block alone: the child fills in its mouth and menus. */
+    piece = { ...structuredClone(plan.block), id: `sim${++simId}`, body: [], elseBody: [] };
+  }
+  const { parent, kind } = plan.slot;
+  for (const sc of sprite.scripts) {
+    if (sc.hat.id === parent) {
+      sc.body.unshift(piece);
+      return;
+    }
+    const visit = (list: Block[]): boolean => {
+      for (let i = 0; i < list.length; i++) {
+        const b = list[i];
+        if (b.id === parent) {
+          if (kind === 'next') list.splice(i + 1, 0, piece);
+          else (kind === 'do' ? b.body : b.elseBody).unshift(piece);
+          return true;
+        }
+        if (visit(b.body) || visit(b.elseBody)) return true;
+      }
+      return false;
+    };
+    if (visit(sc.body)) return;
+  }
+  throw new Error(`the plan points at a block that is not there: ${String(parent)}`);
+}
+
+/** The next thing to show, given the program as it is now. A piece that finishes the program also says how to try it. */
+export function planDemo(goal: DemoGoal, sprites: readonly SpriteView[], selectedId: string | null): DemoPlan {
+  const plan = planCore(goal, sprites, selectedId);
+  if (plan.kind !== 'hat' && plan.kind !== 'block' && plan.kind !== 'move') return plan;
+  const after = structuredClone(sprites) as unknown as (SpriteView & Editable)[];
+  const mine = after.find((s) => s.id === selectedId);
+  if (!mine) return plan;
+  try {
+    applyPlan(mine, plan);
+  } catch {
+    return plan;
+  }
+  const next = planCore(goal, after, selectedId);
+  return next.kind === 'try' ? { ...plan, completes: { hat: next.hat, spriteId: next.spriteId } } : plan;
+}
+
 /* ---------- words ---------- */
 
 const keyLabel = (key: unknown): string => KEYS.find(([, v]) => v === key)?.[0] ?? String(key ?? '');
+
+/** What a block says on itself, or `null` when it is only pictures. */
+export function blockLabel(type: string): string | null {
+  if (type === 'a_flag' || type === 'f_flag') return 'la bandera';
+  const msg = (BLOCK_SPECS as Record<string, { msg: string } | undefined>)[type]?.msg;
+  const text = (msg ?? '').replace(/%\d+/g, '').replace(/\s+/g, ' ').replace(/[,\s]+$/, '').trim();
+  return text || null;
+}
+
+function where(slot: Slot): string {
+  const label = slot.parentType ? blockLabel(slot.parentType) : null;
+  if (!label) return slot.kind === 'next' ? 'abajo del bloque de arriba' : 'adentro del bloque';
+  if (slot.parentType === 'a_flag' || slot.parentType === 'f_flag') return 'debajo de la bandera';
+  return slot.kind === 'next' ? `debajo de «${label}»` : `adentro de «${label}»`;
+}
 
 export function describePlan(plan: DemoPlan): string {
   switch (plan.kind) {
@@ -221,8 +379,14 @@ export function describePlan(plan: DemoPlan): string {
       const apart = plan.reason === 'blocked' ? 'Este va en un programa aparte. ' : '';
       return `${apart}${key}Ahora poné algo abajo.`;
     }
-    case 'block':
-      return 'Así se pega el que sigue.';
+    case 'block': {
+      const label = blockLabel(plan.block.type);
+      return label ? `Pegá «${label}» ${where(plan.slot)}.` : 'Así se pega el que sigue.';
+    }
+    case 'move': {
+      const label = blockLabel(plan.block.type);
+      return label ? `Poné este «${label}» ${where(plan.slot)}.` : 'Poné este bloque donde va.';
+    }
     case 'try':
       return tryTarget(plan.hat, plan.spriteId).caption;
   }

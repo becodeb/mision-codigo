@@ -4,7 +4,8 @@
  * draws is a ghost on an overlay, so the child's program is never touched. `pointAt` just bounces the hand over
  * an element of the page. Browser only; the decisions live in demoPlan.ts.
  */
-import type { BlockType } from '../language/catalog.ts';
+import { BLOCK_SPECS } from '../language/spec.ts';
+import { CATEGORY_INFO } from '../language/toolbox.ts';
 import { describePlan, tryTarget, type DemoPlan, type Slot } from './demoPlan.ts';
 import type { BlockEditor } from './workspace.ts';
 
@@ -56,6 +57,15 @@ function overlay(root: HTMLElement): HTMLElement {
   return layer;
 }
 
+/** Puts the workspace view back where the child left it, once the hand has finished with it. */
+let restoreView: (() => void) | null = null;
+
+function putViewBack(): void {
+  const back = restoreView;
+  restoreView = null;
+  back?.();
+}
+
 /** Bumped by every new demo, so an older animation notices it was replaced and stops touching the page. */
 let running = 0;
 
@@ -80,6 +90,7 @@ function setCaption(layer: HTMLElement, text: string): void {
 export async function pointAt(deps: DemoDeps, selector: string, caption = ''): Promise<void> {
   const token = ++running;
   clearLayer(deps.root);
+  putViewBack();
   const el = resolvePoint(deps.root, selector);
   if (!el) return;
   el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -154,36 +165,101 @@ function begin(deps: DemoDeps, token: number, caption: string): Run {
 
 /** Ends an animation if it is still the current one: removes the overlay. */
 function finish(deps: DemoDeps, token: number): void {
-  if (token === running) clearLayer(deps.root);
+  if (token !== running) return;
+  clearLayer(deps.root);
+  putViewBack();
 }
 
-/** A free spot in the workspace for a new hat: below the last script, at the left margin. */
-function freeSpot(editor: BlockEditor, host: HTMLElement | null): { x: number; y: number } {
-  const hostRect = host?.getBoundingClientRect();
-  let bottom = 0;
+/** The part of the screen where the workspace shows blocks: inside the toolbox and the flyout, which reserve their own space. */
+function viewRect(editor: BlockEditor): DOMRect {
+  return editor.viewRect();
+}
+
+/** A free spot in the workspace for a new hat: below the last script, at the left margin of what is on screen. */
+function freeSpot(editor: BlockEditor): { x: number; y: number } {
+  const view = viewRect(editor);
+  let bottom = view.top + 10;
   let left: number | null = null;
   for (const b of editor.topBlocks()) {
     const r = b.getSvgRoot().getBoundingClientRect();
+    if (r.right < view.left || r.left > view.right) continue;
     bottom = Math.max(bottom, r.bottom);
     left = left === null ? r.left : Math.min(left, r.left);
   }
-  return { x: left ?? (hostRect?.left ?? 0) + 120, y: Math.min(bottom + 70, (hostRect?.bottom ?? 600) - 60) };
+  return { x: Math.max(left ?? view.left + 40, view.left + 16), y: Math.max(view.top + 20, Math.min(bottom + 50, view.bottom - 90)) };
 }
 
-/** Drags a block from the toolbox to a free spot (a new event) or to a connection of the child's own program. */
-async function dragDemo(deps: DemoDeps, type: BlockType, target: { slot: Slot } | { hat: true }, caption: string): Promise<void> {
+/** Moves the hand from where it is to what starts the program and presses it, without pressing it for real. */
+async function tryGesture(deps: DemoDeps, run: Run, token: number, how: ReturnType<typeof tryTarget>, from: { x: number; y: number }): Promise<void> {
+  const root = deps.root;
+  const el =
+    how.target === 'sprite' ? (root.querySelector<HTMLElement>(`.mc-stage .spr[data-id="${how.spriteId}"]`) ?? resolvePoint(root, 'stage'))
+    : how.target === 'keys' ? (resolvePoint(root, 'keys') ?? resolvePoint(root, 'stage'))
+    : resolvePoint(root, how.target);
+  setCaption(run.layer, how.caption);
+  deps.say(how.caption);
+  if (!el) {
+    await sleep(1500);
+    return;
+  }
+  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  await sleep(300);
+  if (token !== running) return;
+  const rb = el.getBoundingClientRect();
+  const tx = rb.left + rb.width / 2;
+  const ty = rb.top + rb.height / 2;
+  await tween(900, (t) => { const e = ease(t); run.setHand(lerp(from.x, tx, e), lerp(from.y, ty, e)); }, run.alive);
+  if (!run.alive()) return;
+  run.hand.classList.add('press');
+  deps.sfx('pop');
+  const ring = document.createElement('div');
+  ring.className = 'ring';
+  ring.style.left = `${tx}px`;
+  ring.style.top = `${ty}px`;
+  run.layer.appendChild(ring);
+  await sleep(900);
+  run.hand.classList.remove('press');
+  await sleep(600);
+}
+
+type Drag = Extract<DemoPlan, { kind: 'hat' | 'block' | 'move' }>;
+
+/**
+ * Drags a block to its place: from the toolbox for a new block or event, or from the workspace for a block the
+ * child already has. The ghost lands on the real connection (the mouth of a C block, the end of a stack). When
+ * the piece completes the program, the hand then shows how to try it.
+ */
+async function dragDemo(deps: DemoDeps, plan: Drag, caption: string): Promise<void> {
   const editor = deps.editor;
   if (!editor) return;
   const root = deps.root;
   const token = ++running;
   clearLayer(root);
-  if (editor.tier === 'text') {
-    editor.openCategoryOf(type);
-    await sleep(350);
+  putViewBack();
+  const type = plan.kind === 'hat' ? plan.hat.type : plan.block.type;
+  let src: ReturnType<BlockEditor['flyoutBlock']>;
+  if (plan.kind === 'move') {
+    src = editor.blockById(plan.block.id) ?? undefined;
+    if (src) {
+      restoreView = editor.reveal(src);
+      await sleep(150);
+    }
+  } else {
+    /* A category that is open stays open: the hand only clicks one when it is not the one showing. */
+    if (editor.tier === 'text' && editor.openCategoryOf(type)) await sleep(350);
     if (token !== running) return;
+    src = editor.flyoutBlock(type);
+    if (src && !editor.showInFlyout(src)) src = undefined;
   }
-  const src = editor.flyoutBlock(type);
-  if (!src || !editor.showInFlyout(src)) {
+  if (token !== running) return;
+  if (!src) {
+    /* A block that names a variable or a list is not offered until one exists: show where to make it. */
+    const cat = (BLOCK_SPECS as Record<string, { cat?: keyof typeof CATEGORY_INFO }>)[type]?.cat;
+    if (editor.tier === 'text' && (cat === 'variables' || cat === 'lists')) {
+      if (editor.openCategoryNamed(CATEGORY_INFO[cat].label)) await sleep(350);
+      await pointAt(deps, '.blocklyFlyoutButton', cat === 'variables' ? 'Primero creá una variable con este botón.' : 'Primero creá una lista con este botón.');
+      return;
+    }
     await pointAt(deps, 'toolbox', caption);
     return;
   }
@@ -192,17 +268,17 @@ async function dragDemo(deps: DemoDeps, type: BlockType, target: { slot: Slot } 
     await sleep(450);
     if (token !== running) return;
   }
-  const host = root.querySelector<HTMLElement>('.mc-blockly');
-  if ('slot' in target) {
-    const owner = editor.blockById(target.slot.parent);
+  if (plan.kind !== 'hat') {
+    const owner = editor.blockById(plan.slot.parent);
     if (owner) {
-      editor.reveal(owner);
-      await sleep(500);
+      const back = editor.reveal(owner);
+      restoreView ??= back;
+      await sleep(150);
       if (token !== running) return;
     }
   }
-  const dest = ('slot' in target ? slotPoint(editor, target.slot) : null) ?? freeSpot(editor, host);
   const o = originOf(src);
+  const dest = (plan.kind !== 'hat' ? slotPoint(editor, plan.slot) : null) ?? freeSpot(editor);
   const run = begin(deps, token, '');
   const { layer, hand, setHand, alive } = run;
 
@@ -215,7 +291,7 @@ async function dragDemo(deps: DemoDeps, type: BlockType, target: { slot: Slot } 
   svg.style.overflow = 'visible';
   const clone = src.getSvgRoot().cloneNode(true) as SVGGElement;
   clone.removeAttribute('transform');
-  clone.classList.remove('mc-glow');
+  clone.classList.remove('mc-glow', 'mc-running');
   svg.appendChild(clone);
   ghost.appendChild(svg);
   const place = (x: number, y: number): void => { ghost.style.transform = `translate(${(x + o.bb.x * o.sc).toFixed(1)}px, ${(y + o.bb.y * o.sc).toFixed(1)}px)`; };
@@ -224,6 +300,7 @@ async function dragDemo(deps: DemoDeps, type: BlockType, target: { slot: Slot } 
   const hy = window.innerHeight + 60;
   const grabX = o.r.left + Math.min(28, o.r.width / 2);
   const grabY = o.r.top + o.r.height / 2;
+  let rest = { x: grabX, y: grabY };
   await tween(750, (t) => { const e = ease(t); setHand(lerp(hx, grabX, e), lerp(hy, grabY, e)); }, alive);
   if (alive()) {
     hand.classList.add('press');
@@ -241,12 +318,13 @@ async function dragDemo(deps: DemoDeps, type: BlockType, target: { slot: Slot } 
       setHand(x + dx, y + dy);
     }, alive);
     hand.classList.remove('press');
+    rest = { x: dest.x + dx, y: dest.y + dy };
     if (alive()) {
       deps.sfx('tick');
       ghost.classList.add('dropped');
       setCaption(layer, caption);
       deps.say(caption);
-      if ('hat' in target) {
+      if (plan.kind === 'hat') {
         /* An empty mouth under the new hat says «something goes here». */
         const slot = document.createElement('div');
         slot.className = 'slot';
@@ -257,12 +335,14 @@ async function dragDemo(deps: DemoDeps, type: BlockType, target: { slot: Slot } 
         if (alive()) {
           const sx = dest.x + 56;
           const sy = dest.y + o.r.height + 22;
-          await tween(700, (t) => { const e = ease(t); setHand(lerp(dest.x + dx, sx, e), lerp(dest.y + dy, sy, e) + Math.abs(Math.sin(t * Math.PI * 2)) * 10); }, alive);
-          await sleep(1200);
+          await tween(700, (t) => { const e = ease(t); setHand(lerp(rest.x, sx, e), lerp(rest.y, sy, e) + Math.abs(Math.sin(t * Math.PI * 2)) * 10); }, alive);
+          rest = { x: sx, y: sy };
+          await sleep(plan.completes ? 600 : 1200);
         }
       } else {
-        await sleep(1300);
+        await sleep(plan.completes ? 900 : 1300);
       }
+      if (alive() && plan.completes) await tryGesture(deps, run, token, tryTarget(plan.completes.hat, plan.completes.spriteId), rest);
     }
   }
   ghost.classList.add('fade');
@@ -270,43 +350,12 @@ async function dragDemo(deps: DemoDeps, type: BlockType, target: { slot: Slot } 
   finish(deps, token);
 }
 
-/** Moves the hand to the thing that starts the program and presses it, without pressing it for real. */
+/** Shows how to try the finished program: the hand goes to the flag, the sprite or the key and presses it. */
 async function tryDemo(deps: DemoDeps, plan: Extract<DemoPlan, { kind: 'try' }>): Promise<void> {
-  const root = deps.root;
   const token = ++running;
-  clearLayer(root);
-  const how = tryTarget(plan.hat, plan.spriteId);
-  const caption = how.caption;
-  const pick = (): HTMLElement | null => {
-    if (how.target === 'sprite') return root.querySelector<HTMLElement>(`.mc-stage .spr[data-id="${plan.spriteId}"]`) ?? resolvePoint(root, 'stage');
-    if (how.target === 'keys') return resolvePoint(root, 'keys') ?? resolvePoint(root, 'stage');
-    return resolvePoint(root, how.target);
-  };
-  const el = pick();
-  if (!el) return;
-  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  await sleep(300);
-  if (token !== running) return;
-  const run = begin(deps, token, caption);
-  deps.say(caption);
-  const rb = el.getBoundingClientRect();
-  const tx = rb.left + rb.width / 2;
-  const ty = rb.top + rb.height / 2;
-  const hx = window.innerWidth * 0.5;
-  const hy = window.innerHeight + 60;
-  await tween(900, (t) => { const e = ease(t); run.setHand(lerp(hx, tx, e), lerp(hy, ty, e)); }, run.alive);
-  if (run.alive()) {
-    run.hand.classList.add('press');
-    deps.sfx('pop');
-    const ring = document.createElement('div');
-    ring.className = 'ring';
-    ring.style.left = `${tx}px`;
-    ring.style.top = `${ty}px`;
-    run.layer.appendChild(ring);
-    await sleep(900);
-    run.hand.classList.remove('press');
-    await sleep(700);
-  }
+  clearLayer(deps.root);
+  const run = begin(deps, token, '');
+  await tryGesture(deps, run, token, tryTarget(plan.hat, plan.spriteId), { x: window.innerWidth * 0.5, y: window.innerHeight + 60 });
   finish(deps, token);
 }
 
@@ -319,9 +368,9 @@ export async function runDemo(deps: DemoDeps, plan: DemoPlan): Promise<void> {
     case 'select-sprite':
       return pointAt(deps, resolvePoint(deps.root, `[data-sprite="${plan.spriteId}"]`) ? `[data-sprite="${plan.spriteId}"]` : 'sprites', text);
     case 'hat':
-      return dragDemo(deps, plan.hat.type, { hat: true }, text);
     case 'block':
-      return dragDemo(deps, plan.block.type, { slot: plan.slot }, text);
+    case 'move':
+      return dragDemo(deps, plan, text);
     case 'try':
       return tryDemo(deps, plan);
   }
@@ -331,4 +380,5 @@ export async function runDemo(deps: DemoDeps, plan: DemoPlan): Promise<void> {
 export function cancelDemo(root: HTMLElement): void {
   running++;
   clearLayer(root);
+  putViewBack();
 }

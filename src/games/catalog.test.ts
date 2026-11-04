@@ -5,7 +5,7 @@ import type { BlockType } from '../language/catalog.ts';
 import { flattenScripts } from '../language/convert.ts';
 import type { Block, ProjectProgram, Script, SpriteProgram } from '../language/ir.ts';
 import { Game } from '../runtime/testing.ts';
-import { planDemo, type DemoPlan, type SpriteView } from '../studio/demoPlan.ts';
+import { applyPlan, planDemo, type DemoPlan, type SpriteView } from '../studio/demoPlan.ts';
 import { GAMES, MIN_STEPS } from './catalog.ts';
 import { blocksOfProject } from './checks.ts';
 import { proveGame, stepsOf } from './proof.ts';
@@ -52,38 +52,6 @@ function markIds(scripts: Script[], counter: { n: number }): void {
     mark(sc.hat);
     sc.body.forEach(mark);
   }
-}
-
-/** Does with the IR what the child does with the mouse after the hand showed it: the block lands where the plan says. */
-function applyPlan(scripts: Script[], plan: DemoPlan): void {
-  if (plan.kind === 'hat') {
-    scripts.push({ hat: { ...clone(plan.hat), id: undefined, body: [], elseBody: [] }, body: [] });
-    return;
-  }
-  if (plan.kind !== 'block') return;
-  /* What the toolbox hands over is the block alone: the child fills in its mouth and menus. */
-  const piece: Block = { ...clone(plan.block), id: undefined, body: [], elseBody: [] };
-  const { parent, kind } = plan.slot;
-  for (const sc of scripts) {
-    if (sc.hat.id === parent) {
-      sc.body.unshift(piece);
-      return;
-    }
-    const visit = (list: Block[]): boolean => {
-      for (let i = 0; i < list.length; i++) {
-        const b = list[i];
-        if (b.id === parent) {
-          if (kind === 'next') list.splice(i + 1, 0, piece);
-          else (kind === 'do' ? b.body : b.elseBody).unshift(piece);
-          return true;
-        }
-        if (visit(b.body) || visit(b.elseBody)) return true;
-      }
-      return false;
-    };
-    if (visit(sc.body)) return;
-  }
-  throw new Error(`the plan points at a block that is not there: ${String(parent)}`);
 }
 
 /** The setup plus the sprites the child adds in the solution, without their code. */
@@ -186,13 +154,20 @@ describe('catalog', () => {
         const goal = { scripts: goalScripts(step), sprite: step.demoSprite, each: step.demoEach };
         let plan: DemoPlan | null = null;
         let presses = 0;
+        let last: Extract<DemoPlan, { completes: unknown }> | null = null;
         for (; presses < 40; presses++) {
           for (const sp of program.sprites) markIds(sp.scripts, counter);
           plan = planDemo(goal, program.sprites.map(viewOf), selected);
-          if (plan.kind === 'try') break;
+          if (plan.kind === 'try') {
+            /* The gesture that tries the program belongs to the piece that finished it, and to no earlier one. */
+            if (last && last.completes === null) failures.push(`${step.id}: the last piece did not say it completes the program`);
+            break;
+          }
+          if (last && last.completes !== null) failures.push(`${step.id}: a piece said it completes the program but more were needed`);
+          last = 'completes' in plan ? plan : null;
           if (plan.kind === 'select-sprite') selected = plan.spriteId;
           else if (plan.kind === 'add-sprite') throw new Error(`${step.id}: the hand asks for a sprite the solution never adds`);
-          else applyPlan(program.sprites.find((sp) => sp.id === selected)!.scripts, plan);
+          else applyPlan(program.sprites.find((sp) => sp.id === selected)!, plan);
         }
         if (plan?.kind !== 'try') {
           failures.push(`${step.id}: the hand never finished (40 presses)`);
