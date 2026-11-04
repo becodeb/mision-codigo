@@ -183,7 +183,8 @@
 }
 
 .t-search {
-  min-width: 260px;
+  flex: 1 1 220px;
+  min-width: 0;
 }
 
 .t-textarea {
@@ -419,4 +420,344 @@ code {
   background: var(--accent-soft);
   font-family: var(--font-hud);
   font-size: 0.95em;
+}
+
+/* Level buttons: five big targets in the team colors. The current level is filled. */
+.t-lv-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.t-lv {
+  min-height: 52px;
+  padding: 0;
+  border: 3px solid var(--team);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: 800 24px/1 var(--font-display);
+  touch-action: manipulation;
+}
+
+.t-lv[aria-pressed='true'] {
+  background: var(--team);
+  color: var(--on);
+  box-shadow: 0 0 0 3px var(--ink);
+  position: relative;
+  z-index: 1;
+}
+
+.t-lv:active {
+  transform: translateY(1px);
+}
+
+/* Quick add */
+.t-quick {
+  gap: 10px;
+}
+
+.t-quick h2 {
+  font-size: 18px;
+}
+
+.t-quick-top {
+  display: flex;
+  gap: 8px;
+}
+
+.t-quick-top .t-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.t-quick-go {
+  flex: 0 0 auto;
+}
+
+.t-quick-bottom {
+  display: grid;
+  gap: 8px;
+}
+
+.t-ok {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #eef9ee;
+  color: var(--go-deep);
+  font-weight: 700;
+}
+
+/* Roster list */
+.t-listbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.t-seg2 {
+  display: inline-flex;
+  border: 2px solid var(--line-2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.t-seg2 button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  background: var(--card);
+  color: var(--ink);
+  font: 700 15px/1 var(--font-body);
+}
+
+.t-seg2 button + button {
+  border-left: 2px solid var(--line-2);
+}
+
+.t-seg2 button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  box-shadow: inset 0 -4px 0 var(--accent);
+}
+
+.t-notice {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--go-deep);
+  font-weight: 700;
+}
+
+.t-stus {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.t-stu {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-left: 8px solid var(--team);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.t-stu-id {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+}
+
+.t-stu-name {
+  overflow-wrap: anywhere;
+  font: 800 20px/1.2 var(--font-display);
+}
+
+.t-stu-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.t-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--team);
+  border: 2px solid var(--ink);
+}
+
+.t-stu-more {
+  min-width: 48px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 22px;
+}
+
+.t-stu > .t-lv-row,
+.t-stu > .t-row-error,
+.t-stu-edit {
+  grid-column: 1 / -1;
+}
+
+.t-stu-edit {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 2px dashed var(--line);
+}
+
+.t-stu-edit .t-input {
+  width: 100%;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.t-stu-edit .t-btn {
+  min-height: 44px;
+}
+
+.t-stu-edit .t-confirm {
+  justify-content: flex-start;
+}
+
+.t-lvgroup {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.t-lvgroup h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 800 18px/1.2 var(--font-display);
+}
+
+.t-fold > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.t-fold-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+@media (min-width: 760px) {
+  .t-stu {
+    grid-template-columns: minmax(160px, 1fr) minmax(300px, 360px) auto;
+    align-items: center;
+  }
+
+  .t-stu > .t-lv-row {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .t-stu-more {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .t-quick-bottom {
+    grid-template-columns: minmax(160px, 220px) minmax(300px, 360px);
+    align-items: center;
+  }
+}
+
+/* Phones: the panel is used standing up, with one hand. */
+@media (max-width: 640px) {
+  .t-app {
+    font-size: 16px;
+  }
+
+  .t-top {
+    gap: 4px 10px;
+    padding: 6px 12px 0;
+  }
+
+  .t-brand {
+    flex: 1 1 auto;
+    gap: 8px;
+    min-width: 0;
+    font-size: 19px;
+  }
+
+  .t-brand span {
+    font-size: 14px;
+  }
+
+  .t-top-end {
+    gap: 10px;
+  }
+
+  .t-link {
+    display: none;
+  }
+
+  .t-top-end .t-btn {
+    min-height: 44px;
+  }
+
+  .t-tabs {
+    order: 3;
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+
+  .t-tab {
+    flex: 1 1 auto;
+    min-height: 48px;
+    padding: 0 6px;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .t-main {
+    padding: 12px 12px 60px;
+  }
+
+  .t-card {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 12px;
+  }
+
+  .t-card h2 {
+    font-size: 20px;
+  }
+
+  .t-input,
+  .t-textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .t-btn {
+    min-height: 44px;
+  }
+
+  .t-tab,
+  .t-seg-btn {
+    min-height: 48px;
+  }
+
+  .t-seg-btn {
+    padding: 0 18px;
+    font-size: 20px;
+  }
+
+  .t-segment {
+    flex-wrap: wrap;
+  }
+
+  .t-seg2 {
+    flex: 1 1 100%;
+  }
+
+  .t-seg2 button {
+    flex: 1;
+  }
+
+  .t-stu-name {
+    font-size: 19px;
+  }
+
+  .t-login-card {
+    padding: 18px;
+  }
 }

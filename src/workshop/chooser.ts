@@ -76,11 +76,4 @@ export function nextGame(current: GameDefinition | null, catalog: CatalogSource 
   return index >= 0 && index < list.length - 1 ? list[index + 1] : null;
 }
 
-/** Accent colors of the teams, used on the greeting. Teachers never see these as the level. */
-export const TEAM_COLORS: Record<LevelId, string> = {
-  1: '#FFC21A',
-  2: '#4C97FF',
-  3: '#2DB34A',
-  4: '#F0524F',
-  5: '#7C4DFF',
-};
+export { TEAM_COLORS } from './teamColors.ts';
