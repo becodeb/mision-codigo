@@ -1,0 +1,422 @@
+/* Teacher panel: adults on a laptop. Compact and plain, same palette as the workshop. */
+.t-app {
+  min-height: 100dvh;
+  font-size: 15px;
+}
+
+.t-center {
+  text-align: center;
+  padding: 80px 16px;
+}
+
+.t-muted {
+  color: var(--ink-soft);
+}
+
+.t-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 10px max(20px, env(safe-area-inset-left, 0px));
+  background: var(--card);
+  border-bottom: 2px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.t-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.t-brand span {
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+
+.t-tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.t-tab {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 4px solid transparent;
+  background: transparent;
+  font: 700 16px/1 var(--font-body);
+  color: var(--ink-soft);
+}
+
+.t-tab:hover {
+  color: var(--ink);
+}
+
+.t-tab.on {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.t-top-end {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.t-link {
+  color: var(--ink-soft);
+}
+
+.t-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px max(20px, env(safe-area-inset-left, 0px)) 60px;
+}
+
+.t-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.t-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+}
+
+.t-card h2 {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.t-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.t-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.t-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+/* Controls */
+.t-btn {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 2px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  font: 700 15px/1 var(--font-body);
+}
+
+.t-btn:hover {
+  border-color: var(--ink-soft);
+}
+
+.t-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent-deep);
+  color: #fff;
+}
+
+.t-btn-primary:hover {
+  border-color: var(--ink);
+}
+
+.t-btn-danger {
+  background: var(--stop);
+  border-color: var(--stop-deep);
+  color: #fff;
+}
+
+.t-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.t-input,
+.t-select,
+.t-textarea {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 2px solid var(--line-2);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 15px;
+}
+
+.t-select {
+  min-height: 44px;
+  padding-right: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.t-input:focus,
+.t-select:focus,
+.t-textarea:focus {
+  border-color: var(--accent);
+}
+
+.t-search {
+  min-width: 260px;
+}
+
+.t-textarea {
+  width: 100%;
+  min-height: 190px;
+  padding: 10px;
+  font: 15px/1.5 var(--font-hud);
+  resize: vertical;
+}
+
+.t-field {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.t-field .t-input {
+  font-weight: 400;
+}
+
+.t-form-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Messages */
+.t-alert {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #ffe6e4;
+  color: #8f2220;
+  font-weight: 700;
+}
+
+.t-note {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fff1da;
+  font-weight: 700;
+}
+
+.t-empty {
+  padding: 16px;
+  border: 2px dashed var(--line-2);
+  border-radius: 10px;
+  color: var(--ink-soft);
+}
+
+.t-result {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eef9ee;
+}
+
+.t-errors {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.t-row-error {
+  color: #8f2220;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* Tables */
+.t-scroll {
+  overflow-x: auto;
+}
+
+.t-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.t-table th,
+.t-table td {
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line);
+}
+
+.t-table thead th {
+  font-size: 14px;
+  color: var(--ink-soft);
+  border-bottom: 2px solid var(--line-2);
+  white-space: nowrap;
+}
+
+.t-table tbody th {
+  font-weight: 700;
+}
+
+.t-table .t-input {
+  width: 100%;
+  min-width: 140px;
+}
+
+.t-num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.t-actions {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.t-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-weight: 700;
+}
+
+.t-col-on {
+  background: var(--accent-soft);
+}
+
+.t-games,
+.t-stuck,
+.t-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.t-stuck {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.t-list {
+  display: grid;
+  gap: 6px;
+  max-width: 78ch;
+}
+
+.t-badge {
+  display: inline-block;
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--line);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.t-badge-ok {
+  background: #d9f3dc;
+  color: var(--go-deep);
+}
+
+/* Class switch */
+.t-segment {
+  display: inline-flex;
+  gap: 12px;
+}
+
+.t-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 28px;
+  border: 3px solid var(--line-2);
+  border-radius: 14px;
+  background: var(--card);
+  font: 800 22px/1 var(--font-display);
+}
+
+.t-seg-btn.on {
+  border-color: var(--accent-deep);
+  background: var(--accent-soft);
+  cursor: default;
+}
+
+.t-seg-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: 700 13px/1.2 var(--font-body);
+}
+
+/* Login */
+.t-login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.t-login-card {
+  width: min(400px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 26px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 6px 0 #f1d7b4;
+}
+
+.t-login-card h1 {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.t-login-card .t-input {
+  width: 100%;
+  min-height: 46px;
+}
+
+.t-back {
+  font-size: 14px;
+}
+
+code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  font-family: var(--font-hud);
+  font-size: 0.95em;
+}
