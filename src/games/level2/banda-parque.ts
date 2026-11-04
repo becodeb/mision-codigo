@@ -9,7 +9,8 @@ import {
 } from '../checks.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 
-const SETUP = project('teatro', []);
+// Starts on a place a band is unlikely to pick, so tapping the marked one is never the natural choice.
+const SETUP = project('espacio', []);
 
 const DANCE: BlockType[] = ['f_jump', 'f_spin', 'f_grow', 'f_shrink', 'f_face'];
 
@@ -52,8 +53,8 @@ export const bandaParque: GameDefinition = {
         {
           id: 'escena',
           title: 'Elegí el lugar y el músico',
-          text: '¡Vamos a armar una banda! Primero elegí un lugar con los dibujitos de abajo. Después tocá el botón con el más y elegí a tu primer músico.',
-          hints: ['Los dos pasos son importantes: un lugar y un músico.'],
+          text: '¡Vamos a armar una banda! Primero elegí un lugar con los dibujitos de abajo: tiene que ser otro, que no tenga el borde de color. Después tocá el botón con el más y elegí a tu primer músico.',
+          hints: ['Los dos pasos son importantes: un lugar distinto al marcado y un músico.'],
           point: 'add-sprite',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop && spriteCount(ctx) > SETUP.sprites.length,
         },
@@ -69,8 +70,8 @@ export const bandaParque: GameDefinition = {
         {
           id: 'melodia',
           title: 'Una melodía',
-          text: 'Una nota sola no es una canción. Armá una melodía: cinco notas o más, y que no sean todas la misma.',
-          hints: ['Tocá el dibujito de cada nota para cambiarla por otra.'],
+          text: 'Una nota sola no es una canción. Armá una melodía: cinco notas o más, con tres notas distintas por lo menos. Después tocá al músico.',
+          hints: ['Tocá el dibujito de cada nota para cambiarla por otra.', 'Tres notas distintas son, por ejemplo, do, mi y sol.'],
           demo: 'f_note',
           check: (ctx) =>
             ctx.program.sprites.some((s) => ctx.stats.ranBy(s.id, 'note') && ctx.stats.ranHatBy(s.id, 'click') && tapNotes(s).length >= 5 && new Set(tapNotes(s)).size >= 3),
@@ -128,12 +129,12 @@ export const bandaParque: GameDefinition = {
     },
     {
       title: 'Estribillo',
-      goal: 'Armás un estribillo que se repite con las vueltas.',
+      goal: 'Armás el estribillo, la parte de la canción que se repite, con las vueltas.',
       steps: [
         {
           id: 'vueltas',
-          title: 'Un estribillo',
-          text: 'Los estribillos se repiten. Usá las vueltas, el bloque de flechitas que giran: poné dos o tres notas adentro y que se repitan.',
+          title: 'La parte que se repite',
+          text: 'El estribillo es la parte de la canción que se repite. Usá las vueltas, el bloque de flechitas que giran: poné dos o tres notas adentro. Después tocá al músico para oírlo.',
           hints: [
             'Las vueltas repiten todo lo que tienen adentro.',
             'Poné notas distintas adentro, así se oye un estribillo.',
@@ -156,8 +157,8 @@ export const bandaParque: GameDefinition = {
         {
           id: 'coro',
           title: 'Un coro',
-          text: 'Que no cante uno solo. Hacé que al menos dos músicos usen las vueltas en su melodía.',
-          hints: ['Elegí a otro músico y poné las vueltas en su canción.'],
+          text: 'Que no cante uno solo. Hacé que al menos dos músicos usen las vueltas en su melodía. Después tocá a cada uno.',
+          hints: ['Elegí a otro músico y poné las vueltas en su canción.', 'Tocá a los dos músicos en el escenario, así las vueltas suenan.'],
           example: [{ sprite: 'Músico dos', scripts: [fClick(fRepeat(2, fNote('fa'), fNote('la')))] }],
           check: (ctx) => chorusSingers(ctx, 1, 1).length >= 2,
         },
@@ -170,7 +171,7 @@ export const bandaParque: GameDefinition = {
         {
           id: 'director',
           title: 'Sumá un director',
-          text: 'Hace falta un director, un cuarto personaje. Cuando lo tocás, manda un sobre de color.',
+          text: 'Hace falta un director, un cuarto personaje. Cuando lo tocás, manda un sobre de color. Después tocalo.',
           hints: [
             'Sumá al director con el botón del más.',
             'El director usa la manito y el sobre que se manda.',
@@ -244,7 +245,7 @@ export const bandaParque: GameDefinition = {
     },
     {
       title: 'Dos escenas',
-      text: 'Hacé que el concierto empiece en un lugar y termine en otro, con el cartel del paisaje.',
+      text: 'Hacé que el concierto empiece en un lugar y termine en otro, con «cambiar de lugar».',
     },
   ],
   solution: {

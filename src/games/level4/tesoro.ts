@@ -5,7 +5,7 @@ import {
   sayFor, score, send, setScore, sound, sprite, stopOthers, touching, win,
 } from '../../language/ir.ts';
 import type { ScriptRef } from '../checks.ts';
-import { PLACES, blocksInList, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount } from '../checks.ts';
+import { PLACES, blocksInList, chosenBackdrop, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount } from '../checks.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import { Pilot, centerOf, touchingNow } from './autopilot.ts';
 
@@ -35,12 +35,23 @@ function touchDetectors(ctx: StepContext): { ref: ScriptRef; key: string }[] {
   return out;
 }
 
-/** Touch detectors that end up taking a point away and sending the explorer back, directly or through a message. */
+/** Messages sent when the explorer finds the treasure. A penalty that reused one would also fire on every find. */
+function findMessages(ctx: StepContext): Set<string> {
+  const finds = touchScripts(ctx).filter((r) => scoresBy(r, 1));
+  return new Set(finds.flatMap((r) => refBlocks(r).filter((b) => b.type === 'a_send').map((b) => String(b.fields.M))));
+}
+
+/**
+ * Touch detectors that end up taking a point away and sending the explorer back, directly or through a message.
+ * The detector must not be the one that rewards the treasure, and a message must be a different one from the treasure's,
+ * with its receiving script already started: that is the proof that the penalty ran. A penalty written straight into a
+ * «cuando toque» has no such proof, because the language does not record a point being taken away.
+ */
 function penalties(ctx: StepContext): { ref: ScriptRef; key: string }[] {
+  const found = findMessages(ctx);
   const takes = (ref: ScriptRef): boolean => scoresBy(ref, -1) && refHas(ref, ['a_goto']);
-  return touchDetectors(ctx).filter(
-    ({ ref }) => takes(ref) || messageReaches(ctx, [ref], takes),
-  );
+  const lands = (ref: ScriptRef): boolean => takes(ref) && !found.has(String(ref.script.hat.fields.M)) && ctx.stats.ranHatBy(ref.sprite.id, 'recv');
+  return touchDetectors(ctx).filter(({ ref }) => !scoresBy(ref, 1) && (takes(ref) || messageReaches(ctx, [ref], lands)));
 }
 
 /** The largest «mover» speed inside the «por siempre» of a script. */
@@ -66,8 +77,8 @@ export const tesoro: GameDefinition = {
         {
           id: 'escena',
           title: 'Elegí el lugar',
-          text: 'La búsqueda empieza en algún lugar. Elegí el escenario: tocá uno de los lugares.',
-          hints: ['Mirá los escenarios de abajo. Tocá el que más te guste.'],
+          text: 'La búsqueda empieza en algún lugar. Elegí el escenario: tocá uno que no tenga el borde de color.',
+          hints: ['Mirá los escenarios de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
           point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
@@ -135,7 +146,7 @@ export const tesoro: GameDefinition = {
           text: 'El explorador tiene que decir en voz alta cuántos tesoros lleva. Hay un bloque «puntos» que se puede poner donde va un texto.',
           hints: [
             'Usá «decir … por … segundos» y poné el bloque «puntos» en el lugar del texto.',
-            'Ponelo al final del programa del tesoro, después de avisar al tesoro.',
+            'Ponelo al final del programa «cuando toque a tesoro» del explorador, después de avisar al tesoro.',
           ],
           unlock: ['a_sayfor', 'v_score'],
           example: [{ sprite: 'Explorador', scripts: [onTouching('tesoro', addScore(1), send('m1'), sayFor(score(), 0.6))] }],
@@ -173,11 +184,12 @@ export const tesoro: GameDefinition = {
         {
           id: 'castigo',
           title: 'Si te toca, perdés un punto',
-          text: 'Si el guardia toca al explorador, el explorador pierde un punto y vuelve a donde empezó. Probalo dejando que te toque.',
+          text: 'Si el guardia toca al explorador, el explorador pierde un punto y vuelve a donde empezó. Usá un mensaje distinto al del tesoro. Probalo dejando que te toque.',
           hints: [
             'El guardia puede mirar todo el tiempo si está tocando al explorador, con «si … entonces» y «¿tocando …?» adentro de su «por siempre».',
             'Un personaje no puede mover a otro: el guardia le manda un mensaje al explorador.',
             'El explorador, al recibirlo, suma un número negativo a los puntos y vuelve al inicio con «ir a x: y:».',
+            'Ojo con el mensaje: el tesoro ya usa uno (por ejemplo m1) y el menú arranca en m1. Si el guardia manda el mismo, cada tesoro te va a dar un punto y después te lo va a sacar. Elegí otro, como m2.',
           ],
           unlock: ['a_goto', 'a_if', 'v_touching'],
           example: [
@@ -214,7 +226,7 @@ export const tesoro: GameDefinition = {
           text: 'Cuando juntes 5 puntos, el juego tiene que cambiar: otro escenario y un mensaje de «fase 2» para todos. Jugá hasta que pase.',
           hints: [
             'Hay un bloque que empieza cuando los puntos llegan a un número.',
-            'Adentro: cambiar el escenario y enviar «fase 2».',
+            'Adentro: cambiar el escenario y enviar «fase 2». Elegí un escenario nuevo: el parque ya viene puesto, así que ese no cuenta.',
           ],
           unlock: ['a_points', 'a_backdrop'],
           example: [{ sprite: 'Explorador', scripts: [onPoints(5, backdrop('ciudad'), send('p2'))] }],
@@ -224,22 +236,23 @@ export const tesoro: GameDefinition = {
                 numField(r.script.hat, 'N') >= 3 &&
                 numField(r.script.hat, 'N') <= 8 &&
                 refHas(r, ['a_send']) &&
-                refBlocks(r).some((b) => b.type === 'a_backdrop' && b.fields.B !== ctx.program.backdrop),
+                refBlocks(r).some((b) => b.type === 'a_backdrop' && chosenBackdrop(ctx, b)),
             ) && ctx.stats.ranHat('points'),
         },
         {
           id: 'veloz',
           title: 'Guardias más veloces',
-          text: 'En la fase 2 los guardias patrullan más rápido. Cuando reciban el mensaje, tienen que dejar de hacer lo de antes y empezar un patrullaje nuevo, más veloz.',
+          text: 'En la fase 2 los dos guardias patrullan más rápido. Cuando reciban el mensaje, cada uno tiene que dejar de hacer lo de antes y empezar un patrullaje nuevo, más veloz. Jugá hasta que llegues a la fase 2 para verlo.',
           hints: [
             'Hay un bloque que apaga los otros programas del mismo personaje.',
             'Primero apagá lo anterior; después un «por siempre» nuevo con más pasos.',
             'Si no apagás lo anterior, los dos programas van a querer mover al guardia a la vez.',
+            'Es lo mismo para los dos guardias.',
           ],
           unlock: ['a_stopothers'],
           example: [{ sprite: 'Guardia', scripts: [onFlag(forever(move(3), bounce())), onReceive('p2', stopOthers(), forever(move(6), bounce()))] }],
           check: (ctx) =>
-            ctx.program.sprites.some((s) => {
+            ctx.program.sprites.filter((s) => {
               const slow = Math.max(0, ...s.scripts.filter((sc) => sc.hat.type === 'a_flag').map((sc) => speedOf(sc.body)));
               return s.scripts.some(
                 (sc) =>
@@ -248,7 +261,7 @@ export const tesoro: GameDefinition = {
                   speedOf(sc.body) > slow &&
                   messageReaches(ctx, refsOfHat(ctx, 'a_points'), (r) => r.script === sc),
               ) && ctx.stats.ranHatBy(s.id, 'recv');
-            }),
+            }).length >= 2,
         },
         {
           id: 'mortal',
@@ -275,6 +288,8 @@ export const tesoro: GameDefinition = {
             'Es otro bloque que empieza cuando los puntos llegan a un número.',
             'Adentro va el bloque de ganar.',
             'Esquivá a los guardias: en la fase 2 si te tocan perdés.',
+            'Si no podés ganar, hacé más lentos a los guardias de la fase 2: bajá los pasos de su «mover» (por ejemplo de 6 a 4).',
+            'También podés bajar la meta de 10 a 8, pero no a menos de 7 y siempre más que los puntos de la fase 2.',
           ],
           unlock: ['a_win'],
           example: [{ sprite: 'Explorador', scripts: [onPoints(10, sayFor('¡Encontraste el tesoro!', 1), win())] }],

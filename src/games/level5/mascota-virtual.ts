@@ -29,6 +29,22 @@ function drains(ctx: StepContext): string[] {
   return [...new Set(names)].filter((n) => declared(ctx).includes(n));
 }
 
+/** Variables that go down inside a loop that waits, but only behind a comparison that reads that same variable: «si comida > 0, restar uno». */
+function guardedDrains(ctx: StepContext): string[] {
+  return placed(ctx)
+    .filter(({ block }) => LOOPS.includes(block.type) && inside(block).some((x) => x.type === 'a_wait'))
+    .flatMap(({ block }) =>
+      inside(block)
+        .filter((b) => BRANCHES.includes(b.type) && !!b.inputs.C && holds([b.inputs.C], COMPARES))
+        .flatMap((b) =>
+          inside(b)
+            .filter(lowers)
+            .map(nameOf)
+            .filter((n) => readNames([b.inputs.C as Block]).includes(n)),
+        ),
+    );
+}
+
 /** Click scripts of object sprites that raise a variable that drains by itself. */
 function feeders(ctx: StepContext) {
   const down = drains(ctx);
@@ -126,8 +142,8 @@ export const mascotaVirtual: GameDefinition = {
         {
           id: 'casa',
           title: 'Su casa',
-          text: '¡Tu mascota virtual llegó! Primero elegí dónde vive: tocá uno de los lugares.',
-          hints: ['Mirá los dibujitos de abajo. Elegí el que más le guste a tu mascota.'],
+          text: '¡Tu mascota virtual llegó! Primero elegí dónde vive: tocá un lugar que no tenga el borde de color.',
+          hints: ['Mirá los dibujitos de abajo. El que tiene borde de color ya está puesto. Elegí otro, el que más le guste a tu mascota.'],
           point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
@@ -137,7 +153,7 @@ export const mascotaVirtual: GameDefinition = {
           text: 'Una mascota necesita comida y energía. Creá una variable para cada una y que las dos empiecen en 10 cada vez que se aprieta la bandera.',
           hints: [
             'Creá las variables con el botón de variables. Ponéles nombres que se entiendan.',
-            'Al principio del juego, "poner" cada variable en 10. Las vas a ver en cartelitos en el escenario.',
+            'Al principio del juego, usá «fijar … a …» para poner cada variable en 10. Las vas a ver en cartelitos en el escenario.',
           ],
           unlock: ['a_setvar', 'v_var', 'a_changevar'],
           demo: 'a_setvar',
@@ -150,8 +166,8 @@ export const mascotaVirtual: GameDefinition = {
           text: 'La comida baja sola: cada 2 segundos pierde uno, sin que nadie toque nada. Mirá el cartelito y esperá.',
           hints: [
             'Algo que se repite sin parar, con una espera adentro.',
-            'En cada vuelta, cambiar la variable de comida en -1.',
-            'Este script también empieza con la bandera verde, pero es otro, aparte del que pone los números.',
+            'En cada vuelta, «sumar a … el valor …» con la variable de comida y el valor -1.',
+            'Este programa también empieza con la bandera verde, pero es otro, aparte del que fija los números.',
           ],
           unlock: ['a_wait', 'a_forever'],
           demo: 'a_forever',
@@ -164,7 +180,7 @@ export const mascotaVirtual: GameDefinition = {
           text: 'La energía también baja sola, pero a su ritmo: más lento que la comida. Cada una de las dos va por su cuenta.',
           hints: [
             'Es lo mismo que la comida, con otra variable y otra espera.',
-            'Un script más para la energía. Si quieren, todo puede ir en la misma bandera verde.',
+            'Un programa más para la energía. Si querés, todo puede ir en la misma bandera verde.',
           ],
           example: [{ sprite: 'Michi', scripts: [onFlag(forever(wait(3), changeVar('energia', -1)))] }],
           check: (ctx) => drains(ctx).length >= 2 && belowStart(ctx).length >= 2,
@@ -172,15 +188,17 @@ export const mascotaVirtual: GameDefinition = {
         {
           id: 'no-negativo',
           title: 'Nunca menos de cero',
-          text: 'Una mascota no puede tener comida negativa. Hacé que ni la comida ni la energía bajen de cero. Dejá correr el tiempo para comprobarlo.',
+          text: 'Una mascota no puede tener comida negativa. Hacé que ni la comida ni la energía bajen de cero: las dos tienen que tener su protección. Dejá correr el tiempo para comprobarlo.',
           hints: [
             'Antes de bajar, preguntá si la variable todavía es mayor que 0.',
             'Si es mayor, recién ahí se le resta uno.',
+            'Tiene que haber una pregunta para la comida y otra para la energía.',
           ],
           unlock: ['a_if', 'v_gt', 'v_lt'],
           example: [{ sprite: 'Michi', scripts: [onFlag(forever(wait(2), ifThen(gt(variable('comida'), 0), changeVar('comida', -1))))] }],
           check: (ctx) =>
-            conditionals(ctx, COMPARES, lowers).length > 0 &&
+            drains(ctx).length >= 2 &&
+            drains(ctx).every((n) => guardedDrains(ctx).includes(n)) &&
             ctx.machine.timerSeconds() > 2 &&
             declared(ctx).every((n) => valueOf(ctx, n) >= 0) &&
             declared(ctx).some((n) => (startOf(ctx, n) ?? 0) > 0 && valueOf(ctx, n) === 0),
@@ -205,7 +223,7 @@ export const mascotaVirtual: GameDefinition = {
           text: 'Cuando tocás la comida, la mascota come: sube su variable de comida y suena algo. Tocala para probarlo.',
           hints: [
             'Hay un bloque que arranca cuando tocan a un personaje.',
-            'Adentro: sumar a la variable de comida. Probá con 3.',
+            'Adentro: «sumar a … el valor …», con la variable de comida. Probá con 3.',
             'No te olvides del sonido.',
           ],
           unlock: ['a_click', 'a_sound'],
@@ -218,10 +236,12 @@ export const mascotaVirtual: GameDefinition = {
           text: 'La comida no puede pasar de 10: aunque toques mil veces, se queda en 10. Tocá la comida varias veces seguidas para probar.',
           hints: [
             'Después de sumar, preguntá si la variable se pasó de 10.',
-            'Si se pasó, ponela en 10.',
+            'Fijate en el cartelito: después de tocar la comida tiene que quedarse en 10, nunca más.',
+            'Si se pasó, fijala en 10 con «fijar … a …».',
           ],
           example: [{ sprite: 'Manzana', scripts: [onClick(changeVar('comida', 3), ifThen(gt(variable('comida'), 10), setVar('comida', 10)))] }],
-          check: (ctx) => cappedNames(ctx).some((c) => valueOf(ctx, c.name) <= c.limit),
+          // Right after a feeding the number sits exactly at the cap: without it, it would be above.
+          check: (ctx) => cappedNames(ctx).some((c) => valueOf(ctx, c.name) === c.limit),
         },
         {
           id: 'dormir',
@@ -243,7 +263,7 @@ export const mascotaVirtual: GameDefinition = {
           text: 'Una mascota dormida no puede comer. Hacé que, mientras duerme, tocar la comida no haga nada. Para eso tenés que acordarte de si está durmiendo.',
           hints: [
             'Una variable más que valga 1 si duerme y 0 si está despierta.',
-            'Ponela en 1 al empezar a dormir y en 0 al despertar.',
+            'Fijala en 1 con «fijar … a …» al empezar a dormir, y en 0 al despertar.',
             'La comida pregunta por esa variable antes de sumar.',
           ],
           unlock: ['v_eq'],
@@ -278,7 +298,7 @@ export const mascotaVirtual: GameDefinition = {
           id: 'cara-dos',
           title: 'Y vuelve a estar contenta',
           text: 'La cara tiene que cambiar para los dos lados: triste si le falta algo, contenta si está bien. Una cosa o la otra.',
-          hints: ['"Si… sino" tiene un lugar para cada caso.', 'Ponele una cara distinta a cada camino.'],
+          hints: ['«Si… si no» tiene un lugar para cada caso.', 'Ponele una cara distinta a cada camino.'],
           example: [{ sprite: 'Michi', scripts: [onFlag(forever(ifElse(lt(variable('comida'), 4), [face('triste')], [face('feliz')])))] }],
           check: (ctx) =>
             placed(ctx).some(({ block: b }) => {
@@ -293,8 +313,8 @@ export const mascotaVirtual: GameDefinition = {
           title: 'Más de dos caras',
           text: 'Dos caras son pocas. Hacé que haya al menos tres estados: bien, así así y mal, y que cuando duerme tenga su propia cara.',
           hints: [
-            'Una elección puede esconder otra elección adentro de su "sino".',
-            'Mal, así así y bien dan tres caminos. Dormida es un cuarto caso, que se pregunta con la variable que recuerda si duerme.',
+            'Una elección puede esconder otra elección adentro de su «si no».',
+            'Mal, así así y bien dan tres caminos. Dormida es un cuarto caso, que se pregunta con la variable que recuerda si duerme: tiene que tener su propia cara.',
           ],
           example: [
             {
@@ -310,10 +330,18 @@ export const mascotaVirtual: GameDefinition = {
               ],
             },
           ],
-          check: (ctx) =>
-            holdingAll(ctx, LOOPS, BRANCHES, ['a_face']).some(
-              ({ block }) => distinct(facesIn(inside(block))) >= 3 && inside(block).filter((x) => BRANCHES.includes(x.type)).length >= 2,
-            ),
+          check: (ctx) => {
+            const asleep = stateVars(ctx);
+            return holdingAll(ctx, LOOPS, BRANCHES, ['a_face']).some(
+              ({ block }) =>
+                distinct(facesIn(inside(block))) >= 3 &&
+                inside(block).filter((x) => BRANCHES.includes(x.type)).length >= 2 &&
+                // One of the choices asks about the variable that remembers who sleeps, and gives that case a face.
+                inside(block).some(
+                  (x) => BRANCHES.includes(x.type) && !!x.inputs.C && readNames([x.inputs.C]).some((n) => asleep.includes(n)) && facesIn([...x.body, ...x.elseBody]).length > 0,
+                ),
+            );
+          },
         },
         {
           id: 'animo',
@@ -400,7 +428,7 @@ export const mascotaVirtual: GameDefinition = {
           text: 'Cuando el crecimiento llega a 20, ¡la mascota ganó! Cambiá el escenario, que lo anuncie con un cartel y cortá lo demás para que no se estropee la fiesta.',
           hints: [
             'Esperar hasta que la variable de crecimiento sea mayor que 19.',
-            'Los otros scripts del mismo personaje se pueden frenar con un bloque especial.',
+            'Los otros programas del mismo personaje se pueden frenar con un bloque especial.',
             'Cambiá el escenario y mostrá un cartel antes de ganar.',
           ],
           unlock: ['a_win', 'a_backdrop', 'a_stopothers', 'v_join'],
@@ -456,7 +484,7 @@ export const mascotaVirtual: GameDefinition = {
           hints: [
             'Antes de mandar el mensaje, preguntá si la energía alcanza.',
             'Si alcanza: bajar la energía y mandar el mensaje. Si no, un cartel.',
-            'Es una elección "si… sino" con un camino para cada caso.',
+            'Es una elección «si… si no» con un camino para cada caso.',
           ],
           example: [
             {

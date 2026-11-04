@@ -6,7 +6,7 @@ import {
   sprite,
 } from '../../language/ir.ts';
 import {
-  blocksInList, blocksOfSprite, blocksOfType, countAny, hasSequence, kindsAfter, sequenceSprites, spriteCount, spritesRan,
+  blocksInList, blocksOfSprite, blocksOfType, chosenBackdrop, countAny, hasSequence, kindsAfter, sequenceSprites, spriteCount, spritesRan,
   spritesWithHat,
 } from '../checks.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
@@ -74,8 +74,8 @@ export const laCarrera: GameDefinition = {
         {
           id: 'pista',
           title: 'Elegí la pista',
-          text: '¡Hoy hay una carrera! Primero elegí dónde es la pista: tocá uno de los lugares.',
-          hints: ['Mirá los dibujitos de abajo. Tocá el que más te guste.'],
+          text: '¡Hoy hay una carrera! Primero elegí dónde es la pista: tocá un lugar que no tenga el borde de color.',
+          hints: ['Mirá los dibujitos de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
           point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
@@ -133,10 +133,10 @@ export const laCarrera: GameDefinition = {
         {
           id: 'ventaja',
           title: 'Uno es más rápido',
-          text: 'Ahora los bloques deciden quién gana. Hacé que un corredor tarde más que el otro: dale más pasos, o ponelo a esperar con el reloj.',
+          text: 'Ahora los bloques deciden quién gana. Hacé que un corredor tarde más que el otro, y que se note: dale tres pasos más, o ponelo a esperar con el reloj.',
           hints: [
-            'Un corredor con menos pasos llega antes.',
-            'El reloj hace esperar a un corredor antes de salir.',
+            'Un corredor con menos pasos llega antes. Con tres pasos de diferencia ya se nota.',
+            'El reloj hace esperar a un corredor antes de salir. Con un segundo de espera alcanza.',
           ],
           unlock: ['f_wait'],
           example: [
@@ -170,7 +170,7 @@ export const laCarrera: GameDefinition = {
     },
     {
       title: 'Segunda vuelta',
-      goal: 'Una segunda vuelta con saltos y una hinchada.',
+      goal: 'Una segunda vuelta con saltos y con hinchas que alientan.',
       steps: [
         {
           id: 'vuelta',
@@ -185,8 +185,8 @@ export const laCarrera: GameDefinition = {
         },
         {
           id: 'saltos',
-          title: 'Vallas en la pista',
-          text: 'Hay vallas en la pista. Adentro de las vueltas, que los dos corredores salten.',
+          title: 'Saltos en la pista',
+          text: 'Hay obstáculos en la pista, como cajones para saltar. Adentro de las vueltas, que los dos corredores salten.',
           hints: [
             'El salto va adentro de las vueltas, al lado de la flecha.',
             'Cada vuelta salta una vez.',
@@ -198,10 +198,10 @@ export const laCarrera: GameDefinition = {
         },
         {
           id: 'hinchada',
-          title: 'La hinchada',
-          text: 'Falta la hinchada. Sumá un cuarto personaje que, cuando salen los corredores, hace tres cosas: sonido, giro, agrandar... Pero no corre.',
+          title: 'Los hinchas',
+          text: 'Faltan los hinchas, los que alientan a los corredores. Sumá un cuarto personaje que, cuando salen los corredores, hace tres cosas: sonido, giro, agrandar... Pero no corre.',
           hints: [
-            'La hinchada también espera el sobre, como los corredores.',
+            'El hincha también espera el sobre, como los corredores.',
             'Poné tres bloques de reacciones, no flechas.',
           ],
           example: [{ sprite: 'Hincha', scripts: [fRecv('yellow', fSound('tambor'), fSpin(), fGrow())] }],
@@ -231,24 +231,24 @@ export const laCarrera: GameDefinition = {
         {
           id: 'podio',
           title: 'Al podio',
-          text: 'Cuando termina la carrera, el lugar cambia al podio. Usá el cartel del paisaje después de las vueltas, y elegí un lugar distinto.',
+          text: 'Cuando termina la carrera, el lugar cambia al podio. Usá «cambiar de lugar» después de las vueltas, y elegí un lugar distinto.',
           hints: [
-            'El cartel del paisaje va después de las vueltas, no antes.',
-            'Tiene que ser un lugar distinto al de la pista.',
+            '«Cambiar de lugar» va después de las vueltas, no antes.',
+            'Tocá el dibujito del bloque y elegí un lugar nuevo, distinto al de la pista. El parque ya viene puesto, así que ese no cuenta.',
           ],
           unlock: ['f_backdrop'],
           example: [{ sprite: 'Ganador', scripts: [fRecv('yellow', fRepeat(5, fRight()), fBackdrop('teatro'))] }],
           check: (ctx) =>
-            blocksOfType(ctx, 'f_backdrop').some((b) => b.fields.B !== ctx.program.backdrop) &&
+            blocksOfType(ctx, 'f_backdrop').some((b) => chosenBackdrop(ctx, b)) &&
             hasSequence(ctx, ['f_repeat'], ['f_backdrop']) &&
             ctx.stats.ran('backdrop'),
         },
         {
           id: 'festejan',
           title: 'Festejan en el podio',
-          text: 'En el podio, todos festejan. Después del cartel del paisaje, poné tres cosas distintas: globito, cara, sonido, giro...',
+          text: 'En el podio, todos festejan. Después de «cambiar de lugar», poné tres cosas distintas: globito, cara, sonido, giro...',
           hints: [
-            'Poné los bloques abajo del cartel del paisaje.',
+            'Poné los bloques abajo de «cambiar de lugar».',
             'Una cara, un sonido y un globito ya son tres cosas distintas.',
           ],
           example: [{ sprite: 'Ganador', scripts: [fRecv('yellow', fBackdrop('teatro'), fFace('risa'), fSound('aplauso'), fSay('GRACIAS'))] }],
