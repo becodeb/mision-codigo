@@ -128,6 +128,7 @@ describe('projects', () => {
   it('saves, loads, overwrites and lists metadata without the project JSON', async () => {
     const child = await signedIn();
     expect((await child.get('/api/projects/caza-pulpi')).status).toBe(404);
+    expect((await child.get('/api/projects/no-existe')).body.error.code).toBe('unknown_game');
 
     const project = { sprites: [{ id: 'a', blocks: [{ type: 'move', fields: { steps: 10 } }] }] };
     const saved = await child.put('/api/projects/caza-pulpi', { project, progress: PROGRESS });
@@ -175,7 +176,8 @@ describe('projects', () => {
       expect(reply.body.error.code).toBe('invalid_game_id');
     }
     expect((await child.get('/api/projects/Bad_Id')).status).toBe(400);
-    expect((await child.put(`/api/projects/${'a'.repeat(40)}`, { project: {}, progress: PROGRESS })).status).toBe(200);
+    // Well-formed but unknown ids are refused, so a visitor cannot fill the disk with made-up games.
+    expect((await child.put(`/api/projects/${'a'.repeat(40)}`, { project: {}, progress: PROGRESS })).status).toBe(404);
 
     const badBodies: unknown[] = [
       {},

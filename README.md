@@ -27,7 +27,7 @@ Un solo proceso sirve la API y la aplicación compilada (`dist/`). Los datos que
 | `PORT` | no | `8301` | Puerto. |
 | `DATA_DIR` | no | `./data` | Carpeta de la base de datos. Está ignorada por git. |
 | `COOKIE_SECURE` | no | `false` | Con `true`, las cookies solo viajan por HTTPS. |
-| `TRUST_PROXY` | no | `false` | Con `true`, el límite de intentos de ingreso docente lee `X-Forwarded-For` (detrás de un proxy). |
+| `TRUST_PROXY` | no | `0` | Cantidad de proxies delante de la app. El límite de intentos de ingreso docente la usa para leer la IP real del cliente. |
 
 ## Cargar a los chicos
 

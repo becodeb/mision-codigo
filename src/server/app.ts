@@ -23,6 +23,7 @@ import type {
   StudentsResponse,
 } from '../shared/api.ts';
 import { GAME_ID_PATTERN, MAX_BODY_BYTES } from '../shared/api.ts';
+import { KNOWN_GAME_IDS } from '../shared/gameIds.ts';
 import type { ClassId, LevelId } from '../shared/levels.ts';
 import { createAuth } from './auth.ts';
 import type { AppConfig } from './config.ts';
@@ -78,6 +79,9 @@ function gameIdParam(req: Request): string {
   if (!GAME_ID_PATTERN.test(gameId)) {
     throw new AppError(400, 'invalid_game_id', 'El identificador del juego no es válido.');
   }
+  if (!KNOWN_GAME_IDS.has(gameId)) {
+    throw new AppError(404, 'unknown_game', 'Ese juego no existe.');
+  }
   return gameId;
 }
 
@@ -103,6 +107,8 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
   app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
+    // The name screen lists children: it must never reach a search engine.
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     next();
   });
 
