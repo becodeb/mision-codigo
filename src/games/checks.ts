@@ -1,5 +1,6 @@
 /** Helpers for step checks. A check must accept any reasonable solution, not only the reference one. */
-import type { Block, BlockType, ProjectProgram, SpriteProgram } from '../language/ir.ts';
+import type { BlockType } from '../language/catalog.ts';
+import type { Block, ProjectProgram, SpriteProgram } from '../language/ir.ts';
 import type { StepContext } from './types.ts';
 
 function walk(block: Block, visit: (b: Block) => void): void {

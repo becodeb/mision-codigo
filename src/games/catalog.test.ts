@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { blockInfo } from '../language/catalog.ts';
-import type { BlockType } from '../language/ir.ts';
+import type { BlockType } from '../language/catalog.ts';
 import { Game } from '../runtime/testing.ts';
 import { GAMES, MIN_STEPS } from './catalog.ts';
 import { blocksOfProject } from './checks.ts';

@@ -64,7 +64,7 @@ export class ProofGame extends Game {
 
   /** The studio marks `shown` when the child opens show mode. */
   show(): this {
-    this.machine.setShown();
+    this.machine.setShown(true);
     this.poll();
     return this;
   }

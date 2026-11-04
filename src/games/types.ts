@@ -2,7 +2,8 @@
  * A game is data: what the child starts with, the guide that grows it through phases, and a reference
  * solution that proves it can be built. The studio renders it and the proof test replays it.
  */
-import type { Block, BlockType, ProjectProgram, Script } from '../language/ir.ts';
+import type { BlockType } from '../language/catalog.ts';
+import type { Block, ProjectProgram, Script } from '../language/ir.ts';
 import type { Machine } from '../runtime/machine.ts';
 import type { StatsRecorder } from '../runtime/stats.ts';
 import type { Game } from '../runtime/testing.ts';
