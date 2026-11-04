@@ -4,7 +4,7 @@ import {
   addScore, backdrop, goToRandom, hide, move, onClick, onFlag, onPoints, onReceive, point, project, repeat, sayFor, send, setScore, setSize,
   show, sound, sprite, wait, win,
 } from '../../language/ir.ts';
-import { PLACES, REACTIONS, appearLater, blocksInList, messageReaches, numField, refBlocks, refHas, refsOfHat, spriteCount } from '../checks.ts';
+import { PLACES, REACTIONS, appearLater, blocksInList, chosenBackdrop, messageReaches, numField, refBlocks, refHas, refsOfHat, spriteCount } from '../checks.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 
 const SETUP = project('parque', [sprite('pulpi', 'pulpi', [], { x: 0, y: -60, size: 90, name: 'Pulpi' })]);
@@ -48,8 +48,8 @@ export const cazaPulpi: GameDefinition = {
         {
           id: 'fondo',
           title: 'Elegí dónde es la cacería',
-          text: 'Pulpi se esconde en algún lugar. Elegí el escenario de la cacería: tocá uno de los lugares.',
-          hints: ['Mirá los escenarios de abajo. Tocá el que más te guste.'],
+          text: 'Pulpi se esconde en algún lugar. Elegí el escenario de la cacería: tocá uno que no tenga el borde de color.',
+          hints: ['Mirá los escenarios de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
           point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
@@ -128,14 +128,15 @@ export const cazaPulpi: GameDefinition = {
         {
           id: 'ritmo',
           title: 'El ritmo justo',
-          text: 'Si cambia muy rápido es imposible, y si tarda mucho es aburrido. Ajustá la pausa hasta que se pueda jugar, y atrapalo 3 veces.',
+          text: 'Si cambia muy rápido es imposible, y si tarda mucho es aburrido. Poné una pausa distinta de 1 segundo, hasta que se pueda jugar, y atrapalo 3 veces.',
           hints: [
-            'Probá con una pausa de entre medio segundo y dos segundos.',
+            'Probá con una pausa de entre medio segundo y dos segundos, pero no 1: ese número ya viene puesto.',
             'Si te cuesta mucho, alargá la pausa. Si es muy fácil, acortala.',
+            'Después de cambiar el número, tocá la bandera y atrapá a Pulpi 3 veces.',
           ],
           example: [{ sprite: 'Pulpi', scripts: [onFlag(setScore(0), repeat(60, wait(0.8), goToRandom()))] }],
           check: (ctx) =>
-            flagLoops(ctx).some((loop) => loopWaits(loop).some((w) => w >= 0.3 && w <= 2.5)) && ctx.stats.maxScore >= 3,
+            flagLoops(ctx).some((loop) => loopWaits(loop).some((w) => w !== 1 && w >= 0.3 && w <= 2.5)) && (ctx.machine.score ?? 0) >= 3,
         },
         {
           id: 'nada',
@@ -159,7 +160,7 @@ export const cazaPulpi: GameDefinition = {
     },
     {
       title: 'Cinco puntos',
-      goal: 'A los 5 puntos cambia el mundo: otro escenario, un Pulpi más difícil y un segundo blanco.',
+      goal: 'A los 5 puntos cambia el mundo: otro escenario, un Pulpi más difícil y otro objetivo.',
       steps: [
         {
           id: 'cinco',
@@ -167,14 +168,14 @@ export const cazaPulpi: GameDefinition = {
           text: 'Cuando juntes 5 puntos, el juego tiene que dar un salto: cambiá el escenario. Atrapá a Pulpi hasta ver el cambio.',
           hints: [
             'Hay un bloque que empieza cuando los puntos llegan a un número.',
-            'Adentro poné el cambio de escenario y elegí uno distinto al de antes.',
+            'Adentro poné el cambio de escenario y elegí uno distinto al de antes. El parque ya viene puesto, así que ese no cuenta.',
             'Para probar más rápido, podés poner un número más chico.',
           ],
           unlock: ['a_points', 'a_backdrop'],
           example: [{ sprite: 'Pulpi', scripts: [onPoints(5, backdrop('espacio'))] }],
           check: (ctx) =>
             refsOfHat(ctx, 'a_points').some(
-              (r) => numField(r.script.hat, 'N') >= 3 && numField(r.script.hat, 'N') <= 8 && refBlocks(r).some((b) => b.type === 'a_backdrop' && b.fields.B !== ctx.program.backdrop),
+              (r) => numField(r.script.hat, 'N') >= 3 && numField(r.script.hat, 'N') <= 8 && refBlocks(r).some((b) => b.type === 'a_backdrop' && chosenBackdrop(ctx, b)),
             ) &&
             ctx.stats.ranHat('points') &&
             ctx.stats.ran('backdrop'),
@@ -194,8 +195,8 @@ export const cazaPulpi: GameDefinition = {
         },
         {
           id: 'segundo',
-          title: 'Un segundo blanco',
-          text: 'Sumá otro personaje para cazar: apretá el botón con el más y elegí al segundo blanco.',
+          title: 'Otro objetivo',
+          text: 'Sumá otro personaje para cazar: apretá el botón con el más y elegí al otro objetivo.',
           hints: ['Podés elegir cualquiera. Después arrastralo en el escenario hasta donde quieras.'],
           point: 'add-sprite',
           check: (ctx) => spriteCount(ctx) >= SETUP.sprites.length + 1,
@@ -203,9 +204,9 @@ export const cazaPulpi: GameDefinition = {
         {
           id: 'segundo-juega',
           title: 'También vale puntos',
-          text: 'El segundo blanco tiene que jugar igual que Pulpi: al tocarlo suma un punto y se escapa a otro lugar.',
+          text: 'El otro objetivo tiene que jugar igual que Pulpi: al tocarlo suma un punto y se escapa a otro lugar.',
           hints: [
-            'Mirá cómo armaste a Pulpi: el segundo blanco necesita algo parecido.',
+            'Mirá cómo armaste a Pulpi: el otro objetivo necesita algo parecido.',
             'Al hacer clic en él: sumar 1 a puntos y después ir a posición aleatoria.',
           ],
           example: [{ sprite: 'Pulpito', scripts: [onClick(addScore(1), goToRandom())] }],
@@ -214,7 +215,7 @@ export const cazaPulpi: GameDefinition = {
         {
           id: 'aparece',
           title: 'Aparece en la fase 2',
-          text: 'El segundo blanco no debería estar desde el principio. Que aparezca recién cuando empieza la fase 2.',
+          text: 'El otro objetivo no debería estar desde el principio. Que aparezca recién cuando empieza la fase 2.',
           hints: [
             'Un personaje escondido no se ve ni se puede tocar.',
             'Escondelo con la bandera verde y mostralo cuando llegue el mensaje de la fase 2.',
@@ -252,7 +253,7 @@ export const cazaPulpi: GameDefinition = {
           hints: [
             'Es otro bloque que empieza cuando los puntos llegan a un número.',
             'Adentro va el bloque de ganar.',
-            'Tocá a los blancos hasta llegar a 10.',
+            'Tocá a Pulpi y al otro objetivo hasta llegar a 10.',
           ],
           unlock: ['a_win'],
           example: [{ sprite: 'Pulpi', scripts: [onPoints(10, win())] }],
@@ -290,7 +291,7 @@ export const cazaPulpi: GameDefinition = {
   ],
   challenges: [
     {
-      title: 'Un blanco que duele',
+      title: 'Un objetivo que duele',
       text: 'Inventá un personaje que, si lo tocás, te saca puntos. ¿Dónde lo ponés para que sea difícil no tocarlo?',
     },
     {
