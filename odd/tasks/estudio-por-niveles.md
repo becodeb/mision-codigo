@@ -271,12 +271,12 @@ src/
       Route: delegated. Checks: typecheck, Vitest, build, browser capture.
 - [x] **T06 Class 1 catalog, levels 1 and 2.** 4 games with guides and proofs. Route: delegated.
       Checks: Vitest proofs, browser capture of one game from each level.
-- [ ] **T07 Class 1 catalog, levels 3 and 4.** 4 games with guides and proofs. Route: delegated.
+- [x] **T07 Class 1 catalog, levels 3 and 4.** 4 games with guides and proofs. Route: delegated.
       Checks: same.
-- [ ] **T08 Class 1 catalog, level 5.** 3 games with guides and proofs. Route: delegated. Checks: same.
+- [x] **T08 Class 1 catalog, level 5.** 3 games with guides and proofs. Route: delegated. Checks: same.
 - [x] **T09 Teacher panel.** Login, bulk import, level assignment, active class, progress and class
       data. Route: delegated. Checks: typecheck, Vitest, build, browser capture.
-- [ ] **T10 Ready for class 1.** Real browser pass through the whole flow, remove the old `estudio/`,
+- [x] **T10 Ready for class 1.** Real browser pass through the whole flow, remove the old `estudio/`,
       move `niveles/` to static serving, serve on the LAN. Route: delegated, then parent spot check.
       Checks: e2e against the production build.
 - [ ] **T11 Class 2 catalog.** The other 12 games with guides and proofs. Route: delegated. Checks:
@@ -311,8 +311,11 @@ because this repo is not a known Engram project. This file is the source of trut
 - T01: `ec4c978`..`77d5488`. T04: merged with `6587376`. T05 and T09: merged with `f50ca1f`. T06: merged with `cc57dc7`. T02 and T03: merged with `22649a1`, fixes in `ff6cf74`.
 - At `ff6cf74`: typecheck clean, Vitest 26 files and 356 tests passed, build passed.
 - Real server on the LAN at 192.168.1.37:8300: name screen, chooser and studio load `presentacion` in Chromium with no external requests. Console shows only expected 401 and 404 responses (no session, new project).
-- Pending: a full playthrough in a real browser with the real catalog (T10).
+- T07, T08 and T10 merged; defect fixes through `9dc0073`; contextual help hand merged with `4c78dcc`.
+- At `4c78dcc`: typecheck clean, Vitest 42 files and 609 tests passed. All 11 class 1 games were played in a real browser during T10, and fixes were re-checked on selected games.
+- Published at https://misioncodigo.becode.com.ar on Coolify from the fork `becodeb/mision-codigo`. Checked on the live site: name screen, chooser, studio with the toolbox open, no page errors.
+- Not verified: real voice, emoji on class laptops, real touch hardware.
 
 ## Next step
 
-T07 and T08 are running. Then T10.
+Freeze at 15:45 Argentina time, remove the five test children, then class 1. After class: T11 to T13.
