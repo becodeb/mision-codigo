@@ -23,6 +23,8 @@ export interface EditorHandlers {
 }
 
 const narrow = (): boolean => typeof window !== 'undefined' && window.innerWidth < 600;
+/** Laptop screens: smaller picture blocks so more of the toolbox shows without scrolling. */
+const short = (): boolean => typeof window !== 'undefined' && window.innerHeight < 820;
 
 export class BlockEditor {
   readonly ws: Blockly.WorkspaceSvg;
@@ -51,7 +53,7 @@ export class BlockEditor {
       comments: false,
       collapse: false,
       disable: false,
-      zoom: { controls: false, wheel: false, pinch: true, startScale: picture ? (narrow() ? 0.85 : 1) : narrow() ? 0.7 : 0.8 },
+      zoom: { controls: false, wheel: false, pinch: true, startScale: picture ? (narrow() ? 0.85 : short() ? 0.8 : 1) : narrow() ? 0.7 : 0.8 },
       move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: true },
       grid: { spacing: 32, length: 3, colour: picture ? '#EFE6D3' : '#E4DDF0', snap: false },
     } as Blockly.BlocklyOptions);

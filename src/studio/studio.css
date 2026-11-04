@@ -217,6 +217,9 @@
 .blocklyDropDownDiv { z-index: 300; }
 .blocklyWidgetDiv { z-index: 300; }
 
+/* The picture toolbox is a long column: make its scroll bar easy to see and to grab. */
+.tier-picture .blocklyFlyout ~ .blocklyScrollbarVertical .blocklyScrollbarHandle, .tier-picture .blocklyFlyoutScrollbar .blocklyScrollbarHandle { fill: #1F5DBD; fill-opacity: .55; }
+
 /* twinkling stars in the backdrops */
 .mc-studio .tw { animation: mc-twinkle 2.5s ease-in-out infinite alternate; }
 @keyframes mc-twinkle { to { opacity: .15; } }
