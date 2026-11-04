@@ -142,8 +142,8 @@ export const mascotaVirtual: GameDefinition = {
         {
           id: 'casa',
           title: 'Su casa',
-          text: '¡Tu mascota virtual llegó! Primero elegí dónde vive: tocá uno de los lugares.',
-          hints: ['Mirá los dibujitos de abajo. Elegí el que más le guste a tu mascota.'],
+          text: '¡Tu mascota virtual llegó! Primero elegí dónde vive: tocá un lugar que no tenga el borde de color.',
+          hints: ['Mirá los dibujitos de abajo. El que tiene borde de color ya está puesto. Elegí otro, el que más le guste a tu mascota.'],
           point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
