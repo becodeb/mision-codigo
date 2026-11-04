@@ -73,7 +73,7 @@ export const presentacion: GameDefinition = {
           title: '¡Que salude!',
           text: 'Tu héroe tiene que saludar. Arrastrá el globito abajo de la bandera verde. Tocá la frase para elegir otra. Después tocá el botón verde.',
           hints: ['El globito va pegado abajo de la bandera.'],
-          demo: 'f_say',
+          demoScript: fFlag(fSay('HOLA')),
           check: (ctx) => spritesWithHat(ctx, { hat: 'f_flag', types: SPEECH }).length >= 1 && ctx.stats.ran('say'),
         },
         {
@@ -82,7 +82,7 @@ export const presentacion: GameDefinition = {
           text: 'Ahora que camine. Poné flechas abajo del globito. Cada flecha es un paso. Poné tres o más y probá con el botón verde.',
           hints: ['Cada flecha mueve al héroe un poquito. Para llegar lejos, poné varias.'],
           unlock: ['f_right', 'f_left', 'f_up', 'f_down', 'f_jump'],
-          demo: 'f_right',
+          demoScript: fFlag(fSay('HOLA'), fRight(), fRight(), fRight()),
           check: (ctx) => countAny(ctx, MOVES) >= 3 && ctx.stats.count('move') >= 3,
         },
       ],

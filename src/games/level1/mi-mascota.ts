@@ -77,7 +77,8 @@ export const miMascota: GameDefinition = {
           text: 'Tu mascota hace un sonido cuando la tocás. Sacá la manito y poné el parlante abajo. Después tocá a tu mascota en el escenario.',
           hints: ['La manito es el comienzo. El parlante va pegado abajo.'],
           unlock: ['f_sound'],
-          demo: 'f_click',
+          demoScript: fClick(fSound('miau')),
+          demoSprite: 'character',
           check: (ctx) => spritesWithHat(ctx, { hat: 'f_click', types: ['f_sound'] }).some(isCharacter),
         },
         {
@@ -86,7 +87,8 @@ export const miMascota: GameDefinition = {
           text: 'Una mascota de verdad hace muchas cosas. Cuando la tocás, que haga cuatro cosas o más, de al menos tres tipos distintos: cara, giro, salto, sonido...',
           hints: ['Pegá más bloques abajo del parlante. Probá la carita, el giro y el salto.'],
           unlock: ['f_spin', 'f_face', 'f_jump', 'f_grow', 'f_shrink', 'f_say'],
-          demo: 'f_face',
+          demoScript: fClick(fSound('miau'), fFace('risa'), fSpin(), fJump()),
+          demoSprite: 'character',
           check: (ctx) => spritesWithHat(ctx, { hat: 'f_click', types: REACTIONS, min: 4, kinds: 3 }).some(isCharacter),
         },
         {

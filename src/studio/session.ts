@@ -5,18 +5,19 @@
  */
 import { ART } from '../art/index.ts';
 import { audioHost, hush, playSfx, setSoundEnabled, speak, unlockAudio } from '../audio/index.ts';
-import type { GameDefinition, StepContext } from '../games/types.ts';
+import type { GameDefinition, GameStep, StepContext } from '../games/types.ts';
 import { setProjectContext } from '../language/blocks.ts';
 import type { BlockType } from '../language/catalog.ts';
 import { BLOCKS } from '../language/catalog.ts';
-import type { ProjectProgram } from '../language/ir.ts';
+import type { ProjectProgram, Script } from '../language/ir.ts';
 import { buildToolbox, tierOf } from '../language/toolbox.ts';
 import { Machine, type Host, type StageView, type TimeSource } from '../runtime/index.ts';
 import type { GameProgress } from '../shared/api.ts';
 import type { LevelId } from '../shared/levels.ts';
 import { ActiveClock, GuideTracker, hintRungs, type FlatStep } from './guide.ts';
-import { addSpriteDoc, newDoc, parseDoc, programOf, usesKeys, type ProjectDoc, type SpriteDoc } from './doc.ts';
-import { cancelDemo, handDemo, pointAt } from './demo.ts';
+import { addSpriteDoc, newDoc, parseDoc, programOf, scriptsOf, usesKeys, type ProjectDoc, type SpriteDoc } from './doc.ts';
+import { cancelDemo, pointAt, runDemo } from './demo.ts';
+import { planDemo, type DemoPlan, type SpriteView } from './demoPlan.ts';
 import { StageRenderer } from './stage.ts';
 import { BlockEditor } from './workspace.ts';
 import { confetti } from './confetti.ts';
@@ -688,14 +689,32 @@ export class StudioSession {
     }
   }
 
-  async demo(type: BlockType): Promise<void> {
+  /** The sprites as the hand sees them: the selected one straight from the workspace, so a block dropped a moment ago counts. */
+  private demoSprites(): SpriteView[] {
+    const art = ART as Record<string, { kind: string } | undefined>;
+    return this.doc.sprites.map((s) => ({
+      id: s.id,
+      name: s.name,
+      art: s.art,
+      kind: art[s.art]?.kind ?? '',
+      scripts: s.id === this.doc.selected && this.editor ? this.editor.scripts() : scriptsOf(s),
+    }));
+  }
+
+  /** «Mostrame»: shows the next missing part of what the step asks for, and never edits the project. */
+  async demo(step: GameStep): Promise<void> {
     this.noteHelp();
-    if (!this.root) return;
-    if (!this.doc.sprites.length) {
-      await pointAt(this.depsForDemo(), 'add-sprite');
+    if (!this.root || !step.demoScript) return;
+    this.editor?.flushPending();
+    const scripts = Array.isArray(step.demoScript) ? step.demoScript : [step.demoScript as Script];
+    let plan: DemoPlan;
+    try {
+      plan = planDemo({ scripts, sprite: step.demoSprite, each: step.demoEach }, this.demoSprites(), this.doc.selected);
+    } catch (e) {
+      console.warn('The hand could not plan this step', e);
       return;
     }
-    await handDemo(this.depsForDemo(), type, BLOCKS[type].kind === 'hat');
+    await runDemo(this.depsForDemo(), plan);
   }
 
   async point(selector: string): Promise<void> {

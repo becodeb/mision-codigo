@@ -319,6 +319,7 @@ function SpritePanel({ session, onAdd }: { session: StudioSession; onAdd: () => 
         {doc.sprites.map((s) => (
           <div
             key={s.id}
+            data-sprite={s.id}
             className={`mc-sp-card${s.id === doc.selected ? ' sel' : ''}`}
             role="button"
             tabIndex={0}

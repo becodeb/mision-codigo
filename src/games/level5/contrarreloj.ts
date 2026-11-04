@@ -111,7 +111,7 @@ export const contrarreloj: GameDefinition = {
             'Todo arranca con la bandera verde. Lo que va adentro de "por siempre" se repite sin parar.',
             'Poné «mover con las flechas» adentro de «por siempre». Probá con velocidad 5.',
           ],
-          demo: 'a_forever',
+          demoScript: onFlag(forever(moveWithArrows(5))),
           example: [{ sprite: 'Toby', scripts: [onFlag(forever(moveWithArrows(5)))] }],
           check: (ctx) =>
             holdingAll(ctx, ['a_forever'], ['a_arrows']).some(({ sprite }) => ctx.stats.ranBy(sprite.id, 'arrows')) &&
@@ -126,7 +126,7 @@ export const contrarreloj: GameDefinition = {
             'Al principio del juego, usá «fijar … a …» para poner la variable en 30. Lo vas a ver en un cartelito en el escenario.',
           ],
           unlock: ['a_setvar', 'v_var', 'a_changevar'],
-          demo: 'a_setvar',
+          demoScript: onFlag(setVar('tiempo', 30), forever(moveWithArrows(5))),
           example: [{ sprite: 'Toby', scripts: [onFlag(setVar('tiempo', 30), forever(moveWithArrows(5)))] }],
           check: (ctx) => setAtStart(ctx).some((s) => s.value >= 10 && s.value <= 120) && ctx.stats.ran('var'),
         },
@@ -140,7 +140,7 @@ export const contrarreloj: GameDefinition = {
             'Esto va en un programa aparte, que también empieza con la bandera verde. Así Toby se mueve mientras el reloj corre.',
           ],
           unlock: ['a_wait', 'a_repeatuntil', 'v_lt'],
-          demo: 'a_wait',
+          demoScript: onFlag(forever(wait(1), changeVar('tiempo', -1))),
           example: [{ sprite: 'Toby', scripts: [onFlag(forever(wait(1), changeVar('tiempo', -1)))] }],
           check: (ctx) => countdownNames(ctx).length > 0 && belowStart(ctx).length > 0 && ctx.stats.count('wait') >= 2,
         },

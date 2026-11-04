@@ -64,7 +64,7 @@ export const bandaParque: GameDefinition = {
           text: 'Tu músico toca una nota cuando lo tocás. Sacá la manito y poné la nota musical abajo. Después tocá al músico en el escenario.',
           hints: ['La manito es el comienzo y la nota va pegada abajo.'],
           unlock: ['f_note'],
-          demo: 'f_note',
+          demoScript: fClick(fNote('do')),
           check: (ctx) => spritesWithHat(ctx, { hat: 'f_click', types: ['f_note'] }).length >= 1 && ctx.stats.count('note') >= 1,
         },
         {
@@ -72,7 +72,7 @@ export const bandaParque: GameDefinition = {
           title: 'Una melodía',
           text: 'Una nota sola no es una canción. Armá una melodía: cinco notas o más, con tres notas distintas por lo menos. Después tocá al músico.',
           hints: ['Tocá el dibujito de cada nota para cambiarla por otra.', 'Tres notas distintas son, por ejemplo, do, mi y sol.'],
-          demo: 'f_note',
+          demoScript: fClick(fNote('do'), fNote('mi'), fNote('sol'), fNote('mi'), fNote('do')),
           check: (ctx) =>
             ctx.program.sprites.some((s) => ctx.stats.ranBy(s.id, 'note') && ctx.stats.ranHatBy(s.id, 'click') && tapNotes(s).length >= 5 && new Set(tapNotes(s)).size >= 3),
         },
@@ -82,7 +82,7 @@ export const bandaParque: GameDefinition = {
           text: 'Que baile mientras toca. Entre las notas, que salte, gire o se agrande. Poné dos movimientos distintos o más.',
           hints: ['El baile va mezclado con las notas, no solo al final.', 'Probá con el salto, el giro y el agrandar.'],
           unlock: ['f_jump', 'f_spin', 'f_grow', 'f_shrink', 'f_face'],
-          demo: 'f_spin',
+          demoScript: fClick(fNote('do'), fJump(), fNote('mi'), fSpin(), fNote('sol')),
           check: (ctx) =>
             spritesWithHat(ctx, { hat: 'f_click', types: DANCE, min: 2, kinds: 2 }).some((s) => tapNotes(s).length >= 3),
         },

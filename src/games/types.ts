@@ -29,8 +29,15 @@ export interface GameStep {
   hints: string[];
   /** Blocks that appear in the toolbox from this step on. */
   unlock?: BlockType[];
-  /** First phase only: block the animated hand drags as a demo. */
-  demo?: BlockType;
+  /**
+   * First phase only: what the step wants built, hat first. «Mostrame» compares it with the child's program and
+   * shows only the next missing thing. Match is by block type, so field values here are examples.
+   */
+  demoScript?: Script | readonly Script[];
+  /** Whom `demoScript` is for when it is not the selected sprite: a sprite id, an art id or an art kind. */
+  demoSprite?: string;
+  /** Every sprite of the project needs the scripts, not just one (two racers). */
+  demoEach?: boolean;
   /** Selector the guide points at when the step is about the interface, not a block. */
   point?: string;
   /** Last rung of the hint ladder: scripts rendered read-only as an example, per sprite name. */

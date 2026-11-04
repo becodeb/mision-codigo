@@ -5,7 +5,7 @@
 import * as Blockly from 'blockly/core';
 import { registerBlocks } from '../language/blocks.ts';
 import type { BlockType } from '../language/catalog.ts';
-import { irToBlockly, type WorkspaceState } from '../language/convert.ts';
+import { blocklyToIr, irToBlockly, type WorkspaceState } from '../language/convert.ts';
 import type { Script } from '../language/ir.ts';
 import { blocklyThemes } from '../language/themes.ts';
 import { CREATE_LIST_KEY, CREATE_VARIABLE_KEY, type ToolboxDefinition } from '../language/toolbox.ts';
@@ -148,6 +148,27 @@ export class BlockEditor {
     return fly?.getWorkspace().getTopBlocks(false).find((b) => b.type === type) as Blockly.BlockSvg | undefined;
   }
 
+  /** Scrolls the open flyout so a block in it is on screen; a block outside the flyout view cannot be picked up by the hand. */
+  showInFlyout(block: Blockly.BlockSvg): boolean {
+    try {
+      const fly = this.ws.getFlyout();
+      if (!fly) return false;
+      const fw = fly.getWorkspace();
+      const view = fw.getParentSvg().getBoundingClientRect();
+      const inView = (): boolean => {
+        const r = block.getSvgRoot().getBoundingClientRect();
+        return r.height > 0 && r.top >= view.top - 1 && r.bottom <= view.bottom + 1;
+      };
+      if (!inView()) {
+        const pos = block.getRelativeToSurfaceXY();
+        fw.scroll(fw.scrollX, -(pos.y * fw.scale) + 16);
+      }
+      return inView();
+    } catch {
+      return false;
+    }
+  }
+
   /** Opens the toolbox category that holds a block, so the hand demo can pick it up. Text tier only. */
   openCategoryOf(type: BlockType): void {
     const toolbox = this.ws.getToolbox() as Blockly.Toolbox | null;
@@ -160,6 +181,24 @@ export class BlockEditor {
         return;
       }
     }
+  }
+
+  /** The scripts on screen right now (block ids included), read without waiting for the debounced change. */
+  scripts(): Script[] {
+    return blocklyToIr(this.save());
+  }
+
+  blockById(id: string | undefined): Blockly.BlockSvg | null {
+    return id ? (this.ws.getBlockById(id) as Blockly.BlockSvg | null) : null;
+  }
+
+  /** Scrolls the workspace so a block is on screen, for a hand that is about to point at it. */
+  reveal(block: Blockly.BlockSvg): void {
+    try {
+      const r = block.getSvgRoot().getBoundingClientRect();
+      const h = this.host.getBoundingClientRect();
+      if (r.top < h.top + 20 || r.bottom > h.bottom - 20 || r.left < h.left || r.right > h.right) this.ws.centerOnBlock(block.id, true);
+    } catch { /* a detached workspace has nothing to scroll */ }
   }
 
   highlight(blockId: string, on: boolean): void {
