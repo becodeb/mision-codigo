@@ -344,12 +344,12 @@
 }
 
 .c-pitch {
+  flex: 1;
   font-size: 17px;
   color: var(--ink-soft);
 }
 
 .c-status {
-  margin-top: auto;
   font-weight: 700;
   font-size: 16px;
 }
