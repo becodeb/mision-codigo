@@ -14,7 +14,7 @@ import { blocksInList, blocksOfSprite } from '../checks.ts';
 import type { Game } from '../../runtime/testing.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import {
-  BRANCHES, COMPARES, GUARDS, LOOPS, SAYS, belowStart, cloningSprites, comesBefore, conditionals, declared, holdingAll, holds, inside, liveClones, literal, lowers,
+  BRANCHES, COMPARES, LOOPS, SAYS, belowStart, cloningSprites, comesBefore, conditionals, declared, holdingAll, holds, inside, liveClones, literal, losesOnZero, lowers,
   nameOf, placed, raises, readNames, scriptsOf, setAtStart, spritesOfArt, valueOf,
 } from './logic.ts';
 import { clonesOf, releaseArrows, steer, varNow, walkTo } from './play.ts';
@@ -66,14 +66,6 @@ function bombHits(ctx: StepContext): boolean {
     return ids.has(s.id) || targets.some((t) => ids.has(t));
   });
 }
-
-/** Whether the game can end by a variable reaching a number: a lose behind a comparison with a variable. */
-const losesOnZero = (ctx: StepContext): boolean =>
-  scriptsOf(ctx).some(
-    ({ script }) =>
-      holds(script.body, ['a_lose']) &&
-      blocksInList(script.body).some((b) => GUARDS.includes(b.type) && !!b.inputs.C && holds([b.inputs.C], COMPARES) && holds([b.inputs.C], ['v_var'])),
-  );
 
 const cloneScripts = (ctx: StepContext) => scriptsOf(ctx, ['a_clonestart']);
 

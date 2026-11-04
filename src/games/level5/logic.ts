@@ -141,6 +141,14 @@ export function belowStart(ctx: StepContext): string[] {
 /** Names of the variables a list of blocks reads. */
 export const readNames = (list: readonly Block[]): string[] => blocksInList(list).filter((b) => b.type === 'v_var').map(nameOf);
 
+/** Whether the game can end by a variable reaching a number: a lose behind a comparison that reads a variable. */
+export const losesOnZero = (ctx: StepContext): boolean =>
+  scriptsOf(ctx).some(
+    ({ script }) =>
+      holds(script.body, ['a_lose']) &&
+      blocksInList(script.body).some((b) => GUARDS.includes(b.type) && !!b.inputs.C && holds([b.inputs.C], COMPARES) && holds([b.inputs.C], ['v_var'])),
+  );
+
 /* ---------- order inside a script ---------- */
 
 /**
