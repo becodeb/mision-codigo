@@ -27,6 +27,12 @@ export function totalSteps(gameId: string, lookup: CatalogLookup = defaultLookup
   return game ? game.phases.reduce((sum, phase) => sum + phase.steps.length, 0) : null;
 }
 
+/** The time of day on a 24-hour clock, «15:05:09», in the computer's own zone. Built by hand: locale formats may drop AM/PM. */
+export function formatClock(date: Date): string {
+  const two = (n: number): string => String(n).padStart(2, '0');
+  return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}`;
+}
+
 /** Minutes for display: «<1» under a minute, whole minutes otherwise. */
 export function formatMinutes(seconds: number): string {
   if (seconds <= 0) return '0';
