@@ -1,10 +1,10 @@
 /**
- * Level 3, class 1: fly Nova with the arrow keys and land on planets. Level 3 has no «touching» and no
- * conditionals, so landing is a tap on the planet while Nova is next to it; the points hats carry the phases.
+ * Level 3, class 1: fly Nova with the arrow keys and land on planets. Landing is real contact: the
+ * «cuando toque a» hat is an event, not a conditional, so level 3 has it. The points hats carry the phases.
  */
 import type { Block } from '../../language/ir.ts';
 import {
-  addScore, backdrop, changeX, changeY, face, goTo, goToRandom, hide, jump, onClick, onFlag, onKey, onPoints, onReceive, project, repeat, sayFor,
+  addScore, backdrop, changeX, changeY, face, goTo, goToRandom, hide, jump, onFlag, onKey, onPoints, onReceive, onTouching, project, repeat, sayFor,
   send, setScore, setSize, show, sound, sprite, wait, win,
 } from '../../language/ir.ts';
 import { PLACES, REACTIONS, appearLater, blocksInList, messageReaches, numField, refBlocks, refHas, refsOfHat, spriteCount } from '../checks.ts';
@@ -22,8 +22,20 @@ const keyScripts = (ctx: StepContext, key: string) => refsOfHat(ctx, 'a_key', (h
 const nudges = (ctx: StepContext, key: string, block: 'a_changex' | 'a_changey', sign: 1 | -1): boolean =>
   keyScripts(ctx, key).some((r) => refBlocks(r).some((b) => b.type === block && numField(b, 'N') * sign > 0));
 
-/** Click scripts that score and move: a planet that flees when landed on. */
-const landables = (ctx: StepContext) => refsOfHat(ctx, 'a_click').filter((r) => refBlocks(r).some((b) => b.type === 'a_addscore' && numField(b, 'N') > 0) && refHas(r, PLACES));
+const NOVA = 'nova';
+
+/** Touch scripts that watch another sprite of the project, with the blocks that must score or cost points. */
+const touchScripts = (ctx: StepContext) =>
+  refsOfHat(ctx, 'a_touching', (h) => ctx.program.sprites.some((s) => s.id === h.fields.T)).filter((r) => r.sprite.id !== r.script.hat.fields.T);
+
+/** Touch scripts that earn a point: a landing. */
+const landings = (ctx: StepContext) => touchScripts(ctx).filter((r) => refBlocks(r).some((b) => b.type === 'a_addscore' && numField(b, 'N') > 0));
+
+/** Landings after which the planet goes elsewhere: it moves itself, or the landing tells it to by message. */
+const fleeing = (ctx: StepContext) =>
+  landings(ctx).filter(
+    (l) => (l.sprite.id !== NOVA && refHas(l, PLACES)) || messageReaches(ctx, [l], (r) => r.sprite.id !== NOVA && refHas(r, PLACES)),
+  );
 
 const loopHas = (loop: Block, types: readonly string[]): boolean => blocksInList(loop.body).some((b) => types.includes(b.type));
 
@@ -91,7 +103,7 @@ export const manejaNova: GameDefinition = {
     },
     {
       title: 'Aterrizar',
-      goal: 'Un planeta espera: llevá a Nova hasta él y tocalo para aterrizar.',
+      goal: 'Un planeta espera: volá con Nova hasta él y tocalo para aterrizar.',
       steps: [
         {
           id: 'planeta',
@@ -104,31 +116,31 @@ export const manejaNova: GameDefinition = {
         {
           id: 'aterrizar',
           title: 'Aterrizaje con punto',
-          text: 'Para aterrizar, volá con Nova hasta el planeta y tocalo con el dedo. Cada aterrizaje tiene que sumar un punto.',
+          text: 'Para aterrizar, Nova tiene que llegar volando y tocar el planeta. Cada aterrizaje tiene que sumar un punto. Después volá con las flechas hasta tocarlo.',
           hints: [
-            'El planeta es el que reacciona cuando lo tocan: «al hacer clic en este personaje».',
+            'El planeta se da cuenta cuando Nova lo toca: «cuando toque a» y elegí a Nova.',
             'Adentro poné «sumar 1 a puntos».',
           ],
-          unlock: ['a_click', 'a_addscore'],
-          example: [{ sprite: 'Planeta', scripts: [onClick(addScore(1))] }],
-          check: (ctx) => refsOfHat(ctx, 'a_click').some((r) => refBlocks(r).some((b) => b.type === 'a_addscore' && numField(b, 'N') > 0)) && ctx.stats.maxScore >= 1,
+          unlock: ['a_touching', 'a_addscore'],
+          example: [{ sprite: 'Planeta', scripts: [onTouching('nova', addScore(1))] }],
+          check: (ctx) => landings(ctx).length > 0 && ctx.stats.ranHat('touching') && ctx.stats.maxScore >= 1,
         },
         {
           id: 'mensaje',
           title: 'Nova festeja',
-          text: 'Que sea Nova quien festeje el aterrizaje: cuando el planeta es tocado, tiene que avisarle a Nova para que diga algo.',
+          text: 'Que sea Nova quien festeje el aterrizaje: cuando el planeta es tocado por Nova, tiene que avisarle a Nova para que diga algo.',
           hints: [
             'Para que un personaje le avise a otro hay que mandar un mensaje.',
-            'El planeta manda el mensaje cuando lo tocan, y Nova lo recibe.',
+            'El planeta manda el mensaje cuando Nova lo toca, y Nova lo recibe.',
             'Cuando Nova lo reciba, que diga algo.',
           ],
           unlock: ['a_send', 'a_recv', 'a_sayfor'],
           example: [
-            { sprite: 'Planeta', scripts: [onClick(addScore(1), send('m1'))] },
+            { sprite: 'Planeta', scripts: [onTouching('nova', addScore(1), send('m1'))] },
             { sprite: 'Nova', scripts: [onReceive('m1', sayFor('¡Aterricé!', 0.5), face('risa'))] },
           ],
           check: (ctx) =>
-            refsOfHat(ctx, 'a_click').some((c) => messageReaches(ctx, [c], (r) => r.sprite.id !== c.sprite.id && refHas(r, REACTIONS))) && ctx.stats.ranHat('recv'),
+            landings(ctx).some((c) => messageReaches(ctx, [c], (r) => r.sprite.id !== c.sprite.id && refHas(r, REACTIONS))) && ctx.stats.ranHat('recv'),
         },
         {
           id: 'inicio',
@@ -161,11 +173,11 @@ export const manejaNova: GameDefinition = {
           text: 'Después de un aterrizaje el planeta tiene que irse a otro lugar, y Nova tiene que volar de nuevo. Conseguí 3 aterrizajes.',
           hints: [
             'Hay un bloque que manda a un personaje a un lugar cualquiera.',
-            'Ponelo en el programa del planeta, el que se activa cuando lo tocan.',
+            'Ponelo en el programa del planeta, el que se activa cuando Nova lo toca.',
           ],
           unlock: ['a_random'],
-          example: [{ sprite: 'Planeta', scripts: [onClick(addScore(1), send('m1'), goToRandom())] }],
-          check: (ctx) => landables(ctx).length > 0 && ctx.stats.maxScore >= 3,
+          example: [{ sprite: 'Planeta', scripts: [onTouching('nova', addScore(1), send('m1'), goToRandom())] }],
+          check: (ctx) => fleeing(ctx).length > 0 && ctx.stats.maxScore >= 3,
         },
         {
           id: 'deriva',
@@ -181,22 +193,22 @@ export const manejaNova: GameDefinition = {
           check: (ctx) =>
             refsOfHat(ctx, 'a_flag').some(
               (r) =>
-                landables(ctx).some((l) => l.sprite.id === r.sprite.id) &&
+                fleeing(ctx).some((l) => l.sprite.id === r.sprite.id) &&
                 blocksInList(r.script.body).some((b) => b.type === 'a_repeat' && numField(b, 'N') >= 5 && loopHas(b, ['a_wait']) && loopHas(b, PLACES)),
             ) && ctx.stats.ran('repeat'),
         },
         {
           id: 'meteorito',
           title: 'Cuidado con el meteorito',
-          text: 'Hay un meteorito en el camino. Sumá una piedra al escenario: si la tocás por error, perdés un punto y la piedra se va a otro lugar. Probá tocarla una vez.',
+          text: 'Hay un meteorito en el camino. Sumá una piedra al escenario: si Nova la toca por error, perdés un punto y la piedra se va a otro lugar. Volá hasta ella una vez para probarlo.',
           hints: [
             'Para sumar puntos el número es positivo. ¿Y para perderlos?',
             'Sumá la piedra con el botón del más y armá su programa como el del planeta, pero al revés.',
           ],
-          example: [{ sprite: 'Meteorito', scripts: [onClick(addScore(-1), sound('boing'), goToRandom())] }],
+          example: [{ sprite: 'Meteorito', scripts: [onTouching('nova', addScore(-1), sound('boing'), goToRandom())] }],
           check: (ctx) =>
             spriteCount(ctx) >= SETUP.sprites.length + 2 &&
-            refsOfHat(ctx, 'a_click').some((r) => refBlocks(r).some((b) => b.type === 'a_addscore' && numField(b, 'N') < 0) && ctx.stats.ranHatBy(r.sprite.id, 'click')),
+            touchScripts(ctx).some((r) => r.sprite.id !== NOVA && refBlocks(r).some((b) => b.type === 'a_addscore' && numField(b, 'N') < 0) && ctx.stats.ranHatBy(r.sprite.id, 'touching')),
         },
       ],
     },
@@ -258,14 +270,14 @@ export const manejaNova: GameDefinition = {
         {
           id: 'ganar',
           title: 'Llegar a casa',
-          text: 'Aterrizar en el planeta hogar tiene que ganar el juego. Jugá hasta llegar a casa.',
+          text: 'Aterrizar en el planeta hogar tiene que ganar el juego. Volá hasta llegar a casa.',
           hints: [
-            'El planeta hogar se toca con el dedo, como el otro.',
-            'Cuando lo tocan, tiene que pasar «ganar».',
+            'Al planeta hogar se llega volando, como al otro: se da cuenta cuando Nova lo toca.',
+            'Cuando Nova lo toca, tiene que pasar «ganar».',
           ],
           unlock: ['a_win'],
-          example: [{ sprite: 'Hogar', scripts: [onClick(sayFor('¡Llegamos a casa!', 1), win())] }],
-          check: (ctx) => refsOfHat(ctx, 'a_click').some((r) => refHas(r, ['a_win'])) && ctx.stats.won,
+          example: [{ sprite: 'Hogar', scripts: [onTouching('nova', sayFor('¡Llegamos a casa!', 1), win())] }],
+          check: (ctx) => touchScripts(ctx).some((r) => refHas(r, ['a_win'])) && ctx.stats.won,
         },
         {
           id: 'mostrar',
@@ -281,7 +293,7 @@ export const manejaNova: GameDefinition = {
   challenges: [
     {
       title: 'Más meteoritos',
-      text: 'Sumá más piedras que quiten puntos. ¿Cuántas podés poner sin que el juego sea imposible?',
+      text: 'Sumá más piedras que quiten puntos cuando Nova las toca. ¿Cuántas podés poner sin que el juego sea imposible?',
     },
     {
       title: 'El poder secreto',
@@ -320,52 +332,48 @@ export const manejaNova: GameDefinition = {
           'ball',
           [
             onFlag(goTo(120, 10), repeat(150, wait(4), goToRandom())),
-            onClick(addScore(1), sound('magia'), send('m1'), goToRandom()),
+            onTouching('nova', addScore(1), sound('magia'), send('m1'), goToRandom()),
             onReceive('p2', setSize(100), repeat(150, wait(3.5), goToRandom())),
           ],
-          { x: 120, y: 10, size: 170, name: 'Planeta' },
+          { x: 120, y: 10, size: 230, name: 'Planeta' },
         ),
         sprite(
           'meteorito',
           'rock',
-          [onClick(addScore(-1), sound('boing'), goToRandom()), onFlag(repeat(150, wait(3), goToRandom()))],
-          { x: -60, y: -20, size: 120, name: 'Meteorito' },
+          [onTouching('nova', addScore(-1), sound('boing'), goToRandom()), onFlag(repeat(150, wait(3), goToRandom()))],
+          { x: -60, y: -20, size: 150, name: 'Meteorito' },
         ),
-        sprite('hogar', 'heart', [onFlag(hide()), onPoints(5, show()), onClick(sayFor('¡Llegamos a casa!', 1), win())], { x: -150, y: 40, size: 200, name: 'Hogar' }),
+        sprite('hogar', 'heart', [onFlag(hide()), onPoints(5, show()), onTouching('nova', sayFor('¡Llegamos a casa!', 1), win())], { x: -150, y: 40, size: 200, name: 'Hogar' }),
       ],
     ),
     play: (game) => {
-      /** Presses the arrow that closes the biggest gap, one tap at a time, until Nova is next to the target. */
-      const flyNextTo = (id: string): void => {
-        for (let i = 0; i < 120; i++) {
+      /** Where Nova stands relative to a sprite, and whether they touch. */
+      const touching = (id: string): boolean => game.machine.touchingTarget(game.sprite('nova'), id);
+      /** Flies Nova toward a sprite like a child would: hold the arrow that closes the biggest gap, look, repeat. */
+      const flyTo = (id: string): void => {
+        const score = game.machine.score;
+        for (let i = 0; i < 200 && game.machine.score === score && !game.machine.ended && !touching(id); i++) {
           const nova = game.sprite('nova');
           const target = game.sprite(id);
           const dx = target.x - nova.x;
           const dy = target.y - nova.y;
-          if (Math.abs(dx) <= STEP && Math.abs(dy) <= STEP) return;
           const key = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : dy > 0 ? 'ArrowUp' : 'ArrowDown';
-          game.press(key);
-          game.run(80);
-          game.release(key);
+          game.hold(key, 80);
+          game.run(40);
         }
-      };
-      const land = (id: string, settleMs = 200): void => {
-        flyNextTo(id);
-        const t = game.sprite(id);
-        game.machine.tapAt(t.x, t.y + 15);
-        game.run(settleMs);
+        game.run(300);
       };
       game.flag();
       game.run(200);
-      // The spacebar power, then one tap on the meteorite to see what it costs.
-      game.press(' ');
-      game.run(100);
-      game.release(' ');
-      const rock = game.sprite('meteorito');
-      game.machine.tapAt(rock.x, rock.y + 15);
+      // The spacebar power, then a flight into the meteorite to see what it costs.
+      game.hold(' ', 100);
+      flyTo('meteorito');
       game.run(300);
-      for (let i = 0; i < 40 && (game.machine.score ?? 0) < 5; i++) land('planeta');
-      for (let i = 0; i < 10 && !game.machine.ended; i++) land('hogar', 1_500);
+      for (let i = 0; i < 60 && (game.machine.score ?? 0) < 5; i++) flyTo('planeta');
+      for (let i = 0; i < 20 && !game.machine.ended; i++) {
+        flyTo('hogar');
+        game.run(1_500);
+      }
       game.machine.setShown(true);
     },
   },

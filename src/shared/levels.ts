@@ -31,7 +31,7 @@ export const LEVELS: readonly LevelInfo[] = [
     id: 3,
     teamName: 'Equipo Bosque',
     teacherDescription:
-      'Teclado, coordenadas y mensajes con bloques de texto, sin condicionales. Por ejemplo, puntos y fases por mensajes.',
+      'Teclado, coordenadas, mensajes y contacto entre personajes con bloques de texto, sin condicionales. Por ejemplo, puntos y fases por mensajes.',
   },
   {
     id: 4,

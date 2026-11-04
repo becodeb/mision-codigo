@@ -8,6 +8,7 @@ import { blockInfo, type HatKind } from '../language/catalog.ts';
 import type { Block, ProjectProgram, SpriteProgram } from '../language/ir.ts';
 import { EDGE } from '../language/options.ts';
 import { runList, type Thread } from './exec.ts';
+import { arg } from './expr.ts';
 import { bounds, clampXY, edgeHits, hitTest, overlaps } from './geometry.ts';
 import { nullHost, type Host, type StageView } from './host.ts';
 import type { ArtMetrics, ArtTable, SpriteInstance } from './instance.ts';
@@ -146,7 +147,31 @@ export class Machine implements StageView {
     this.stopAll();
     this.reset();
     this.running = true;
+    this.hoistFlagSetups();
     return this.trigger('flag');
+  }
+
+  /**
+   * Every flag script starts in the same frame, in the order they were made. A script that waits for a
+   * variable («esperar hasta que vidas < 1») placed before the one that sets it would read 0 and fire at
+   * once. So the leading «fijar» blocks that hold a typed-in value (a number or a text, not a calculation)
+   * are applied before any script runs. The scripts still run them afterwards, to the same effect.
+   */
+  private hoistFlagSetups(): void {
+    for (const inst of this.instances) {
+      for (const sc of inst.scripts) {
+        if (blockInfo(sc.hat.type)?.hat !== 'flag') continue;
+        for (const b of sc.body) {
+          if (b.type !== 'a_setvar' && b.type !== 'a_setscore') break;
+          const key = b.type === 'a_setvar' ? 'V' : 'N';
+          const input = b.inputs[key];
+          if (input && input.type !== 'v_num' && input.type !== 'v_text') break;
+          if (b.type === 'a_setvar') this.vars.set(String(b.fields.NAME), arg(this, inst, b, key));
+          else this.setScore(toNum(arg(this, inst, b, key)));
+        }
+      }
+    }
+    this.dirty = true;
   }
 
   /** Stops every script, deletes clones, clears speech and animation offsets. Keeps the current state. */
