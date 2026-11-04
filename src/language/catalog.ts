@@ -57,6 +57,7 @@ export const BLOCKS = {
   a_key: txtHat(3, 'key'),
   a_recv: txtHat(3, 'recv'),
   a_points: txtHat(3, 'points'),
+  a_touching: txtHat(3, 'touching'),
   a_send: txt(3, 'command', 'broadcast'),
   a_move: txt(3, 'command', 'move'),
   a_point: txt(3, 'command', 'move'),
@@ -86,7 +87,6 @@ export const BLOCKS = {
   v_text: txt(3, 'value'),
 
   /* text tier, level 4 */
-  a_touching: txtHat(4, 'touching'),
   a_arrows: txt(4, 'command', 'move', 'arrows'),
   a_bounce: txt(4, 'command', 'move'),
   a_gotosprite: txt(4, 'command', 'move'),

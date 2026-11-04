@@ -78,16 +78,16 @@ describe('catalog', () => {
     expect(has(2, 'f_wait') && has(2, 'f_repeat') && has(2, 'f_send') && has(2, 'f_recv') && has(2, 'f_note')).toBe(true);
   });
 
-  it('level 3: keyboard, coordinates, messages, points trigger, win; no conditionals', () => {
-    for (const t of ['a_flag', 'a_click', 'a_key', 'a_recv', 'a_send', 'a_points', 'a_move', 'a_goto', 'a_glide', 'a_wait', 'a_repeat', 'a_win', 'a_setscore', 'a_addscore', 'v_num', 'v_text'] as const) {
+  it('level 3: keyboard, coordinates, messages, points and touching triggers, win; no conditionals', () => {
+    for (const t of ['a_flag', 'a_click', 'a_key', 'a_recv', 'a_send', 'a_points', 'a_touching', 'a_move', 'a_goto', 'a_glide', 'a_wait', 'a_repeat', 'a_win', 'a_setscore', 'a_addscore', 'v_num', 'v_text'] as const) {
       expect(has(3, t), t).toBe(true);
     }
-    for (const t of ['a_forever', 'a_if', 'a_lose', 'a_touching', 'v_score', 'v_touching', 'v_key', 'a_stopothers'] as const) expect(has(3, t), t).toBe(false);
+    for (const t of ['a_forever', 'a_if', 'a_lose', 'v_score', 'v_touching', 'v_key', 'a_stopothers'] as const) expect(has(3, t), t).toBe(false);
     expect(blocksForLevel(3).every((t) => BLOCKS[t].tier === 'text')).toBe(true);
   });
 
-  it('level 4 adds loops, rules, touching and reading points', () => {
-    for (const t of ['a_touching', 'a_arrows', 'a_bounce', 'a_gotosprite', 'a_forever', 'a_if', 'a_stop', 'a_stopothers', 'a_lose', 'v_score', 'v_touching', 'v_key'] as const) {
+  it('level 4 adds loops, rules, touching as a question and reading points', () => {
+    for (const t of ['a_arrows', 'a_bounce', 'a_gotosprite', 'a_forever', 'a_if', 'a_stop', 'a_stopothers', 'a_lose', 'v_score', 'v_touching', 'v_key'] as const) {
       expect(has(4, t), t).toBe(true);
     }
     for (const t of ['a_ifelse', 'a_setvar', 'a_clone', 'v_random', 'a_ask'] as const) expect(has(4, t), t).toBe(false);
