@@ -30,7 +30,7 @@ is, served as a static legacy page).
   comments in English.
 - Must not recreate a specific existing game: genres are fine, names/characters/art are ours.
 - No internet needed during class: Blockly and fonts are bundled, not loaded from a CDN.
-- Raspberry Pi: `vitest --maxWorkers=2`, at most one writer at a time on this tree.
+- Raspberry Pi: `vitest --maxWorkers=2`, at most one writer at a time per working tree.
 - Never bind the server to `0.0.0.0` by default. `HOST` is explicit.
 - There is one workshop and no access code, by the owner's decision (2026-11-04). Anyone who reaches
   the server can read the name list, so store first names only, and revisit this before any public
@@ -52,7 +52,9 @@ If time runs short, cut in this order: the third level 5 game, then the teacher 
 - RDD: off (global, `gentle-ai review mode status`). No native review.
 - Delivery: `exception-ok`. Reason: greenfield rewrite on one local branch, no PR requested, and
   the slices cannot be reviewed apart from the rewrite they replace. Forecast: well over 400 lines.
-- Route: delegated direct, one writer at a time (writer trigger: 2+ non-trivial files per task).
+- Route: delegated direct (writer trigger: 2+ non-trivial files per task). The owner approved parallel
+  writers in isolated worktrees on 2026-11-04: sibling folders under `../mision-codigo-wt/`, at most
+  3 writers at a time, and the parent merges each branch into `feat/estudio-por-niveles`.
 
 ## Design
 
