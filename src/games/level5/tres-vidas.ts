@@ -96,6 +96,10 @@ function recordVars(ctx: StepContext): string[] {
   });
 }
 
+/** What each «crear un clon» in a list copies. A block left on its first option copies the sprite itself. */
+const clonedTargets = (list: readonly Block[]): string[] =>
+  blocksInList(list).filter((b) => b.type === 'a_clone').map((b) => String(b.fields.T ?? 'myself'));
+
 const shownBySay = (ctx: StepContext, name: string): boolean =>
   placed(ctx).some(({ block }) => SAYS.includes(block.type) && readNames([block]).includes(name));
 
@@ -122,7 +126,7 @@ export const tresVidas: GameDefinition = {
           text: '¡Empieza Tres vidas! Nova tiene que atrapar estrellas. Primero hacé que se mueva con las flechas todo el tiempo que dura el juego.',
           hints: [
             'Todo arranca con la bandera verde. Lo que va adentro de "por siempre" se repite sin parar.',
-            'Poné "moverse con las flechas" adentro del "por siempre". Probá con velocidad 6.',
+            'Poné «mover con las flechas» adentro de «por siempre». Probá con velocidad 6.',
           ],
           demo: 'a_forever',
           example: [{ sprite: 'Nova', scripts: [onFlag(forever(moveWithArrows(6)))] }],
@@ -136,7 +140,7 @@ export const tresVidas: GameDefinition = {
           text: 'La estrella aparece arriba, en un lugar al azar, y cae hasta salirse por abajo de la pantalla.',
           hints: [
             'Con "ir a" la ponés arriba: en x un número al azar entre -200 y 200, y en y un número alto, como 140.',
-            'Para que baje, repetí "sumar a y" con un número negativo. Se repite hasta que la y de la estrella sea menor que -150.',
+            'Para que baje, repetí «cambiar y en» con un número negativo. Se repite hasta que la y de la estrella sea menor que -150.',
           ],
           unlock: ['a_goto', 'a_changey', 'a_repeatuntil', 'v_random', 'v_lt', 'v_y'],
           demo: 'a_goto',
@@ -180,7 +184,7 @@ export const tresVidas: GameDefinition = {
           text: 'Nova arranca con 3 vidas. Creá una variable para contarlas y que empiece en 3 cada vez que se aprieta la bandera.',
           hints: [
             'Creá la variable con el botón de variables. Ponele el nombre que quieras.',
-            'Al principio del juego, "poner" tu variable en 3.',
+            'Al principio del juego, usá «fijar … a …» para poner tu variable en 3.',
           ],
           unlock: ['a_setvar', 'v_var', 'a_changevar'],
           demo: 'a_setvar',
@@ -192,8 +196,8 @@ export const tresVidas: GameDefinition = {
           title: 'Se escapó una',
           text: 'Si la estrella llega abajo sin que Nova la atrape, se pierde una vida. Si la atrapa, suma el punto. Una cosa o la otra, nunca las dos.',
           hints: [
-            '"Si… sino" elige entre dos caminos: lo que va en el "si" y lo que va en el "sino".',
-            'En el "si" sumá el punto. En el "sino" cambiá tu variable de vidas en -1.',
+            '«Si… si no» elige entre dos caminos: lo que va en el «si» y lo que va en el «si no».',
+            'En el «si» sumá el punto. En el «si no» usá «sumar a … el valor …» con tu variable de vidas y el valor -1.',
             'Dejá que se escape una estrella a propósito para ver cómo baja la variable.',
           ],
           unlock: ['a_ifelse'],
@@ -218,7 +222,7 @@ export const tresVidas: GameDefinition = {
           id: 'sonidos',
           title: 'Se escucha',
           text: 'Que se oiga la diferencia: un sonido cuando Nova atrapa y otro, distinto, cuando se escapa una.',
-          hints: ['Poné un sonido en cada camino del "si… sino". Elegí dos que suenen muy diferente.'],
+          hints: ['Poné un sonido en cada camino de «si… si no». Elegí dos que suenen muy diferente.'],
           unlock: ['a_sound'],
           example: [
             {
@@ -356,7 +360,7 @@ export const tresVidas: GameDefinition = {
           title: 'Las reglas del clon',
           text: 'Cada copia también aplica las reglas: da el punto o quita la vida. Y cuando termina tiene que desaparecer, si no se amontonan.',
           hints: [
-            'Mové las reglas de la estrella (el "si… sino") al final del bloque del clon.',
+            'Mové las reglas de la estrella («si… si no») al final del bloque del clon.',
             'Hay un bloque para borrar a este clon. Va al final de todo.',
             'Si los clones no se borran, llegás al máximo de 30 y dejan de nacer.',
           ],
@@ -435,7 +439,13 @@ export const tresVidas: GameDefinition = {
               ],
             },
           ],
-          check: (ctx) => conditionals(ctx, ['v_random'], ['a_clone']).length > 0 && cloningSprites(ctx).length >= 2,
+          check: (ctx) =>
+            conditionals(ctx, ['v_random'], ['a_clone']).some(({ block }) => {
+              const yes = clonedTargets(block.body);
+              const no = clonedTargets(block.elseBody);
+              // Cloning the same thing in both paths is no mix at all.
+              return yes.length === 0 || no.length === 0 || yes.some((t) => !no.includes(t));
+            }) && cloningSprites(ctx).length >= 2,
         },
       ],
     },
@@ -464,12 +474,18 @@ export const tresVidas: GameDefinition = {
           text: 'Y también aparecen más seguido: la espera entre copias se achica a medida que sube el puntaje.',
           hints: [
             'La espera es el número que le das a "esperar". También puede ser una cuenta.',
-            'Una división sirve: un número grande dividido por algo que crece da cada vez menos.',
+            'Una división sirve: un número grande dividido por algo que crece da cada vez menos. El puntaje tiene que ir abajo de la división.',
+            'Si el puntaje fuera la espera, cada vez esperarías más, y eso es lo contrario de lo que se pide.',
           ],
           example: [{ sprite: 'Estrella', scripts: [onFlag(forever(createClone(), wait(div(12, add(score(), 10)))))] }],
+          // A wait that shrinks as the score grows: the score (or a variable) is taken away from, or divides, a number.
           check: (ctx) =>
             holdingAll(ctx, LOOPS, ['a_clone']).some(({ block }) =>
-              inside(block).some((x) => x.type === 'a_wait' && inside(x).some((y) => y.type === 'v_score' || y.type === 'v_var')),
+              inside(block).some(
+                (x) =>
+                  x.type === 'a_wait' &&
+                  inside(x).some((y) => (y.type === 'v_div' || y.type === 'v_sub') && !!y.inputs.B && holds([y.inputs.B], ['v_score', 'v_var'])),
+              ),
             ),
         },
         {
