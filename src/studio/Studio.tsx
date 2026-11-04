@@ -124,6 +124,7 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
               </div>
             </div>
           )}
+          <SpritePanel session={session} onAdd={() => setDialog('sprites')} snapRev={snap.rev} />
         </div>
 
         <aside className="mc-side">
@@ -168,7 +169,7 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
             <span className="mc-coords">{selected.name} · x: {Math.round(selected.x)} · y: {Math.round(selected.y)}</span>
           )}
 
-          <div className="mc-panel" data-point="backdrops">
+          <div className="mc-panel mc-places" data-point="backdrops">
             <div className="mc-panel-head"><h4>Lugar</h4></div>
             <div className="mc-bd-strip">
               {Object.entries(BACKDROPS).map(([id, def]) => (
@@ -187,7 +188,6 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
             </div>
           </div>
 
-          <SpritePanel session={session} onAdd={() => setDialog('sprites')} snapRev={snap.rev} />
         </aside>
       </div>
 
@@ -305,8 +305,16 @@ function SpritePanel({ session, onAdd }: { session: StudioSession; onAdd: () => 
   }, [armed]);
   const selected = session.selectedSprite;
   return (
-    <div className="mc-panel" data-point="sprites">
-      <div className="mc-panel-head"><h4>Personajes</h4></div>
+    <div className="mc-panel mc-tray" data-point="sprites">
+      <div className="mc-panel-head">
+        <h4>Personajes</h4>
+        {selected && (
+          <label className="mc-name-row">
+            Nombre
+            <input maxLength={16} autoComplete="off" value={selected.name} onChange={(e) => session.renameSprite(selected.id, e.target.value)} />
+          </label>
+        )}
+      </div>
       <div className="mc-sprites">
         {doc.sprites.map((s) => (
           <div
@@ -338,12 +346,6 @@ function SpritePanel({ session, onAdd }: { session: StudioSession; onAdd: () => 
           <span>Agregar</span>
         </button>
       </div>
-      {selected && (
-        <label className="mc-name-row">
-          Nombre
-          <input maxLength={16} autoComplete="off" value={selected.name} onChange={(e) => session.renameSprite(selected.id, e.target.value)} />
-        </label>
-      )}
     </div>
   );
 }

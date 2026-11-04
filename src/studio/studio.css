@@ -80,7 +80,10 @@
 .mc-tabs { display: flex; gap: 6px; margin: 6px 0; }
 .mc-tabs button { border: 2px solid #A9CDE8; background: #fff; border-radius: 10px; padding: 4px 12px; font-weight: 700; }
 .mc-tabs button.on { background: #1F5DBD; border-color: #1F5DBD; color: #fff; }
-.mc-example-ws { position: relative; height: 210px; border: 3px solid #A9CDE8; border-radius: 14px; overflow: hidden; background: #fff; margin-top: 4px; }
+.mc-gbody.has-example { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 46%); column-gap: 14px; align-items: start; }
+.mc-gbody.has-example > * { grid-column: 1; }
+.mc-gbody.has-example > .mc-example { grid-column: 2; grid-row: 1 / span 6; margin-top: 0; }
+.mc-example-ws { position: relative; height: clamp(150px, 24dvh, 220px); border: 3px solid #A9CDE8; border-radius: 14px; overflow: hidden; background: #fff; margin-top: 4px; }
 
 /* main */
 .mc-main { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 500px); gap: 14px; padding: 12px max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left)); }
@@ -91,7 +94,8 @@
 .mc-who .mc-icon svg { width: 28px; height: 28px; }
 .mc-hint { margin-left: auto; font-size: 13px; color: var(--ink-soft); text-align: right; }
 .mc-blockly { flex: 1; min-height: 0; position: relative; }
-.mc-code-empty { position: absolute; inset: 52px 0 0; display: grid; place-items: center; text-align: center; padding: 24px; background: rgba(255, 253, 248, .96); z-index: 80; }
+.mc-code-empty { position: absolute; inset: 52px 0 0; display: grid; place-items: center; text-align: center; padding: 24px; background: var(--paper); z-index: 80; }
+.mc-tray { z-index: 81; }
 .mc-code-empty p { font: 700 20px/1.3 var(--font-display); margin-bottom: 14px; }
 .mc-cta { border: 0; font: 800 20px/1 var(--font-display); padding: 14px 22px 12px; border-radius: 16px; background: var(--accent); color: #fff; box-shadow: 0 4px 0 var(--accent-deep); }
 .mc-side { display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0; padding-bottom: 4px; }
@@ -109,24 +113,26 @@
 .mc-stage .spr { cursor: grab; }
 .running .mc-stage .spr { cursor: pointer; }
 .mc-coords { font: 600 13px/1 var(--font-hud); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-.mc-panel { background: var(--card); border: 3px solid var(--line); border-radius: 18px; padding: 10px 12px 12px; display: grid; gap: 8px; }
+.mc-panel { background: var(--card); border: 3px solid var(--line); border-radius: 18px; padding: 8px 12px 10px; display: grid; gap: 6px; }
+.mc-panel-head { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
 .mc-panel-head h4 { font: 800 17px/1 var(--font-display); }
 .mc-bd-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.mc-places .mc-panel-head h4, .mc-tray .mc-panel-head h4 { font-size: 15px; }
 .mc-bd { padding: 0; border: 3px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; aspect-ratio: 4 / 3; display: block; position: relative; min-width: 44px; }
 .mc-bd svg { width: 100%; height: 100%; display: block; }
 .mc-bd.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
-.mc-bd span { position: absolute; left: 0; right: 0; bottom: 0; font: 700 11px/1.6 var(--font-body); background: rgba(255, 255, 255, .85); text-align: center; }
-.mc-sprites { display: flex; flex-wrap: wrap; gap: 8px; }
-.mc-sp-card { position: relative; width: 82px; padding: 4px 4px 6px; border-radius: 14px; border: 3px solid var(--line); background: #fff; display: grid; justify-items: center; gap: 2px; cursor: pointer; }
-.mc-sp-card svg { width: 60px; height: 64px; }
-.mc-sp-card .nm { font: 700 13px/1.1 var(--font-body); max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-bd span { position: absolute; left: 0; right: 0; bottom: 0; font: 700 11px/1.4 var(--font-body); background: rgba(255, 255, 255, .85); text-align: center; }
+.mc-sprites { display: flex; flex-wrap: wrap; gap: 8px 10px; padding-top: 8px; max-height: 190px; overflow-y: auto; }
+.mc-sp-card { position: relative; width: 74px; padding: 4px 4px 6px; border-radius: 14px; border: 3px solid var(--line); background: #fff; display: grid; justify-items: center; gap: 2px; cursor: pointer; }
+.mc-sp-card svg { width: 44px; height: 48px; }
+.mc-sp-card .nm { font: 700 13px/1.1 var(--font-body); max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mc-sp-card.sel { border-color: var(--accent); background: var(--accent-soft); }
 .mc-sp-del { position: absolute; top: -10px; right: -10px; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; background: #8E86B0; color: #fff; display: grid; place-items: center; padding: 0; font-weight: 800; font-size: 16px; line-height: 1; }
 .mc-sp-del.armed { background: var(--stop); width: auto; padding: 0 10px; border-radius: 16px; font-size: 13px; }
-.mc-sp-add { width: 82px; min-height: 92px; border-radius: 14px; border: 3px dashed var(--line-2); background: transparent; display: grid; place-items: center; gap: 2px; color: var(--accent-deep); font: 800 14px/1.1 var(--font-display); }
-.mc-sp-add .mc-icon svg { width: 34px; height: 34px; }
+.mc-sp-add { width: 74px; min-height: 76px; border-radius: 14px; border: 3px dashed var(--line-2); background: transparent; display: grid; place-items: center; gap: 2px; color: var(--accent-deep); font: 800 14px/1.1 var(--font-display); }
+.mc-sp-add .mc-icon svg { width: 28px; height: 28px; }
 .mc-name-row { display: flex; align-items: center; gap: 8px; font-size: 14px; }
-.mc-name-row input { flex: 1; min-width: 0; height: 40px; border-radius: 10px; border: 2px solid var(--line); padding: 0 10px; font-weight: 700; background: #fff; }
+.mc-name-row input { width: 150px; min-width: 0; height: 34px; border-radius: 10px; border: 2px solid var(--line); padding: 0 10px; font-weight: 700; background: #fff; }
 
 /* stage overlays */
 .mc-ended { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 16px; background: rgba(36, 26, 77, .72); color: #fff; z-index: 5; }
@@ -215,6 +221,22 @@
 .mc-studio .tw { animation: mc-twinkle 2.5s ease-in-out infinite alternate; }
 @keyframes mc-twinkle { to { opacity: .15; } }
 
+/* Laptops and landscape tablets: everything fits the window. The stage takes the height that is left. */
+@media (min-width: 1001px) {
+  .mc-studio { height: 100dvh; min-height: 0; }
+  .mc-topbar { padding-top: 6px; padding-bottom: 6px; flex: none; }
+  .mc-ibtn { width: 44px; height: 44px; }
+  .mc-guide { padding-top: 8px; padding-bottom: 8px; flex: none; }
+  .mc-main { flex: 1 1 0; min-height: 440px; grid-template-columns: minmax(0, 1fr) clamp(320px, 38vw, 500px); padding-top: 8px; padding-bottom: 10px; }
+  .mc-code { min-height: 0; }
+  .mc-side { min-height: 0; display: grid; grid-template-rows: auto minmax(150px, 1fr) auto auto; gap: 10px; padding-bottom: 0; }
+  .mc-stage-slot { container-type: size; min-height: 0; }
+  .mc-stage-box { width: min(calc(100cqw - 6px), calc((100cqh - 6px) * 4 / 3)); margin: 0 auto; }
+  .mc-studio.show .mc-stage-slot { container-type: normal; }
+  .mc-studio.show .mc-stage-box { margin: 0; }
+  .mc-flag, .mc-stop, .mc-showbtn { height: 52px; }
+  .mc-stop { width: 52px; }
+}
 @media (max-width: 1000px) {
   .mc-main { grid-template-columns: minmax(0, 1fr); }
   .mc-side { order: -1; }

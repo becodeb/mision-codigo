@@ -103,7 +103,7 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
   return (
     <section className={`mc-guide${done ? ' done' : ''}${celebrate ? ' celebrate' : ''}`} data-point="guide" aria-live="polite">
       {robi}
-      <div className="mc-gbody">
+      <div className={`mc-gbody${exampleShown ? ' has-example' : ''}`}>
         <div className="mc-ghead">
           <span className="mc-phase">
             Fase {flat.phaseIndex + 1} de {phaseCount}: {phase.title}
