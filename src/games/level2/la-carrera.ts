@@ -76,7 +76,7 @@ export const laCarrera: GameDefinition = {
           title: 'Elegí la pista',
           text: '¡Hoy hay una carrera! Primero elegí dónde es la pista: tocá uno de los lugares.',
           hints: ['Mirá los dibujitos de abajo. Tocá el que más te guste.'],
-          point: '#backdrops',
+          point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
         {
@@ -84,7 +84,7 @@ export const laCarrera: GameDefinition = {
           title: 'Elegí a los corredores',
           text: 'Ahora elegí a los dos corredores. Tocá el botón con el más dos veces.',
           hints: ['Podés elegir dos iguales o dos distintos.'],
-          point: '#sp-add',
+          point: 'add-sprite',
           check: (ctx) => spriteCount(ctx) >= SETUP.sprites.length + 2,
         },
         {
@@ -259,7 +259,7 @@ export const laCarrera: GameDefinition = {
           title: '¡Mostrá tu carrera!',
           text: '¡Terminaste! Tocá el botón amarillo para ver tu carrera en pantalla grande.',
           hints: ['Buscá el botón amarillo y tocalo.'],
-          point: '#btn-show',
+          point: 'show',
           check: (ctx) => ctx.stats.shown,
         },
       ],

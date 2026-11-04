@@ -256,25 +256,25 @@ src/
 
 ## Tasks
 
-- [ ] **T01 Foundation and runtime.** Vite + React + TS + Vitest. Bundled Blockly and fonts. IR,
+- [x] **T01 Foundation and runtime.** Vite + React + TS + Vitest. Bundled Blockly and fonts. IR,
       headless runtime with the full language and the three fixes, ported art and audio, objects.
       Route: delegated. Checks: typecheck, Vitest, build.
-- [ ] **T02 Blocks.** Block definitions for both tiers, per-level toolboxes, Blockly <-> IR round
+- [x] **T02 Blocks.** Block definitions for both tiers, per-level toolboxes, Blockly <-> IR round
       trip for every block type. Route: delegated. Checks: typecheck, Vitest.
-- [ ] **T03 Studio.** React editor at parity with the old app (stage, drag, workspace per sprite,
+- [x] **T03 Studio.** React editor at parity with the old app (stage, drag, workspace per sprite,
       guide with voice, Mostrame hand, show mode, confetti) plus monitors, win/lose overlay, ask
       modal, variable modal, touch arrows. Route: delegated. Checks: typecheck, Vitest, build,
       browser capture.
-- [ ] **T04 Backend.** Express, SQLite, sessions, all routes, tests. Route: delegated. Checks:
+- [x] **T04 Backend.** Express, SQLite, sessions, all routes, tests. Route: delegated. Checks:
       typecheck, Vitest, real HTTP run.
-- [ ] **T05 Workshop flow.** Name screen, level chooser, autosave with offline fallback.
+- [x] **T05 Workshop flow.** Name screen, level chooser, autosave with offline fallback.
       Route: delegated. Checks: typecheck, Vitest, build, browser capture.
-- [ ] **T06 Class 1 catalog, levels 1 and 2.** 4 games with guides and proofs. Route: delegated.
+- [x] **T06 Class 1 catalog, levels 1 and 2.** 4 games with guides and proofs. Route: delegated.
       Checks: Vitest proofs, browser capture of one game from each level.
 - [ ] **T07 Class 1 catalog, levels 3 and 4.** 4 games with guides and proofs. Route: delegated.
       Checks: same.
 - [ ] **T08 Class 1 catalog, level 5.** 3 games with guides and proofs. Route: delegated. Checks: same.
-- [ ] **T09 Teacher panel.** Login, bulk import, level assignment, active class, progress and class
+- [x] **T09 Teacher panel.** Login, bulk import, level assignment, active class, progress and class
       data. Route: delegated. Checks: typecheck, Vitest, build, browser capture.
 - [ ] **T10 Ready for class 1.** Real browser pass through the whole flow, remove the old `estudio/`,
       move `niveles/` to static serving, serve on the LAN. Route: delegated, then parent spot check.
@@ -308,8 +308,11 @@ because this repo is not a known Engram project. This file is the source of trut
 
 ## Verification evidence
 
-None yet.
+- T01: `ec4c978`..`77d5488`. T04: merged with `6587376`. T05 and T09: merged with `f50ca1f`. T06: merged with `cc57dc7`. T02 and T03: merged with `22649a1`, fixes in `ff6cf74`.
+- At `ff6cf74`: typecheck clean, Vitest 26 files and 356 tests passed, build passed.
+- Real server on the LAN at 192.168.1.37:8300: name screen, chooser and studio load `presentacion` in Chromium with no external requests. Console shows only expected 401 and 404 responses (no session, new project).
+- Pending: a full playthrough in a real browser with the real catalog (T10).
 
 ## Next step
 
-T01.
+T07 and T08 are running. Then T10.

@@ -33,7 +33,7 @@ export const presentacion: GameDefinition = {
           title: 'Elegí el lugar',
           text: '¡Hola! Soy Robi. Hoy vas a inventar tu propia historia. Primero elegí dónde pasa: tocá uno de los lugares.',
           hints: ['Mirá los dibujitos de abajo. Tocá el que más te guste.'],
-          point: '#backdrops',
+          point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
         {
@@ -41,7 +41,7 @@ export const presentacion: GameDefinition = {
           title: 'Elegí al héroe',
           text: 'Ahora elegí quién es el héroe. Tocá el botón con el más.',
           hints: ['El botón con el más está al lado de los personajes.'],
-          point: '#sp-add',
+          point: 'add-sprite',
           check: (ctx) => spriteCount(ctx) > SETUP.sprites.length,
         },
         {
@@ -72,7 +72,7 @@ export const presentacion: GameDefinition = {
           title: 'Sumá un amigo',
           text: 'Toda historia necesita a alguien más. Sumá un amigo con el botón del más.',
           hints: ['Es el mismo botón que usaste para elegir al héroe.'],
-          point: '#sp-add',
+          point: 'add-sprite',
           check: (ctx) => spriteCount(ctx) >= SETUP.sprites.length + 2,
         },
         {
@@ -207,7 +207,7 @@ export const presentacion: GameDefinition = {
           title: '¡Mostrá tu historia!',
           text: '¡Terminaste! Tocá el botón amarillo para ver tu historia en pantalla grande.',
           hints: ['Buscá el botón amarillo y tocalo.'],
-          point: '#btn-show',
+          point: 'show',
           check: (ctx) => ctx.stats.shown,
         },
       ],

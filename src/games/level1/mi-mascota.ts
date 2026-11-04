@@ -48,7 +48,7 @@ export const miMascota: GameDefinition = {
           title: 'Elegí tu mascota',
           text: '¡Hola! Soy Robi. Hoy vas a tener una mascota. Tocá el botón con el más y elegí cuál querés.',
           hints: ['El botón con el más está al lado de los personajes.'],
-          point: '#sp-add',
+          point: 'add-sprite',
           check: (ctx) => characters(ctx).length >= 1,
         },
         {
@@ -56,7 +56,7 @@ export const miMascota: GameDefinition = {
           title: 'Su casa',
           text: 'Ahora elegí dónde vive tu mascota. Tocá uno de los lugares.',
           hints: ['Mirá los dibujitos de abajo. Tocá el que más le guste a tu mascota.'],
-          point: '#backdrops',
+          point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
         {
@@ -91,7 +91,7 @@ export const miMascota: GameDefinition = {
             'La manzana también tiene su propia manito. Elegila y armale un programa.',
             'Una manzana mordida se achica. ¿Qué bloque achica?',
           ],
-          example: [{ sprite: 'Manzana', scripts: [fClick(fSound('pop'), fShrink())] }],
+          example: [{ sprite: 'Manzana', scripts: [fClick(fSound('boing'), fShrink())] }],
           check: (ctx) =>
             spritesWithHat(ctx, { hat: 'f_click', types: ['f_shrink', 'f_sound', 'f_spin', 'f_jump', 'f_grow'], min: 2 }).some(isObject),
         },
@@ -129,7 +129,7 @@ export const miMascota: GameDefinition = {
           title: 'Sumá otra mascota',
           text: 'Tu mascota está sola. Sumá una segunda, distinta de la primera.',
           hints: ['Es el mismo botón del más. Elegí otro animal.'],
-          point: '#sp-add',
+          point: 'add-sprite',
           check: (ctx) => new Set(characters(ctx).map((s) => s.art)).size >= 2,
         },
         {
@@ -217,7 +217,7 @@ export const miMascota: GameDefinition = {
           title: '¡Mostrá a tus mascotas!',
           text: '¡Terminaste! Tocá el botón amarillo para ver tu juego en pantalla grande.',
           hints: ['Buscá el botón amarillo y tocalo.'],
-          point: '#btn-show',
+          point: 'show',
           check: (ctx) => ctx.stats.shown,
         },
       ],
@@ -248,7 +248,7 @@ export const miMascota: GameDefinition = {
         sprite(
           'manzana',
           'apple',
-          [fClick(fSound('pop'), fShrink(), fSpin())],
+          [fClick(fSound('boing'), fShrink(), fSpin())],
           { x: 170, y: -125, name: 'Manzana' },
         ),
         sprite(

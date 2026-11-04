@@ -54,7 +54,7 @@ export const bandaParque: GameDefinition = {
           title: 'Elegí el lugar y el músico',
           text: '¡Vamos a armar una banda! Primero elegí un lugar con los dibujitos de abajo. Después tocá el botón con el más y elegí a tu primer músico.',
           hints: ['Los dos pasos son importantes: un lugar y un músico.'],
-          point: '#sp-add',
+          point: 'add-sprite',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop && spriteCount(ctx) > SETUP.sprites.length,
         },
         {
@@ -96,7 +96,7 @@ export const bandaParque: GameDefinition = {
           title: 'Sumá músicos',
           text: 'Un músico solo no hace una banda. Sumá dos más: tres en total.',
           hints: ['Es el mismo botón del más. Podés elegir tres distintos.'],
-          point: '#sp-add',
+          point: 'add-sprite',
           check: (ctx) => spriteCount(ctx) >= SETUP.sprites.length + 3,
         },
         {
@@ -223,7 +223,7 @@ export const bandaParque: GameDefinition = {
           title: '¡Mostrá tu banda!',
           text: '¡Terminaste! Tocá el botón amarillo para ver tu banda en pantalla grande.',
           hints: ['Buscá el botón amarillo y tocalo.'],
-          point: '#btn-show',
+          point: 'show',
           check: (ctx) => ctx.stats.shown,
         },
       ],
