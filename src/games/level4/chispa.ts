@@ -5,7 +5,7 @@ import {
   score, send, show, sound, sprite, stopOthers, win,
 } from '../../language/ir.ts';
 import {
-  PLACES, appearLater, blocksInList, lethalTargets, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount,
+  PLACES, appearLater, blocksInList, chosenBackdrop, lethalTargets, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount,
 } from '../checks.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import { Pilot, centerOf, touchingNow } from './autopilot.ts';
@@ -51,8 +51,8 @@ export const chispa: GameDefinition = {
         {
           id: 'escena',
           title: 'Elegí el lugar',
-          text: 'Chispa vive en algún lugar. Elegí el escenario: tocá uno de los lugares.',
-          hints: ['Mirá los escenarios de abajo. Tocá el que más te guste.'],
+          text: 'Chispa vive en algún lugar. Elegí el escenario: tocá uno que no tenga el borde de color.',
+          hints: ['Mirá los escenarios de abajo. El que tiene borde de color ya está puesto. Tocá otro, el que más te guste.'],
           point: 'backdrops',
           check: (ctx) => ctx.program.backdrop !== SETUP.backdrop,
         },
@@ -131,7 +131,7 @@ export const chispa: GameDefinition = {
           text: 'Michi tiene que decir en voz alta cuántas monedas lleva. Hay un bloque «puntos» que se puede poner donde va un texto.',
           hints: [
             'Usá «decir … por … segundos» y poné el bloque «puntos» en el lugar del texto.',
-            'Ponelo al final del programa de la moneda, después del mensaje.',
+            'Ponelo al final del programa «cuando toque a moneda» de Michi, después del mensaje.',
           ],
           unlock: ['a_sayfor', 'v_score'],
           example: [{ sprite: 'Michi', scripts: [onTouching('moneda', addScore(1), send('m1'), sayFor(score(), 0.5))] }],
@@ -213,7 +213,7 @@ export const chispa: GameDefinition = {
           text: 'Cuando juntes 10 monedas, el juego da otro salto: cambia el escenario y se manda el mensaje de «fase 3». Jugá hasta ver el cambio.',
           hints: [
             'Es otro bloque de puntos, con un número más grande que el anterior.',
-            'Adentro: cambiar el escenario, y enviar «fase 3».',
+            'Adentro: cambiar el escenario, y enviar «fase 3». Elegí un escenario nuevo: el parque ya viene puesto, así que ese no cuenta.',
           ],
           unlock: ['a_backdrop'],
           example: [{ sprite: 'Michi', scripts: [onPoints(10, backdrop('ciudad'), send('p3'))] }],
@@ -223,18 +223,19 @@ export const chispa: GameDefinition = {
                 numField(r.script.hat, 'N') >= 8 &&
                 numField(r.script.hat, 'N') <= 14 &&
                 refHas(r, ['a_send']) &&
-                refBlocks(r).some((b) => b.type === 'a_backdrop' && b.fields.B !== ctx.program.backdrop) &&
+                refBlocks(r).some((b) => b.type === 'a_backdrop' && chosenBackdrop(ctx, b)) &&
                 ctx.stats.maxScore >= numField(r.script.hat, 'N'),
             ),
         },
         {
           id: 'rapido',
           title: 'Dragones más veloces',
-          text: 'En la fase 3 los dos dragones van más rápido. Cuando reciban el mensaje tienen que dejar de hacer lo de antes y empezar un patrullaje nuevo, más veloz.',
+          text: 'En la fase 3 los dos dragones van más rápido. Cuando reciban el mensaje tienen que dejar de hacer lo de antes y empezar un patrullaje nuevo, más veloz. Jugá hasta la fase 3 para verlo.',
           hints: [
             'Hay un bloque que apaga los otros programas del mismo personaje.',
             'Primero apagá lo anterior; después un «por siempre» nuevo con más pasos.',
             'Es lo mismo para los dos dragones.',
+            'Para verlo funcionar tenés que juntar monedas hasta llegar a la fase 3. Si te cuesta, esquivá a los dragones con calma.',
           ],
           unlock: ['a_stopothers'],
           example: [{ sprite: 'Chispa', scripts: [onFlag(forever(move(3), bounce())), onReceive('p3', stopOthers(), forever(move(5), bounce()))] }],
@@ -243,10 +244,12 @@ export const chispa: GameDefinition = {
         {
           id: 'ganar',
           title: 'La meta',
-          text: 'Con 15 monedas, Michi ganó. Armá la victoria. Y ganala de verdad: si te cuesta, hacé más lentos a los dragones o poné una meta más chica.',
+          text: 'Con 15 monedas, Michi ganó. Armá la victoria. Y ganala de verdad: si te cuesta, hacé más lentos a los dragones o poné una meta un poco más chica.',
           hints: [
             'Es otro bloque que empieza cuando los puntos llegan a un número.',
             'Adentro va el bloque de ganar. Antes podés poner un festejo.',
+            'La meta tiene que ser más grande que los puntos de la fase 3 (más de 10). Podés bajarla de 15 a 12, pero no menos.',
+            'Para hacer más lentos a los dragones, bajá los pasos de su «mover» en la fase 3: por ejemplo de 5 a 4.',
           ],
           unlock: ['a_win'],
           example: [{ sprite: 'Michi', scripts: [onPoints(15, sayFor('¡Ganaste!', 1), win())] }],
