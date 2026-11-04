@@ -7,9 +7,13 @@ import '@fontsource/chakra-petch/500.css';
 import '@fontsource/chakra-petch/600.css';
 import '@fontsource/chakra-petch/700.css';
 import { createRoot } from 'react-dom/client';
+import './styles/base.css';
+import './workshop/workshop.css';
+import { Boundary } from './workshop/Boundary.tsx';
+import { WorkshopApp } from './workshop/WorkshopApp.tsx';
 
-function App() {
-  return <p style={{ fontFamily: '"Baloo 2", sans-serif', fontWeight: 800 }}>Misión Código</p>;
-}
-
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+  <Boundary>
+    <WorkshopApp />
+  </Boundary>,
+);
