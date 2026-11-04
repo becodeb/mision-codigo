@@ -1,0 +1,182 @@
+/* Tokens and primitives shared by the workshop, the studio and the teacher panel. */
+:root {
+  --ink: #241a4d;
+  --ink-soft: #625a8c;
+  --paper: #fff9ee;
+  --card: #ffffff;
+  --line: #eadfc9;
+  --line-2: #d9c7a6;
+  --accent: #ff8a1f;
+  --accent-deep: #d96a0b;
+  --accent-soft: #fff0dd;
+  --go: #2db34a;
+  --go-deep: #1e8636;
+  --stop: #f0524f;
+  --stop-deep: #b93633;
+  --violet: #7c4dff;
+  --violet-soft: #efe8ff;
+  --gold: #ffc93c;
+  --focus: #ff8a1f;
+  --font-display: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --font-body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  --font-hud: 'Chakra Petch', Consolas, ui-monospace, monospace;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  line-height: 1.1;
+  margin: 0;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.gutter {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Chunky buttons: a flat face over a solid ledge that sinks when pressed. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 22px;
+  border: 3px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--ink);
+  font: 800 19px/1 var(--font-display);
+  box-shadow: 0 4px 0 var(--line);
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--accent-deep);
+}
+
+.btn-primary:active {
+  box-shadow: 0 1px 0 var(--accent-deep);
+}
+
+.btn-quiet {
+  min-height: 48px;
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--line-2);
+  color: var(--ink-soft);
+  font-size: 17px;
+}
+
+.btn-quiet:active {
+  transform: none;
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.robi {
+  display: block;
+}
+
+.robi .eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 4s infinite;
+}
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
