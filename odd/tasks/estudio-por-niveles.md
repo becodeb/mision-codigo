@@ -2,8 +2,10 @@
 
 ## Objective
 
-Turn Misión Código into the platform for the workshop's family showcase: each child enters by
-name, sees the games of the difficulty level the teachers assigned, and builds one with a parent.
+Turn Misión Código into the platform for the workshop's showcase class: each child enters by name,
+sees the games of the difficulty level the teachers assigned, and builds them during a class of
+30 to 60 minutes without running out of things to do. It is a normal class: parents accompany and
+help, but no game is about them or gives them a role.
 
 ## Problem and why
 
@@ -67,20 +69,25 @@ declare starters and solutions as data. Toolboxes are per level and per game. `M
 everything the level allows.
 
 **Picture tier** (levels 1 and 2). Existing `f_*` blocks plus: `f_hide`, `f_show`, `f_note` (do, re,
-mi, fa, sol, la, si), `f_random` (appear anywhere).
+mi, fa, sol, la, si), `f_random` (appear anywhere), `f_backdrop` (change scene, so stories have
+chapters), `f_star` (+1 star on the stage), `f_send` and `f_recv` (colored envelopes: red, blue,
+yellow).
 
 **Text tier** (levels 3 to 5). Inputs are value sockets with shadow blocks, as in Scratch.
 
 | Group | Level 3 | Level 4 adds | Level 5 adds |
 |---|---|---|---|
-| Events | flag, tap, key, send, receive | when touching X (edge-triggered) | when I start as a clone |
+| Events | flag, tap, key, send, receive, when points reach N (fires once per run) | when touching X (edge-triggered) | when I start as a clone |
 | Motion | move, point dir, change x/y, go to x/y, go to random, glide, jump | move with arrows (speed), bounce on edge, go to sprite | turn, point angle, point towards sprite, set x/y |
 | Looks | say, say for, think for, face, size, show, hide, backdrop | | |
 | Sound | sound, note | | |
-| Control | wait, repeat | forever, if, stop all, win, lose | if/else, repeat until, wait until, stop this script, create clone, delete clone |
-| Values | number, text | points (set, add, read), touching X, key pressed | variables, lists, random a..b, + - × ÷, = < >, and/or/not, join, x, y, timer, distance to X, ask + answer |
+| Control | wait, repeat, win | forever, if, stop all, stop my other scripts, lose | if/else, repeat until, wait until, stop this script, create clone, delete clone |
+| Values | number, text, points (set, add) | points (read), touching X, key pressed | variables, lists, random a..b, + - × ÷, = < >, and/or/not, join, x, y, timer, distance to X, ask + answer |
 
 Variables and lists are project-wide, created from a modal, and shown as monitors on the stage.
+
+Messages include `fase 2`, `fase 3`, `fase 4`, `final A`, `final B`. With «when points reach N»,
+those messages and «stop my other scripts», a child can program phases without variables.
 
 Semantics follow Scratch: compare numerically when both sides are numeric, otherwise as
 case-insensitive text. Clones are capped at 30. Repeat counts are capped at 500.
@@ -105,41 +112,62 @@ apple, ball, car, rock, treasure, heart, paddle, bolt, cloud, bomb. Objects igno
 ### Games
 
 A game is data, in `src/games/`: `id`, `level`, `kind` (`story` or `game`), `title`, `pitch`,
-`concept`, `familyTip` (what the adult does and what the child does), `setup` (backdrop, sprites,
-starter code), `toolbox`, `steps[]` (title, spoken text, unlocks, demo or example, `check(ctx)`),
-`challenge` (an optional extra), and `solution` (per-sprite IR plus a scripted input scenario).
+`concept`, `setup` (backdrop, sprites, starter code), `toolbox`, `phases[]`, `challenges[]`, and
+`solution` (per-sprite IR plus a scripted input scenario). A phase has a title and `steps[]`. A step
+has a title, spoken text, unlocks, `hints[]`, and `check(ctx)`.
 
 **Every game must prove it can be built**: a Vitest test loads the solution into the headless
 runtime, plays the scenario, and asserts that every step check passes and the win or end state
 happens. A game without a passing proof does not ship.
 
-Catalog (`H` story, `J` game):
+### Class length
 
-| L | Id | Title | Kind | What it is |
-|---|---|---|---|---|
-| 1 | `hola-somos` | Hola, somos nosotros | H | Child and adult pick a character each; tapping one introduces it |
-| 1 | `paseo-toby` | El paseo de Toby | H | Toby crosses the park walking and jumping |
-| 1 | `baile-pulpi` | El baile de Pulpi | H | A dance with spins, jumps and sounds |
-| 1 | `mi-mascota` | Mi mascota | J | Tap it: it laughs, sounds and jumps |
-| 2 | `banda-parque` | La banda del parque | J | Each character plays notes when tapped |
-| 2 | `chiste-robi` | El chiste de Robi | H | One tells the joke, the other waits and laughs |
-| 2 | `la-carrera` | La carrera | J | Two racers; the blocks decide who wins |
-| 2 | `escondidas` | Las escondidas | J | Tapping one reveals another |
-| 3 | `preguntale` | Preguntale a tu familia | J | The child writes questions about themself; the adult taps the answer |
-| 3 | `caza-pulpi` | Cazá a Pulpi | J | Tap it: a point, and it jumps elsewhere |
-| 3 | `dos-finales` | Cuento con dos finales | H | Pick an option: the scene and the ending change |
-| 3 | `maneja-nova` | Manejá a Nova | J | Fly through space with the arrows to reach the planet |
-| 4 | `tesoro` | Búsqueda del tesoro | J | Reach the treasure: a point, and it appears elsewhere |
-| 4 | `chispa` | Que no te atrape Chispa | J | Dodge Chispa; if she touches you, you lose |
-| 4 | `cruza-ciudad` | Cruzá la ciudad | J | Reach the top without being hit by cars |
-| 4 | `salto` | Salto de obstáculos | J | Jump what comes from the right |
-| 4 | `ataja` | Atajá lo que cae | J | Catch falling objects |
-| 5 | `tres-vidas` | Tres vidas | J | Catch stars, avoid bombs; at zero lives the game ends |
-| 5 | `contrarreloj` | Contrarreloj | J | 10 points before 30 seconds |
-| 5 | `mascota-virtual` | Mascota virtual | J | Hunger and energy fall by themselves; keep it alive |
-| 5 | `rebote` | Rebote | J | Paddle and ball with angles |
-| 5 | `defensa` | Defensa del castillo | J | Shoot clones of what approaches |
-| 5 | `memoria` | Memoria de sonidos | J | Repeat a growing sequence; the hardest |
+A class lasts 30 to 60 minutes and no child should run out of things to do. A team therefore has
+much more content than one class needs, and every game grows instead of ending after one idea.
+
+- **Phases.** Each game has at least 3 phases. The same project grows through them: a story gains
+  chapters, a game gains harder rounds.
+- **Minimum steps per game.** Levels 1 and 2: 8 and 10. Levels 3, 4 and 5: 10, 12 and 12. A Vitest
+  test enforces these minimums across the catalog.
+- **Thinking, not copying.** The first phase teaches with demos. Later steps state the goal and
+  keep the answer behind a hint ladder: goal, then a hint, then an example. A child who only follows
+  instructions must not be able to finish a phase by dragging what is on screen.
+- **Challenges.** Each game ends with at least 3 open challenges with no single answer, so a fast
+  child keeps building inside the same game.
+- **No dead end.** Finishing a game offers the next one of the level, ordered from easier to harder.
+  The free project is always available.
+- **Target.** One game takes a typical child of that level 25 to 40 minutes. This is an estimate
+  that only a real class can confirm.
+
+### Catalog
+
+`H` story, `J` game. Phases are cumulative.
+
+| L | Id | Title | Kind | Phase 1 | Phase 2 | Phase 3 | Phase 4 |
+|---|---|---|---|---|---|---|---|
+| 1 | `presentacion` | La gran presentación | H | The hero appears and introduces itself | A friend appears and they talk | They travel to another place | They say goodbye with faces and sounds |
+| 1 | `paseo-toby` | El paseo de Toby | H | Cross the park walking and jumping | Arrive at the castle and meet someone | Something scary happens | Back home with a happy ending |
+| 1 | `baile-pulpi` | El baile de Pulpi | H | Invent the first steps | Add a dance partner | Each dancer gets a solo | Grand finale at the theater with applause |
+| 1 | `mi-mascota` | Mi mascota | J | Tap it and it reacts | It eats and grows | A second pet with its own reactions | The pets play together in another place |
+| 2 | `banda-parque` | La banda del parque | J | One musician plays a melody when tapped | Three musicians, each with its own notes | Repeat a chorus with «repetir» | A conductor starts everyone with envelopes |
+| 2 | `chiste-robi` | El show de chistes | H | One tells a joke, the other waits and laughs | Take turns with envelopes | A second joke in a new scene | The audience reacts and the show closes |
+| 2 | `la-carrera` | La carrera | J | Two racers with «repetir» | The blocks decide who wins | A second lap with jumps | Stars for the winner and a podium scene |
+| 2 | `escondidas` | Las escondidas | J | Tapping one reveals another | Everyone hides and appears in random places | A star for each one found | The final hiding place opens a new scene |
+| 3 | `quiz` | El gran quiz | J | A question with answers you tap | Right gives a point, wrong gives a message | Three questions linked by messages | A final screen that depends on the points |
+| 3 | `caza-pulpi` | Cazá a Pulpi | J | Tap it: a point, and it jumps elsewhere | It moves by itself | At 5 points: a new backdrop and a second target | At 10 points: win |
+| 3 | `dos-finales` | Cuento con dos finales | H | The opening scene | First choice between two paths | Each path has its own scene | Two different endings, then a third secret one |
+| 3 | `maneja-nova` | Manejá a Nova | J | Move with the arrows | Reach the planet to earn a point | Each point sends the planet elsewhere | At 5 points: a new world and a win |
+| 4 | `tesoro` | Búsqueda del tesoro | J | Reach the treasure: a point | It appears elsewhere | A guard patrols it, and touching it loses points | Phase 2 at 5 points with a faster guard, win at 10 |
+| 4 | `chispa` | Que no te atrape Chispa | J | Chispa bounces; a touch loses | Collect coins while dodging | At 5 points: a second dragon | At 10 points: faster, with a new backdrop and a win |
+| 4 | `cruza-ciudad` | Cruzá la ciudad | J | Reach the top for a point | One car crosses; a hit sends you back | Several lanes with different speeds | Phase 2 at 3 crossings: faster, win at 6 |
+| 4 | `salto` | Salto de obstáculos | J | Jump with the space bar | An obstacle comes from the right; a hit loses | Each obstacle passed gives a point | Phases by points: faster, with a flying obstacle |
+| 4 | `ataja` | Atajá lo que cae | J | Move the catcher | One object falls and gives a point | It falls from random places | Bad objects, faster phases, and a win |
+| 5 | `tres-vidas` | Tres vidas | J | A lives variable and catching stars | Bombs take lives; zero loses | Clones rain down | Difficulty rises with the score, plus a record |
+| 5 | `contrarreloj` | Contrarreloj | J | A timer that counts down | Points before time runs out | Bonus objects add seconds | Phases with less time and a win screen |
+| 5 | `mascota-virtual` | Mascota virtual | J | Hunger and energy fall on their own | Feed it and put it to sleep | Its face depends on its state | Decide when it wins or gets sick; add a mini-game |
+| 5 | `rebote` | Rebote | J | A ball bounces at an angle | The paddle returns it; the floor loses | Bricks made of clones that disappear | Speed rises and you win by clearing everything |
+| 5 | `defensa` | Defensa del castillo | J | Move the cannon and shoot | Enemies approach as clones | Hits give points; contact takes lives | Waves that grow, then a final boss with lives |
+| 5 | `memoria` | Memoria de sonidos | J | Play a sound for each button | The program plays a list | Compare the child's input with the list | The sequence grows every round; a mistake ends it |
 
 ### Backend
 
@@ -212,7 +240,9 @@ src/
 ## Acceptance criteria
 
 - A child enters the code, taps their name and sees only their level's games plus the free project.
-- Each of the 23 games has a guide and a passing headless proof.
+- Each of the 23 games has at least 3 phases, the level's minimum steps, at least 3 challenges, and a
+  passing headless proof.
+- Finishing a game offers the next one, so no child hits a dead end during a 60-minute class.
 - Closing the browser and logging in from another computer restores the child's project.
 - A teacher can paste a class list, assign levels and see progress.
 - The app works with the backend reachable and no internet access.
@@ -221,6 +251,9 @@ src/
 ## Progress
 
 Exploration done. Branch `feat/estudio-por-niveles` created from `main` at `ce5eec0`.
+
+Engram mirror `odd/estudio-por-niveles/tasks`: **pending**. Writes fail with `ambiguous_project`
+because this repo is not a known Engram project. This file is the source of truth meanwhile.
 
 ## Verification evidence
 
