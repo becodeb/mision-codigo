@@ -20,8 +20,8 @@ In scope: rewrite on React + Vite + TypeScript, Express backend with SQLite, new
 headless runtime, 23 guided games plus a free project, 5 levels, teacher panel, LAN serving,
 Docker-ready production build.
 
-Out of scope for now: public deploy, accounts or passwords for children, sharing projects between
-children, `niveles/` rewrite (kept as is, served as a static legacy page).
+Out of scope for now: public deploy, accounts or passwords for children, `niveles/` rewrite (kept as
+is, served as a static legacy page).
 
 ## Constraints
 
@@ -171,6 +171,37 @@ much more content than one class needs, and every game grows instead of ending a
 | 5 | `defensa` | Defensa del castillo | J | Move the cannon and shoot | Enemies approach as clones | Hits give points; contact takes lives | Waves that grow, then a final boss with lives |
 | 5 | `memoria` | Memoria de sonidos | J | Play a sound for each button | The program plays a list | Compare the child's input with the list | The sequence grows every round; a mistake ends it |
 
+### Two classes
+
+Children use the platform twice: a trial class on 2026-11-04, and a second class some weeks later
+with parents accompanying. The second must not repeat the first. Each game has a `class` field (1 or
+2), and a teacher setting chooses the active class. A child sees the active class's games of their
+level, plus every game they already started.
+
+| L | Class 1 | Class 2 |
+|---|---|---|
+| 1 | `presentacion`, `mi-mascota` | `paseo-toby`, `baile-pulpi` |
+| 2 | `la-carrera`, `banda-parque` | `chiste-robi`, `escondidas` |
+| 3 | `caza-pulpi`, `maneja-nova` | `quiz`, `dos-finales` |
+| 4 | `tesoro`, `chispa` | `cruza-ciudad`, `salto`, `ataja` |
+| 5 | `tres-vidas`, `contrarreloj`, `mascota-virtual` | `rebote`, `defensa`, `memoria` |
+
+Class 2 also adds:
+
+- **Show what you made.** On entry a child can open their class 1 project in show mode.
+- **Invent your game.** A design card (hero, goal, rule, what gets harder) becomes the child's own
+  guide with no predefined solution.
+- **Class arcade.** At the end, children publish a project and play their classmates' games.
+- **Level review.** Teachers adjust levels using what class 1 recorded.
+
+More games can join later: a game is data, and it only needs a passing proof.
+
+### Class data
+
+Each project records when each step was completed. The teacher panel shows, per game and child, the
+time spent, the current step and the steps where children get stuck. Class 1 uses this to measure
+the 25 to 40 minute estimate and to adjust levels and games before class 2.
+
 ### Backend
 
 Express 5 on Node 24 with `node:sqlite`, running TypeScript directly through native type stripping.
@@ -228,20 +259,28 @@ src/
       typecheck, Vitest, real HTTP run.
 - [ ] **T05 Workshop flow.** Name screen, level chooser, autosave with offline fallback.
       Route: delegated. Checks: typecheck, Vitest, build, browser capture.
-- [ ] **T06 Levels 1 and 2 catalog.** 8 games with guides and proofs. Route: delegated. Checks:
-      Vitest proofs, browser capture of one game from each level.
-- [ ] **T07 Levels 3 and 4 catalog.** 9 games with guides and proofs. Route: delegated. Checks: same.
-- [ ] **T08 Level 5 catalog.** 6 games with guides and proofs. Route: delegated. Checks: same.
-- [ ] **T09 Teacher panel.** Login, bulk import, level assignment, progress. Route: delegated.
-      Checks: typecheck, Vitest, build, browser capture.
-- [ ] **T10 Close.** Real browser pass through the whole flow, Dockerfile, README, remove the old
-      `estudio/`, move `niveles/` to static serving, serve on the LAN. Route: delegated, then parent
-      spot check. Checks: e2e against the production build.
+- [ ] **T06 Class 1 catalog, levels 1 and 2.** 4 games with guides and proofs. Route: delegated.
+      Checks: Vitest proofs, browser capture of one game from each level.
+- [ ] **T07 Class 1 catalog, levels 3 and 4.** 4 games with guides and proofs. Route: delegated.
+      Checks: same.
+- [ ] **T08 Class 1 catalog, level 5.** 3 games with guides and proofs. Route: delegated. Checks: same.
+- [ ] **T09 Teacher panel.** Login, bulk import, level assignment, active class, progress and class
+      data. Route: delegated. Checks: typecheck, Vitest, build, browser capture.
+- [ ] **T10 Ready for class 1.** Real browser pass through the whole flow, remove the old `estudio/`,
+      move `niveles/` to static serving, serve on the LAN. Route: delegated, then parent spot check.
+      Checks: e2e against the production build.
+- [ ] **T11 Class 2 catalog.** The other 12 games with guides and proofs. Route: delegated. Checks:
+      Vitest proofs, browser capture.
+- [ ] **T12 Class 2 activities.** Show what you made, invent your game, class arcade. Route:
+      delegated. Checks: typecheck, Vitest, build, browser capture.
+- [ ] **T13 Close.** Dockerfile, README, adjustments from class 1 data. Route: delegated. Checks: e2e
+      against the production build.
 
 ## Acceptance criteria
 
-- A child opens the app, enters or taps their name and sees only their level's games plus the free
-  project.
+- A child opens the app, enters or taps their name and sees only the active class's games of their
+  level, the games they already started, and the free project.
+- Class 1 records enough data to show time per game and where children get stuck.
 - Each of the 23 games has at least 3 phases, the level's minimum steps, at least 3 challenges, and a
   passing headless proof.
 - Finishing a game offers the next one, so no child hits a dead end during a 60-minute class.
