@@ -5,7 +5,7 @@ import {
   score, send, show, sound, sprite, stopOthers, win,
 } from '../../language/ir.ts';
 import {
-  PLACES, appearLater, blocksInList, chosenBackdrop, lethalTargets, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount,
+  PLACES, appearLater, blocksInList, chosenBackdrop, lethalTargets, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount, travelled,
 } from '../checks.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import { Pilot, centerOf, touchingNow } from './autopilot.ts';
@@ -64,7 +64,7 @@ export const chispa: GameDefinition = {
           unlock: ['a_forever', 'a_arrows'],
           demo: 'a_arrows',
           check: (ctx) =>
-            refsOfHat(ctx, 'a_flag').some((r) => nestedIn(r.script.body, 'a_forever').some((b) => b.type === 'a_arrows')) && ctx.stats.ran('arrows'),
+            refsOfHat(ctx, 'a_flag').some((r) => nestedIn(r.script.body, 'a_forever').some((b) => b.type === 'a_arrows') && ctx.stats.ranBy(r.sprite.id, 'arrows') && travelled(ctx, r.sprite.id)),
         },
         {
           id: 'rebota',

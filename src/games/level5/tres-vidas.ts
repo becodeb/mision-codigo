@@ -10,7 +10,7 @@ import {
   variable, wait, waitUntil, goTo,
   type Block, type SpriteProgram,
 } from '../../language/ir.ts';
-import { blocksInList, blocksOfSprite } from '../checks.ts';
+import { blocksInList, blocksOfSprite, fell } from '../checks.ts';
 import type { Game } from '../../runtime/testing.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import {
@@ -141,6 +141,7 @@ export const tresVidas: GameDefinition = {
           hints: [
             'Con "ir a" la ponés arriba: en x un número al azar entre -200 y 200, y en y un número alto, como 140.',
             'Para que baje, repetí «cambiar y en» con un número negativo. Se repite hasta que la y de la estrella sea menor que -150.',
+            'Tocá la bandera verde y mirá: la estrella tiene que bajar de verdad.',
           ],
           unlock: ['a_goto', 'a_changey', 'a_repeatuntil', 'v_random', 'v_lt', 'v_y'],
           demo: 'a_goto',
@@ -150,7 +151,7 @@ export const tresVidas: GameDefinition = {
               scripts: [onFlag(goTo(randomBetween(-200, 200), 140), repeatUntil(lt(posY(), -150), changeY(-3)))],
             },
           ],
-          check: (ctx) => fallers(ctx).length > 0,
+          check: (ctx) => fallers(ctx).some((s) => fell(ctx, s.id)),
         },
         {
           id: 'atrapar',
@@ -352,7 +353,10 @@ export const tresVidas: GameDefinition = {
           check: (ctx) =>
             fallingClones(ctx).some(
               ({ sprite, script }) =>
-                ctx.stats.ranHatBy(sprite.id, 'clone') && holds(script.body, ['a_show']) && blocksOfSprite(sprite).some((b) => b.type === 'a_hide'),
+                ctx.stats.ranHatBy(sprite.id, 'clone') &&
+                fell(ctx, sprite.id, 'clones') &&
+                holds(script.body, ['a_show']) &&
+                blocksOfSprite(sprite).some((b) => b.type === 'a_hide'),
             ),
         },
         {
@@ -461,12 +465,19 @@ export const tresVidas: GameDefinition = {
             'La velocidad de caída es el número que le sumás a y. Ese número puede depender del puntaje.',
             'Una cuenta como 3 + puntaje ÷ 5 empieza lenta y se acelera de a poco.',
             'Como baja, el número es negativo: multiplicalo por -1.',
+            'Para verlo, atrapá unas estrellas con la bandera verde: la caída se acelera con los puntos.',
           ],
           unlock: ['v_add', 'v_sub', 'v_mul', 'v_div'],
           example: [{ sprite: 'Estrella', scripts: [onCloneStart(repeatUntil(lt(posY(), -150), changeY(mul(-1, add(3, div(score(), 5))))))] }],
+          // The fall speed has to have really taken more than one value while playing.
           check: (ctx) =>
-            placed(ctx).some(({ block: b }) => b.type === 'a_changey' && inside(b).some((x) => x.type === 'v_score' || x.type === 'v_var')) &&
-            ctx.stats.ran('math'),
+            ctx.program.sprites.some((sp) =>
+              sp.scripts.some(
+                (sc, i) =>
+                  blocksInList(sc.body).some((b) => b.type === 'a_changey' && inside(b).some((x) => x.type === 'v_score' || x.type === 'v_var')) &&
+                  (ctx.stats.sampled(`changey|${sp.id}#${i}`)?.distinct ?? 0) >= 2,
+              ),
+            ),
         },
         {
           id: 'ritmo',
@@ -476,16 +487,27 @@ export const tresVidas: GameDefinition = {
             'La espera es el número que le das a "esperar". También puede ser una cuenta.',
             'Una división sirve: un número grande dividido por algo que crece da cada vez menos. El puntaje tiene que ir abajo de la división.',
             'Si el puntaje fuera la espera, cada vez esperarías más, y eso es lo contrario de lo que se pide.',
+            'Para verlo, jugá unos puntos con la bandera verde: la espera se achica a medida que sumás.',
           ],
           example: [{ sprite: 'Estrella', scripts: [onFlag(forever(createClone(), wait(div(12, add(score(), 10)))))] }],
           // A wait that shrinks as the score grows: the score (or a variable) is taken away from, or divides, a number.
+          // ...and the wait between copies has to have really got shorter while playing.
           check: (ctx) =>
-            holdingAll(ctx, LOOPS, ['a_clone']).some(({ block }) =>
-              inside(block).some(
-                (x) =>
-                  x.type === 'a_wait' &&
-                  inside(x).some((y) => (y.type === 'v_div' || y.type === 'v_sub') && !!y.inputs.B && holds([y.inputs.B], ['v_score', 'v_var'])),
-              ),
+            ctx.program.sprites.some((sp) =>
+              sp.scripts.some((sc, i) => {
+                const shrinks = blocksInList(sc.body).some(
+                  (b) =>
+                    LOOPS.includes(b.type) &&
+                    inside(b).some((x) => x.type === 'a_clone') &&
+                    inside(b).some(
+                      (x) =>
+                        x.type === 'a_wait' &&
+                        inside(x).some((y) => (y.type === 'v_div' || y.type === 'v_sub') && !!y.inputs.B && holds([y.inputs.B], ['v_score', 'v_var'])),
+                    ),
+                );
+                const waits = ctx.stats.sampled(`wait|${sp.id}#${i}`);
+                return shrinks && !!waits && typeof waits.first === 'number' && waits.min < waits.first;
+              }),
             ),
         },
         {

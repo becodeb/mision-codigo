@@ -4,7 +4,7 @@ import type { BlockType } from '../language/catalog.ts';
 import { Game } from '../runtime/testing.ts';
 import { GAMES, MIN_STEPS } from './catalog.ts';
 import { blocksOfProject } from './checks.ts';
-import { proveGame, stepsOf } from './proof.ts';
+import { ProofGame, proveGame, stepsOf } from './proof.ts';
 import { NO_UI, type GameDefinition, type StepContext } from './types.ts';
 
 /** Literals come with the sockets, so they never need to be in a toolbox. */
@@ -106,5 +106,36 @@ describe('catalog', () => {
       expect(missing).toEqual([]);
       expect(errors).toEqual([]);
     });
+  });
+});
+
+/**
+ * A step whose text sends the child to try something must not pass the instant the flag goes up: the program
+ * has to have lived and done it. The text match catches the wording; the list names steps that describe
+ * a behavior (it falls, it jumps, the face changes) without saying «probalo».
+ */
+const TRY = /probalo|probarlo|probar\b|comprob|\bjugá|\bdejá |dejala|dejate|mirá cómo|a propósito|\bjuntá|\batrapá|esperá|tocala|tocá la comida/i;
+const BEHAVIOR = new Set([
+  'tres-vidas:cae', 'tres-vidas:clon-cae', 'tres-vidas:velocidad', 'tres-vidas:ritmo',
+  'contrarreloj:salta', 'contrarreloj:bonus', 'contrarreloj:trampa', 'contrarreloj:bonus-suma',
+  'mascota-virtual:dormida', 'mascota-virtual:cara-dos', 'mascota-virtual:cara-tres', 'mascota-virtual:animo',
+  'tesoro:castigo', 'tesoro:mover', 'chispa:heroe',
+]);
+
+describe('steps that ask the child to try something', () => {
+  it.each(GAMES.map((g) => [g.id, g] as const))('%s: none passes on the flag and one frame, with no input', (_id, game) => {
+    const driver = new ProofGame(game, game.solution.program);
+    driver.flag();
+    driver.run(20);
+    const early = stepsOf(game)
+      .filter((s) => (TRY.test(s.text) || BEHAVIOR.has(`${game.id}:${s.id}`)) && driver.done.has(s.id))
+      .map((s) => s.id);
+    driver.machine.dispose();
+    expect(early).toEqual([]);
+  });
+
+  it('names only steps that exist', () => {
+    const real = new Set(GAMES.flatMap((g) => stepsOf(g).map((s) => `${g.id}:${s.id}`)));
+    for (const key of BEHAVIOR) expect(real.has(key), key).toBe(true);
   });
 });
