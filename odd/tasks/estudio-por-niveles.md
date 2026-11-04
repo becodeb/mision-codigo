@@ -37,6 +37,14 @@ is, served as a static legacy page).
   deploy.
 - No push, PR or merge without the owner asking. The remote belongs to another GitHub account.
 
+## Schedule
+
+Class 1 is on 2026-11-04 at 16:45 Argentina time (19:45 UTC; the machine clock is UTC). The build must
+be frozen by 15:45 Argentina time (18:45 UTC), leaving an hour to load names and test.
+
+If time runs short, cut in this order: the third level 5 game, then the teacher panel's progress view
+(the data is still recorded), then the second game of a level. The fallback is the old app.
+
 ## Workflow settings
 
 - TDD: **off**. Source: no project configuration exists. Runner: Vitest (introduced in T01). Ordinary
