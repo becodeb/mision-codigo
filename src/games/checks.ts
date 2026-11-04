@@ -158,3 +158,89 @@ export function runsOf(sprite: SpriteProgram, types: readonly BlockType[]): numb
     }, 0);
   return sprite.scripts.reduce((n, sc) => n + count(sc.body), 0);
 }
+
+/* ---------- helpers for the text-tier games (levels 3 and 4) ---------- */
+
+/** A script and the sprite that owns it. */
+export interface ScriptRef {
+  sprite: SpriteProgram;
+  script: Script;
+}
+
+/** Scripts that start with this hat, optionally narrowed by its fields (key, message, points, target). */
+export function refsOfHat(ctx: StepContext, hat: BlockType, where?: (hat: Block) => boolean): ScriptRef[] {
+  return ctx.program.sprites.flatMap((sprite) =>
+    sprite.scripts.filter((script) => script.hat.type === hat && (!where || where(script.hat))).map((script) => ({ sprite, script })),
+  );
+}
+
+/** Every block in a script's body, nested ones included. */
+export const refBlocks = (ref: ScriptRef): Block[] => blocksInList(ref.script.body);
+
+export const refHas = (ref: ScriptRef, types: readonly BlockType[]): boolean => refBlocks(ref).some((b) => types.includes(b.type));
+
+/** A number held by a block: a field (hat, dropdown) or a literal in a socket. NaN when it is neither. */
+export function numField(block: Block, key: string): number {
+  const field = block.fields[key];
+  if (field !== undefined) return Number(field);
+  const input = block.inputs[key];
+  return input && input.type === 'v_num' ? Number(input.fields.V) : NaN;
+}
+
+/** Blocks nested inside any block of type `container` found in the list, for example inside a «por siempre». */
+export function nestedIn(list: readonly Block[], container: BlockType): Block[] {
+  return blocksInList(list)
+    .filter((b) => b.type === container)
+    .flatMap((b) => [...blocksInList(b.body), ...blocksInList(b.elseBody)]);
+}
+
+/** Blocks that put a sprite somewhere else or push it along. */
+export const PLACES: readonly BlockType[] = ['a_random', 'a_goto', 'a_glide', 'a_changex', 'a_changey', 'a_move', 'a_gotosprite'];
+/** Blocks that make a sprite visibly react. */
+export const REACTIONS: readonly BlockType[] = ['a_say', 'a_sayfor', 'a_thinkfor', 'a_sound', 'a_note', 'a_face', 'a_jump', 'a_changesize', 'a_setsize'];
+
+/** Whether a script of `from` sends a message that some script satisfying `then` receives. */
+export function messageReaches(ctx: StepContext, from: readonly ScriptRef[], then: (receiver: ScriptRef) => boolean = () => true): boolean {
+  return from.some((f) =>
+    refBlocks(f)
+      .filter((b) => b.type === 'a_send')
+      .some((send) => refsOfHat(ctx, 'a_recv', (h) => h.fields.M === send.fields.M).some(then)),
+  );
+}
+
+/** Sprites that hide at the start and show up later from a message or a points threshold that already fired. */
+export function appearLater(ctx: StepContext): SpriteProgram[] {
+  return ctx.program.sprites.filter((s) => {
+    const own = (hat: BlockType) => s.scripts.filter((sc) => sc.hat.type === hat).map((script) => ({ sprite: s, script }));
+    const hides = own('a_flag').some((r) => refHas(r, ['a_hide']));
+    const shows = [...own('a_recv'), ...own('a_points')].some((r) => refHas(r, ['a_show']));
+    return hides && shows && (ctx.stats.ranHatBy(s.id, 'recv') || ctx.stats.ranHatBy(s.id, 'points'));
+  });
+}
+
+/** Sprites with a «por siempre» that moves and bounces, started by the flag or a message, and that already ran it. */
+export function patrolSprites(ctx: StepContext): SpriteProgram[] {
+  const starts: BlockType[] = ['a_flag', 'a_recv', 'a_points'];
+  return ctx.program.sprites.filter((s) =>
+    s.scripts.some((script) => {
+      if (!starts.includes(script.hat.type)) return false;
+      const inside = nestedIn(script.body, 'a_forever').map((b) => b.type);
+      return inside.includes('a_move') && inside.includes('a_bounce');
+    }) && ctx.stats.ranBy(s.id, 'forever'),
+  );
+}
+
+/** Ids of the sprites that end the game when touched: «al tocar … perder», or «si tocando … perder». */
+export function lethalTargets(ctx: StepContext): Set<string> {
+  const out = new Set<string>();
+  for (const ref of refsOfHat(ctx, 'a_touching')) if (refHas(ref, ['a_lose'])) out.add(String(ref.script.hat.fields.T));
+  for (const s of ctx.program.sprites) {
+    for (const sc of s.scripts) {
+      for (const b of blocksInList(sc.body)) {
+        if (b.type !== 'a_if' || b.inputs.C?.type !== 'v_touching') continue;
+        if (blocksInList(b.body).some((x) => x.type === 'a_lose')) out.add(String(b.inputs.C.fields.T));
+      }
+    }
+  }
+  return out;
+}
