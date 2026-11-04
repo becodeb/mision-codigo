@@ -1,0 +1,12 @@
+export { CLONE_CAP, Machine } from './machine.ts';
+export type { MachineOptions, Snapshot } from './machine.ts';
+export { ManualTime } from './time.ts';
+export type { Clock, FrameScheduler, TimeSource } from './time.ts';
+export { nullHost } from './host.ts';
+export type { Host, SpeakOptions, StageView } from './host.ts';
+export { StatsRecorder } from './stats.ts';
+export type { ArtMetrics, ArtTable, Bubble, SpriteInstance } from './instance.ts';
+export { HH, HW, bounds, clampXY, edgeHits, overlaps } from './geometry.ts';
+export { MAX_LIST, MAX_TEXT, compare, toBool, toNum, toStr } from './values.ts';
+export type { Value } from './values.ts';
+export { REPEAT_CAP } from './exec.ts';
