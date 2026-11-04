@@ -1,7 +1,7 @@
 /** Level 3, class 1: tap Pulpi for points. It runs away, a second target appears, and 10 points win. */
 import type { Block } from '../../language/ir.ts';
 import {
-  addScore, backdrop, goToRandom, hide, move, onClick, onFlag, onPoints, onReceive, point, project, repeat, sayFor, send, setScore, setSize,
+  addScore, backdrop, face, goToRandom, hide, move, onClick, onFlag, onPoints, onReceive, point, project, repeat, sayFor, send, setScore, setSize,
   show, sound, sprite, wait, win,
 } from '../../language/ir.ts';
 import { PLACES, REACTIONS, appearLater, blocksInList, chosenBackdrop, messageReaches, numField, refBlocks, refHas, refsOfHat, spriteCount } from '../checks.ts';
@@ -254,6 +254,7 @@ export const cazaPulpi: GameDefinition = {
             'Es otro bloque que empieza cuando los puntos llegan a un número.',
             'Adentro va el bloque de ganar.',
             'Tocá a Pulpi y al otro objetivo hasta llegar a 10.',
+            'Ganar corta el juego en el momento: no pongas esperas largas antes de «ganar», o los toques siguen sumando.',
           ],
           unlock: ['a_win'],
           example: [{ sprite: 'Pulpi', scripts: [onPoints(10, win())] }],
@@ -268,9 +269,10 @@ export const cazaPulpi: GameDefinition = {
           text: 'Ganar merece una fiesta. Antes de que termine el juego, que pasen al menos dos cosas distintas: decir algo, un sonido, una cara...',
           hints: [
             'Poné los bloques de festejo antes del bloque de ganar.',
-            'Un cartel con «decir … por 2 segundos» y un sonido de aplausos quedan bien.',
+            'Una cara y un sonido de aplausos quedan bien.',
+            'Que sea algo rápido: con «decir … por 2 segundos» el juego sigue mientras tanto y los toques todavía suman puntos de más antes de ganar.',
           ],
-          example: [{ sprite: 'Pulpi', scripts: [onPoints(10, sayFor('¡Ganaste!', 1), sound('aplauso'), win())] }],
+          example: [{ sprite: 'Pulpi', scripts: [onPoints(10, face('risa'), sound('aplauso'), win())] }],
           check: (ctx) =>
             winHats(ctx).some((r) => {
               const body = r.script.body;
@@ -324,7 +326,7 @@ export const cazaPulpi: GameDefinition = {
             onReceive('p2', setSize(70)),
             onPoints(8, send('p3')),
             onReceive('p3', setSize(55), repeat(120, wait(0.5), goToRandom())),
-            onPoints(10, sayFor('¡Ganaste!', 1), sound('aplauso'), win()),
+            onPoints(10, face('risa'), sound('aplauso'), win()),
           ],
           { x: 0, y: -60, size: 90, name: 'Pulpi' },
         ),

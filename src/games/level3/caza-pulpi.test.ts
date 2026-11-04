@@ -33,3 +33,22 @@ describe('caza-pulpi', () => {
     game.machine.dispose();
   });
 });
+
+describe('caza-pulpi ending', () => {
+  it('wins on exactly ten points: the win sign does not leave time for more taps to score', () => {
+    const game = new Game(cazaPulpi.solution.program);
+    game.flag();
+    game.run(400);
+    /* A quick child: six taps a second, alternating between the two targets. */
+    for (let turn = 0; turn < 600 && !game.machine.ended; turn++) {
+      const s = game.sprite(turn % 2 ? 'pulpito' : 'pulpi');
+      if (s.visible) game.machine.tapAt(s.x, s.y + 20);
+      game.run(160);
+    }
+    expect(game.machine.ended).toBe('win');
+    expect(game.machine.score).toBe(10);
+    game.run(2_000);
+    expect(game.machine.score).toBe(10);
+    game.machine.dispose();
+  });
+});
