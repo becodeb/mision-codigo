@@ -1,5 +1,5 @@
 /** Helpers for step checks. A check must accept any reasonable solution, not only the reference one. */
-import { ART, type ArtId } from '../art/index.ts';
+import { ART, BACKDROPS, type ArtId } from '../art/index.ts';
 import { blockInfo, type BlockType } from '../language/catalog.ts';
 import type { Block, ProjectProgram, Script, SpriteProgram } from '../language/ir.ts';
 import type { StepContext } from './types.ts';
@@ -60,6 +60,16 @@ export function blocksInList(list: readonly Block[]): Block[] {
 export function blocksOfType(ctx: StepContext, type: BlockType): Block[] {
   return blocksOfProject(ctx.program).filter((b) => b.type === type);
 }
+
+/** What a fresh backdrop block shows before the child picks anything: the first place of the list. */
+const NEW_BLOCK_BACKDROP = Object.keys(BACKDROPS)[0];
+
+/**
+ * Whether a backdrop block was really chosen by the child. A new block comes with the first place already picked,
+ * so that one never counts (even a child who wants it must pick another), and neither does the project's own place.
+ */
+export const chosenBackdrop = (ctx: StepContext, block: Block): boolean =>
+  block.fields.B !== ctx.program.backdrop && block.fields.B !== NEW_BLOCK_BACKDROP;
 
 /** How many blocks of any of these types the project has. */
 export function countAny(ctx: StepContext, types: readonly BlockType[]): number {
