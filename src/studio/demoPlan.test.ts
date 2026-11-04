@@ -276,12 +276,62 @@ describe('planDemo: piece by piece, depth first', () => {
     const s = make([onFlag()], [[forever()]]);
     const p = plan(want, [s]);
     expect(p).toMatchObject({ kind: 'move', block: { id: s.loose![0][0].id, type: 'a_forever' }, slot: { parent: s.scripts[0].hat.id, kind: 'next', parentType: 'a_flag' }, completes: null });
-    expect(describePlan(p)).toBe('Poné este «por siempre» debajo de la bandera.');
+    expect(describePlan(p)).toBe('Conectá este «por siempre» debajo de la bandera.');
   });
 
-  it('a loose «por siempre» that already holds blocks: shows a new one', () => {
+  it('a loose «por siempre» that already holds the movement: connect it, and that completes the program', () => {
     const s = make([onFlag()], [[forever(moveWithArrows(3))]]);
+    const p = plan(want, [s]) as Extract<DemoPlan, { kind: 'move' }>;
+    expect(p).toMatchObject({ kind: 'move', block: { id: s.loose![0][0].id }, slot: { parent: s.scripts[0].hat.id, kind: 'next' } });
+    expect(p.completes).toMatchObject({ hat: { type: 'a_flag' }, spriteId: 'p' });
+    expect(describePlan(p)).toBe('Conectá este «por siempre» debajo de la bandera.');
+  });
+
+  it('a loose «por siempre» with only unrelated blocks is the child\'s other idea: a new one comes from the toolbox', () => {
+    const s = make([onFlag()], [[forever(sayFor('a', 1))]]);
     expect(plan(want, [s])).toMatchObject({ kind: 'block', block: { type: 'a_forever' } });
+  });
+
+  it('a covered stack with an extra foreign block is still reused', () => {
+    const s = make([onFlag()], [[forever(sayFor('a', 1), moveWithArrows(3))]]);
+    expect(plan(want, [s])).toMatchObject({ kind: 'move', block: { id: s.loose![0][0].id } });
+  });
+
+  it('two loose «por siempre»: the one that covers more wins, then the one with fewer foreign blocks', () => {
+    const empty = forever();
+    const covers = forever(sayFor('a', 1), moveWithArrows(3));
+    const cleaner = forever(moveWithArrows(3));
+    const s = make([onFlag()], [[empty], [covers], [cleaner]]);
+    expect(plan(want, [s])).toMatchObject({ kind: 'move', block: { id: s.loose![2][0].id } });
+    const t = make([onFlag()], [[empty], [covers]]);
+    expect(plan(want, [t])).toMatchObject({ kind: 'move', block: { id: t.loose![1][0].id } });
+  });
+
+  it('a loose movement block and no «por siempre»: the container first, then the child\'s own block goes inside', () => {
+    const s = make([onFlag()], [[moveWithArrows(3)]]);
+    const first = plan(want, [s]);
+    expect(first).toMatchObject({ kind: 'block', block: { type: 'a_forever' }, completes: null });
+    applyPlan(s as unknown as Parameters<typeof applyPlan>[0], first);
+    s.scripts = withIds(s.scripts as Script[], 'r.');
+    const second = plan(want, [s]) as Extract<DemoPlan, { kind: 'move' }>;
+    expect(second).toMatchObject({ kind: 'move', block: { id: s.loose![0][0].id, type: 'a_arrows' }, slot: { kind: 'do' } });
+    expect(second.completes).not.toBeNull();
+  });
+
+  it('a «por siempre» holding the movement in the wrong place is lifted to the right one', () => {
+    const s = make([onFlag(repeat(2, forever(moveWithArrows(3))))]);
+    const p = plan(want, [s]);
+    expect(p).toMatchObject({ kind: 'move', block: { type: 'a_forever' } });
+  });
+
+  it('a right hat with the right body somewhere else in the workspace counts as done', () => {
+    const s = make([onFlag(), onClick(sayFor('a', 1)), onFlag(forever(moveWithArrows(3)))]);
+    expect(plan(want, [s]).kind).toBe('try');
+  });
+
+  it('plain blocks of other programs are not taken away', () => {
+    const s = make([onFlag(forever()), onClick(moveWithArrows(3))]);
+    expect(plan(want, [s])).toMatchObject({ kind: 'block', block: { type: 'a_arrows' } });
   });
 
   it('a loose movement block goes inside the «por siempre» and completes the program', () => {

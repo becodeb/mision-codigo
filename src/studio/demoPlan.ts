@@ -70,8 +70,6 @@ const isTerminal = (type: string): boolean => {
 
 const bodyOf = (type: string): boolean => (BLOCK_SPECS as Record<string, unknown>)[type] !== undefined && hasBody(type as Parameters<typeof hasBody>[0]);
 
-const isEmptyBlock = (b: Block): boolean => !b.body.length && !b.elseBody.length;
-
 function typesIn(list: readonly Block[], into = new Set<string>()): Set<string> {
   for (const b of list) {
     into.add(b.type);
@@ -180,28 +178,45 @@ function sameEvent(want: Block, hat: Block): boolean {
   return true;
 }
 
+const sizeOf = (list: readonly Block[]): number => list.reduce((n, b) => n + 1 + sizeOf(b.body) + sizeOf(b.elseBody), 0);
+
+interface Reuse {
+  block: Block;
+  covered: number;
+  foreign: number;
+}
+
 /**
- * Built blocks the child could drag to the slot: a loose block on its own, or an empty C block that is the last
- * of its list somewhere nothing asks for it (under another event, in another container). Full containers and
- * plain blocks inside other programs are left alone: they are somebody's work.
+ * The child's own block to drag to the slot instead of bringing a new one. Candidates are the top of a loose
+ * stack, the last block of a list anywhere in a loose stack, and an unclaimed container in the last place of a
+ * program (it is somewhere nothing asks for it). Each is scored: `covered` is how many blocks of the wanted
+ * block's insides it already holds, `foreign` how many it holds that are not wanted (plus blocks that would come
+ * along beneath it). Empty or covering something means reuse: the child's extra ideas are theirs and stay. A
+ * candidate that holds only foreign blocks is the child's other idea, so it is left alone.
  */
-function movable(want: Block, sprite: SpriteView, claimed: ReadonlySet<string>): Block | null {
-  const free = (b: Block): boolean => !!b.id && b.type === want.type && !claimed.has(b.id) && (!bodyOf(b.type) || isEmptyBlock(b));
-  for (const stack of sprite.loose ?? []) if (stack.length === 1 && free(stack[0])) return stack[0];
-  const search = (list: readonly Block[]): Block | null => {
-    for (let i = 0; i < list.length; i++) {
-      const b = list[i];
-      const inner = search(b.body) ?? search(b.elseBody);
-      if (inner) return inner;
-      if (i === list.length - 1 && bodyOf(b.type) && free(b)) return b;
-    }
-    return null;
+function reuse(want: Block, sprite: SpriteView, claimed: ReadonlySet<string>): Block | null {
+  const found: Reuse[] = [];
+  const consider = (b: Block, tail: number): void => {
+    if (!b.id || b.type !== want.type || claimed.has(b.id)) return;
+    const inside = [...b.body, ...b.elseBody];
+    const covered = fit(want.body, b.body, { parent: b.id, kind: 'do' }).matched + (want.elseBody.length || b.elseBody.length ? fit(want.elseBody, b.elseBody, { parent: b.id, kind: 'else' }).matched : 0);
+    const foreign = sizeOf(inside) - covered + tail;
+    if (covered > 0 || foreign === 0) found.push({ block: b, covered, foreign });
   };
-  for (const sc of sprite.scripts) {
-    const found = search(sc.body);
-    if (found) return found;
+  const lasts = (list: readonly Block[], inLoose: boolean): void => {
+    list.forEach((b, i) => {
+      lasts(b.body, inLoose);
+      lasts(b.elseBody, inLoose);
+      if (i === list.length - 1 && (inLoose || bodyOf(b.type))) consider(b, 0);
+    });
+  };
+  for (const stack of sprite.loose ?? []) {
+    if (stack.length) consider(stack[0], stack.length - 1);
+    lasts(stack, true);
   }
-  return null;
+  for (const sc of sprite.scripts) lasts(sc.body, false);
+  found.sort((x, y) => y.covered - x.covered || x.foreign - y.foreign);
+  return found[0]?.block ?? null;
 }
 
 /** Plans one wanted script against a sprite. `null` means it is all there; `claimed` collects the built blocks that count. */
@@ -226,7 +241,7 @@ function planScript(want: Script, sprite: SpriteView, claimed: Set<string>): Pie
   if (best.s.hat.id) claimed.add(best.s.hat.id);
   best.claimed.forEach((c) => claimed.add(c));
   const { block, slot } = best.missing!;
-  const mine = movable(block, sprite, claimed);
+  const mine = reuse(block, sprite, claimed);
   return mine ? { kind: 'move', block: mine, slot, completes: null } : { kind: 'block', block, slot, completes: null };
 }
 
@@ -272,12 +287,16 @@ let simId = 0;
 
 type Editable = { scripts: Script[]; loose?: Block[][] };
 
-/** Removes a loose or nested block and returns it. */
-function takeBlock(sprite: Editable, id: string | undefined): Block | null {
+/** Removes a loose or nested block and returns it, with the blocks that hang below it when it tops a loose stack (they come along). */
+function takeBlock(sprite: Editable, id: string | undefined): { block: Block; tail: Block[] } | null {
   if (!id) return null;
   for (const stack of sprite.loose ?? []) {
     const i = stack.findIndex((b) => b.id === id);
-    if (i >= 0) return stack.splice(i, 1)[0];
+    if (i === 0) {
+      const [block, ...tail] = stack.splice(0);
+      return { block, tail };
+    }
+    if (i > 0) return { block: stack.splice(i, 1)[0], tail: [] };
   }
   const visit = (list: Block[]): Block | null => {
     for (let i = 0; i < list.length; i++) {
@@ -289,7 +308,7 @@ function takeBlock(sprite: Editable, id: string | undefined): Block | null {
   };
   for (const sc of sprite.scripts) {
     const found = visit(sc.body);
-    if (found) return found;
+    if (found) return { block: found, tail: [] };
   }
   return null;
 }
@@ -302,10 +321,12 @@ export function applyPlan(sprite: Editable, plan: DemoPlan): void {
   }
   if (plan.kind !== 'block' && plan.kind !== 'move') return;
   let piece: Block;
+  let tail: Block[] = [];
   if (plan.kind === 'move') {
     const taken = takeBlock(sprite, plan.block.id);
     if (!taken) throw new Error(`the plan moves a block that is not there: ${String(plan.block.id)}`);
-    piece = taken;
+    piece = taken.block;
+    tail = taken.tail;
   } else {
     /* What the toolbox hands over is the block alone: the child fills in its mouth and menus. */
     piece = { ...structuredClone(plan.block), id: `sim${++simId}`, body: [], elseBody: [] };
@@ -313,15 +334,15 @@ export function applyPlan(sprite: Editable, plan: DemoPlan): void {
   const { parent, kind } = plan.slot;
   for (const sc of sprite.scripts) {
     if (sc.hat.id === parent) {
-      sc.body.unshift(piece);
+      sc.body.unshift(piece, ...tail);
       return;
     }
     const visit = (list: Block[]): boolean => {
       for (let i = 0; i < list.length; i++) {
         const b = list[i];
         if (b.id === parent) {
-          if (kind === 'next') list.splice(i + 1, 0, piece);
-          else (kind === 'do' ? b.body : b.elseBody).unshift(piece);
+          if (kind === 'next') list.splice(i + 1, 0, piece, ...tail);
+          else (kind === 'do' ? b.body : b.elseBody).unshift(piece, ...tail);
           return true;
         }
         if (visit(b.body) || visit(b.elseBody)) return true;
@@ -385,7 +406,7 @@ export function describePlan(plan: DemoPlan): string {
     }
     case 'move': {
       const label = blockLabel(plan.block.type);
-      return label ? `Poné este «${label}» ${where(plan.slot)}.` : 'Poné este bloque donde va.';
+      return label ? `Conectá este «${label}» ${where(plan.slot)}.` : 'Conectá este bloque donde va.';
     }
     case 'try':
       return tryTarget(plan.hat, plan.spriteId).caption;
