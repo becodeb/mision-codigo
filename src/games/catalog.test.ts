@@ -105,7 +105,7 @@ describe('catalog', () => {
       const { missing, errors } = await proveGame(game);
       expect(missing).toEqual([]);
       expect(errors).toEqual([]);
-    });
+    }, 30_000);
   });
 });
 

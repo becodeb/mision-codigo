@@ -6,11 +6,13 @@
 import type { BlockType } from '../../language/catalog.ts';
 import {
   addScore, add, backdrop, changeVar, changeY, createClone, deleteClone, div, forever, gt, ifElse, ifThen, join, lose, lt, moveWithArrows, mul,
-  onCloneStart, onFlag, onPoints, or, posY, project, randomBetween, repeatUntil, sayFor, score, setVar, setX, setY, show, hide, sound, sprite, touching,
-  variable, wait, waitUntil, goTo,
+  onCloneStart, onFlag, onPoints, or, posY, project, randomBetween, repeatUntil, sayFor, score, setVar, setX, setY, show, hide, sound, sprite, stopOthers, touching,
+  variable, wait, waitUntil, win, goTo,
   type Block, type SpriteProgram,
 } from '../../language/ir.ts';
 import { blocksInList, blocksOfSprite, fell } from '../checks.ts';
+import { bounds } from '../../runtime/geometry.ts';
+import type { SpriteInstance } from '../../runtime/instance.ts';
 import type { Game } from '../../runtime/testing.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import {
@@ -455,7 +457,7 @@ export const tresVidas: GameDefinition = {
     },
     {
       title: 'Cada vez más difícil',
-      goal: 'El juego se acelera con los puntos y guarda tu mejor racha.',
+      goal: 'El juego se acelera con los puntos, guarda tu mejor racha y se puede ganar.',
       steps: [
         {
           id: 'velocidad',
@@ -561,6 +563,23 @@ export const tresVidas: GameDefinition = {
           ],
           check: (ctx) => recordVars(ctx).some((n) => valueOf(ctx, n) >= 2 && shownBySay(ctx, n)),
         },
+        {
+          id: 'ganar',
+          title: 'También se puede ganar',
+          text: 'Un juego tiene que poder ganarse. Cuando Nova llega a 15 puntos, aparece un cartel de victoria y ganás. Jugá bien hasta lograrlo.',
+          hints: [
+            'Hay un bloque que arranca solo cuando el puntaje llega a un número. Ya lo usaste para el nivel 2.',
+            'Adentro: un cartel con tiempo y después «ganar».',
+            'Mientras el cartel está en pantalla el juego sigue: poné «detener mis otros programas» primero, así no perdés justo cuando ganaste.',
+            'Para probarlo sin esperar tanto, podés bajar el número, pero no a menos de 12: el nivel 2 empieza en 10.',
+          ],
+          unlock: ['a_win', 'a_stopothers'],
+          example: [{ sprite: 'Nova', scripts: [onPoints(15, stopOthers(), sayFor('¡Ganaste!', 2), win())] }],
+          check: (ctx) =>
+            scriptsOf(ctx, ['a_points']).some(({ script }) => Number(script.hat.fields.N) >= 12 && holds(script.body, ['a_win']) && holds(script.body, ['a_stopothers'])) &&
+            comesBefore(ctx, (b) => SAYS.includes(b.type), ['a_win']) &&
+            ctx.stats.won,
+        },
       ],
     },
   ],
@@ -593,6 +612,7 @@ export const tresVidas: GameDefinition = {
             onFlag(setVar('vidas', 3), setVar('racha', 0), setVar('mejor', 0), forever(moveWithArrows(6))),
             onFlag(waitUntil(lt(variable('vidas'), 1)), sayFor(join('Mejor racha: ', variable('mejor')), 2), lose()),
             onPoints(10, backdrop('castillo'), sayFor('¡Nivel 2!', 1)),
+            onPoints(15, stopOthers(), sayFor('¡Ganaste!', 2), win()),
           ],
           { x: 0, y: -125, size: 80, name: 'Nova' },
         ),
@@ -643,21 +663,64 @@ export const tresVidas: GameDefinition = {
 
 const NOVA = 'nova';
 
-/** One frame of steering: dodge a bomb that is coming down on Nova, else go under the lowest star. */
+/** A star or a bomb coming down: its hit circle (centre and radius), how far it falls per step, and whether it is good. */
+interface Faller {
+  x: number;
+  y: number;
+  r: number;
+  speed: number;
+  star: boolean;
+}
+
+const HIT = 0.85;
+
+/** Plays out a plan (move `d1` for `k` frames, then `d2`) against what is falling, and says how good it is. */
+function planValue(nova: { x: number; y: number; r: number }, fallers: Faller[], d1: number, k: number, d2: number): number {
+  let value = 0;
+  const alive = fallers.map(() => true);
+  let x = nova.x;
+  for (let t = 1; t <= 60; t++) {
+    x = Math.max(-215, Math.min(215, x + 6 * (t <= k ? d1 : d2)));
+    fallers.forEach((f, i) => {
+      if (!alive[i]) return;
+      const y = f.y - f.speed * t;
+      if (Math.hypot(f.x - x, y - nova.y) < (f.r + nova.r) * HIT) {
+        alive[i] = false;
+        value += f.star ? 1 : -4;
+      } else if (y < -150) {
+        alive[i] = false;
+        if (f.star) value -= 2;
+      }
+    });
+  }
+  /* Between equal plans, end closer to the lowest star that is still falling. */
+  const target = fallers.filter((f, i) => alive[i] && f.star).sort((a, b) => a.y - b.y)[0];
+  return value * 100 - (target ? Math.abs(target.x - x) * 0.05 : 0);
+}
+
+/** One frame of steering: looks a second ahead at every star and bomb and picks the best of a few simple plans. */
 function chaseStars(g: Game): void {
   const me = g.sprite(NOVA);
-  const danger = clonesOf(g, 'bomba')
-    .filter((b) => b.y > -120 && b.y < 100 && Math.abs(b.x - me.x) < 64)
-    .sort((a, b) => a.y - b.y)[0];
-  if (danger) {
-    const side = me.x >= danger.x ? 1 : -1;
-    let target = danger.x + side * 80;
-    if (Math.abs(target) > 215) target = danger.x - side * 80;
-    steer(g, NOVA, target, null, 4);
-    return;
+  const mine = bounds(me);
+  const score = g.machine.score ?? 0;
+  const circle = (i: SpriteInstance, speed: number, star: boolean): Faller => {
+    const b = bounds(i);
+    return { x: b.x, y: b.y, r: b.r, speed, star };
+  };
+  const fallers: Faller[] = [
+    ...clonesOf(g, 'estrella').map((i) => circle(i, 3 + score / 5, true)),
+    ...clonesOf(g, 'bomba').map((i) => circle(i, 4 + score / 5, false)),
+  ].filter((f) => f.y > -150);
+  let best = { value: -Infinity, dir: 0 };
+  for (const d1 of [-1, 0, 1]) {
+    for (const k of [12, 36]) {
+      for (const d2 of [-1, 0, 1]) {
+        const value = planValue(mine, fallers, d1, k, d2);
+        if (value > best.value) best = { value, dir: d1 };
+      }
+    }
   }
-  const star = clonesOf(g, 'estrella').filter((s) => s.y > -100).sort((a, b) => a.y - b.y)[0];
-  steer(g, NOVA, star ? star.x : me.x, null, 4);
+  steer(g, NOVA, me.x + best.dir * 60, null, 2);
 }
 
 function playTresVidas(g: Game): void {
@@ -677,4 +740,15 @@ function playTresVidas(g: Game): void {
   walkTo(g, NOVA, 210, null, 3000);
   g.runUntil(() => g.machine.ended !== null, 90_000);
   releaseArrows(g);
+  /* Then games played well all the way until one reaches the goal and wins. Losing is part of the game: try again. */
+  for (let attempt = 0; attempt < 20 && !g.machine.stats.won; attempt++) {
+    g.flag();
+    g.run(200);
+    g.runUntil(() => {
+      if (g.machine.ended) return true;
+      chaseStars(g);
+      return false;
+    }, 300_000);
+    releaseArrows(g);
+  }
 }

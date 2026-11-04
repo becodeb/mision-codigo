@@ -17,5 +17,10 @@ describe('tres-vidas', () => {
   it.each([2, 3, 4])('plays without runtime errors with random seed %i', async (seed) => {
     const { errors } = await proveGame(tresVidas, seed);
     expect(errors).toEqual([]);
-  });
+  }, 30_000);
+
+  it('can be won: the reference player reaches the goal and every step passes', async () => {
+    const { missing } = await proveGame(tresVidas);
+    expect(missing).toEqual([]);
+  }, 30_000);
 });
