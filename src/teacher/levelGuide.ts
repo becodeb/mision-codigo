@@ -3,7 +3,9 @@ import type { LevelId } from '../shared/levels.ts';
 
 export interface LevelGuide {
   id: LevelId;
-  /** The logic the level's games require. */
+  /** School grades this level usually fits. */
+  grades: string;
+  /** The logic the level's games require (the class 2 easy games). */
   logic: string;
   /** How to tell that a child belongs here. */
   signs: string[];
@@ -12,7 +14,8 @@ export interface LevelGuide {
 export const LEVEL_GUIDES: readonly LevelGuide[] = [
   {
     id: 1,
-    logic: 'Secuencia: los bloques se ejecutan de arriba hacia abajo. Bloques con dibujos y voz, sin leer textos largos.',
+    grades: '1.º y 2.º grado',
+    logic: 'Secuencia: los bloques se hacen en orden, de arriba hacia abajo, cuando tocás al personaje. Bloques con dibujos y voz, sin leer.',
     signs: [
       'Es su primer contacto con la programación o con bloques.',
       'Todavía lee con dificultad o necesita que le lean las instrucciones.',
@@ -21,25 +24,28 @@ export const LEVEL_GUIDES: readonly LevelGuide[] = [
   },
   {
     id: 2,
-    logic: 'Eventos, tiempos y repetir: «cuando toco esto, pasa aquello», varios personajes y mensajes de colores.',
+    grades: '2.º y 3.º grado',
+    logic: 'Lo del nivel anterior más repetir (las vueltas): una melodía que se repite sin poner los bloques muchas veces. Bloques con dibujos.',
     signs: [
       'Armó una secuencia sin ayuda y quiere que pasen más cosas a la vez.',
-      'Entiende que un personaje puede esperar o reaccionar a otro.',
+      'Se da cuenta cuando repite el mismo bloque muchas veces.',
       'Todavía prefiere bloques con dibujos antes que con texto.',
     ],
   },
   {
     id: 3,
-    logic: 'Teclado, coordenadas y mensajes con bloques de texto. Sin condicionales: los puntos y las fases se arman con mensajes.',
+    grades: '3.º y 4.º grado',
+    logic: 'Bloques con texto: al hacer clic, la bandera verde, sumar puntos, ir a un lugar al azar y ganar al llegar a un puntaje.',
     signs: [
       'Lee los bloques con texto sin ayuda.',
-      'Entiende dónde está un objeto con las coordenadas x e y.',
-      'Quiere controlar un personaje con el teclado o armar un cuento con finales distintos.',
+      'Puede seguir una consigna escrita corta sin que se la lean.',
+      'Le gusta que su juego cuente puntos.',
     ],
   },
   {
     id: 4,
-    logic: 'Bucle y reglas: por siempre, «si toca», puntos, ganar y perder. Juegos de esquivar y atrapar.',
+    grades: '4.º y 5.º grado',
+    logic: 'Juegos con reglas: por siempre, mover con las flechas, «cuando toque a», puntos, ganar y perder.',
     signs: [
       'Ya usó Scratch u otro entorno de bloques y no necesita guía para empezar.',
       'Piensa en reglas: «si pasa esto, entonces aquello».',
@@ -48,16 +54,18 @@ export const LEVEL_GUIDES: readonly LevelGuide[] = [
   },
   {
     id: 5,
-    logic: 'Estado: variables, comparaciones, «si no», azar, clones y listas. Vidas, tiempo y dificultad que cambia.',
+    grades: '6.º y 7.º grado',
+    logic: 'Lo del nivel anterior en un juego más largo: un personaje que aparece al llegar a un puntaje (esconder y mostrar) y direcciones (apuntar arriba o abajo).',
     signs: [
-      'Usó variables y puede explicar para qué sirven.',
+      'Terminó un juego de esquivar sin ayuda y quiere uno más largo.',
       'Sabe depurar: cuando algo no anda, busca por qué.',
-      'Pide hacer cosas que los bloques anteriores no permiten, como vidas o enemigos que se repiten.',
+      'Puede explicarle a un compañero qué hace cada bloque de su juego.',
     ],
   },
 ];
 
 export const LEVEL_ADVICE = [
+  'En la Clase 2 ningún nivel usa sobres (mensajes), operadores (<, =, +), variables ni coordenadas: para estas edades son demasiado abstractos.',
   'El grado no define el nivel: chicos del mismo grado pueden estar en niveles distintos según su experiencia.',
   'Ante la duda, conviene el nivel más bajo. Se puede subir en cualquier momento y el avance que ya tienen se conserva.',
   'Los chicos nunca ven el número: solo ven el nombre de su equipo.',

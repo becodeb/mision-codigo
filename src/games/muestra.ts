@@ -1,13 +1,16 @@
 /** Clase 2: un juego fácil por nivel para la última clase y la muestra. Los originales siguen en la Clase 1. */
 import type { BlockType } from '../language/catalog.ts';
-import { isCharacter, spritesWithHat } from './checks.ts';
+import {
+  addScore, bounce, face, forever, goToRandom, hide, lose, move, moveWithArrows, onFlag, onPoints, onTouching, point, project, show, sound, sprite, win,
+} from '../language/ir.ts';
+import { PLACES, isCharacter, refHas, refsOfHat, spritesWithHat } from './checks.ts';
 import { easyVersion } from './easy.ts';
 import { miMascota } from './level1/mi-mascota.ts';
 import { bandaParque } from './level2/banda-parque.ts';
 import { cazaPulpi } from './level3/caza-pulpi.ts';
 import { chispa } from './level4/chispa.ts';
-import { tresVidas } from './level5/tres-vidas.ts';
-import type { GameDefinition } from './types.ts';
+import { Pilot, centerOf, touchingNow } from './level4/autopilot.ts';
+import type { GameDefinition, GameSolution, StepContext } from './types.ts';
 
 const PET_REACTIONS: BlockType[] = ['f_sound', 'f_spin', 'f_face', 'f_jump', 'f_grow', 'f_shrink', 'f_say', 'f_text'];
 
@@ -72,6 +75,7 @@ export const PULPI_FACIL = easyVersion(cazaPulpi, {
     },
     ganar: {
       text: 'Cuando juntes 10 puntos, ganás. Armá la victoria y ganalo de verdad.',
+      unlock: ['a_points', 'a_win'],
       explain: '«Cuando los puntos lleguen a…» es un bloque que espera: se activa solo cuando los puntos llegan a ese número.',
       hints: ['Es otro bloque que empieza cuando los puntos llegan a un número.', 'Adentro va el bloque de ganar.', 'Tocá a Pulpi hasta llegar a 10.'],
     },
@@ -79,69 +83,144 @@ export const PULPI_FACIL = easyVersion(cazaPulpi, {
   },
 });
 
+/* ---------- Nivel 4 y 5: Chispa sin sobres ---------- */
+
+/** La moneda se mueve sola cuando la toca el personaje que junta puntos con ella: sin mensajes. */
+function coinJumps(ctx: StepContext): boolean {
+  const pickups = refsOfHat(ctx, 'a_touching').filter((r) => refHas(r, ['a_addscore']) && !refHas(r, ['a_lose']));
+  const targets = new Set(pickups.map((r) => String(r.script.hat.fields.T)));
+  return refsOfHat(ctx, 'a_touching').some((r) => targets.has(r.sprite.id) && refHas(r, PLACES)) && ctx.stats.maxScore >= 3;
+}
+
+const COIN_STEP = {
+  title: 'La moneda salta',
+  text: 'Cada vez que Michi toca la moneda, la moneda tiene que saltar a otro lugar. Armalo en la moneda: «cuando toque a Michi» y abajo «ir a posición aleatoria». Juntá 3 monedas.',
+  explain: 'Cada personaje tiene sus propios bloques. La moneda también se da cuenta cuando la tocan: «cuando toque a Michi» funciona en la moneda igual que en Michi.',
+  hints: ['Tocá la moneda abajo, en «Personajes», para armar sus bloques.', '«Cuando toque a Michi» y abajo «ir a posición aleatoria».'],
+  unlock: ['a_random'] as BlockType[],
+  example: [{ sprite: 'Moneda', scripts: [onTouching('michi', goToRandom())] }],
+  check: coinJumps,
+};
+
+const winStep = (goal: number) => ({
+  text: `Con ${goal} monedas, Michi gana. Armá la victoria y ganala de verdad.`,
+  explain: '«Cuando los puntos lleguen a…» es un bloque que espera: se activa solo cuando los puntos llegan a ese número.',
+  hints: [
+    'Es otro bloque que empieza cuando los puntos llegan a un número. Ponelo en Michi.',
+    'Adentro va el bloque de ganar. Antes podés poner un sonido de festejo.',
+    'Si te cuesta, hacé más lento al dragón: bajá los pasos de su «mover».',
+  ],
+  unlock: ['a_points', 'a_win'] as BlockType[],
+  example: [{ sprite: 'Michi', scripts: [onPoints(goal, sound('aplauso'), win())] }],
+});
+
+const CHISPA_EXPLAINS = {
+  heroe: { explain: '«Por siempre» repite lo de adentro sin parar mientras dura el juego. Así Michi te escucha las flechas todo el tiempo, no una sola vez.' },
+  rebota: { explain: '«Mover» avanza unos pasos y «rebotar si toca un borde» lo da vuelta al llegar a la orilla. Dentro de «por siempre», va y viene solo.' },
+  pierde: { explain: '«Cuando toque a …» es un bloque que espera: se activa en el momento en que Michi choca con ese personaje.' },
+  recoger: { explain: 'Los puntos son un número que el juego recuerda. «Sumar 1 a puntos» le agrega uno. Lo ves arriba del escenario.' },
+};
+
+/** Juega como un chico: primero se deja atrapar, después junta monedas esquivando hasta ganar. */
+function chispaSolution(dragons: boolean, goal: number): GameSolution {
+  const hazards = dragons ? ['chispa', 'chispita'] : ['chispa'];
+  const michi = [
+    onFlag(forever(moveWithArrows(5))),
+    onTouching('chispa', face('triste'), sound('boing'), lose()),
+    ...(dragons ? [onTouching('chispita', face('triste'), sound('boing'), lose())] : []),
+    onTouching('moneda', addScore(1), sound('magia')),
+    onPoints(goal, sound('aplauso'), win()),
+  ];
+  const program = project('castillo', [
+    sprite('michi', 'michi', michi, { x: -180, y: -120, size: 80, name: 'Michi' }),
+    sprite('chispa', 'chispa', [onFlag(forever(move(3), bounce()))], { x: -200, y: -30, size: 80, name: 'Chispa' }),
+    sprite('moneda', 'coin', [onTouching('michi', goToRandom())], { x: 120, y: 30, size: 130, name: 'Moneda' }),
+    ...(dragons
+      ? [sprite('chispita', 'chispa', [onFlag(hide(), point('0')), onPoints(5, show(), forever(move(3), bounce()))], { x: 100, y: -150, size: 60, name: 'Chispita' })]
+      : []),
+  ]);
+  return {
+    program,
+    play: (game) => {
+      const hero = () => game.sprite('michi');
+      const coin = () => game.sprite('moneda');
+      const careful = new Pilot(game, { hero: 'michi', speed: 2.5, hazards });
+      const reckless = new Pilot(game, { hero: 'michi', speed: 2.5, hazards: [] });
+      const points = (): number => game.machine.score ?? 0;
+      game.flag();
+      game.run(200);
+      game.runUntil(() => {
+        const c = centerOf(game.sprite('chispa'));
+        reckless.steer(c.x, c.y);
+        return game.machine.ended !== null;
+      }, 60_000);
+      reckless.release();
+      game.run(200);
+      game.flag();
+      game.run(200);
+      let overlap = 0;
+      let away = 0;
+      game.runUntil(() => {
+        if (points() >= goal || game.machine.ended) return true;
+        overlap = touchingNow(hero(), coin()) ? overlap + 1 : 0;
+        if (overlap > 12) {
+          away = 40;
+          overlap = 0;
+        }
+        const to = away > 0 ? { x: 0, y: -60 } : centerOf(coin());
+        if (away > 0) away--;
+        careful.steer(to.x, to.y);
+        return false;
+      }, 240_000);
+      careful.release();
+      game.run(1_500);
+      game.machine.setShown(true);
+    },
+  };
+}
+
 export const CHISPA_FACIL = easyVersion(chispa, {
   pitch: 'Mové a Michi con las flechas, juntá monedas y que no te atrape Chispa.',
+  solution: chispaSolution(false, 8),
   keep: {
     escena: {},
-    heroe: {
-      explain: '«Por siempre» repite lo de adentro sin parar mientras dura el juego. Así Michi te escucha las flechas todo el tiempo, no una sola vez.',
-    },
-    rebota: {
-      explain: '«Mover» avanza unos pasos y «rebotar si toca un borde» lo da vuelta al llegar a la orilla. Dentro de «por siempre», va y viene solo.',
-    },
-    pierde: {
-      explain: '«Cuando toque a …» es un bloque que espera: se activa en el momento en que Michi choca con ese personaje.',
-    },
+    ...CHISPA_EXPLAINS,
     moneda: {},
-    recoger: {
-      explain: 'Los puntos son un número que el juego recuerda. «Sumar 1 a puntos» le agrega uno. Lo ves arriba del escenario.',
-    },
-    reaparece: {
-      text: 'Cada vez que Michi junta la moneda, la moneda tiene que saltar a otro lugar. Michi le avisa con un sobre. Juntá 3 monedas.',
-      explain: 'Un personaje no puede mover a otro, pero le puede mandar un aviso: eso es el sobre. Michi usa «enviar» con un color, y la moneda usa «al recibir» ese mismo color para saber que tiene que moverse. Es como un mensajito entre personajes.',
-      hints: [
-        'En Michi: abajo de «cuando toque a moneda», poné «enviar» y elegí un color.',
-        'En la moneda: poné «al recibir» con el mismo color, y abajo «ir a posición aleatoria».',
-      ],
-    },
-    ganar: {
-      text: 'Con 8 monedas, Michi gana. Armá la victoria y ganala de verdad.',
-      explain: '«Cuando los puntos lleguen a…» es un bloque que espera: se activa solo cuando los puntos llegan a ese número.',
-      hints: [
-        'Es otro bloque que empieza cuando los puntos llegan a un número.',
-        'Adentro va el bloque de ganar. Antes podés poner un festejo.',
-        'Si te cuesta, hacé más lenta a Chispa: bajá los pasos de su «mover».',
-      ],
-    },
+    reaparece: COIN_STEP,
+    ganar: winStep(8),
     mostrar: {},
   },
 });
 
-export const TRES_VIDAS_FACIL = easyVersion(tresVidas, {
-  pitch: 'Atrapá estrellas, esquivá bombas y no te quedes sin vidas.',
-  addShow: true,
+export const DOS_DRAGONES = easyVersion(chispa, {
+  id: 'dos-dragones',
+  title: 'Dos dragones',
+  level: 5,
+  pitch: 'Juntá monedas esquivando a Chispa. A las 5 monedas aparece un segundo dragón.',
+  solution: chispaSolution(true, 10),
   keep: {
-    mover: {
-      explain: '«Por siempre» repite lo de adentro sin parar mientras dura el juego, así Nova te escucha las flechas todo el tiempo.',
+    escena: {},
+    ...CHISPA_EXPLAINS,
+    moneda: {},
+    reaparece: COIN_STEP,
+    segundo: {},
+    aparece: {
+      text: 'El segundo dragón empieza escondido y aparece cuando juntás 5 monedas. Escondelo con la bandera y mostralo con «cuando los puntos lleguen a 5».',
+      explain: 'Un personaje escondido no se ve y no puede tocar a nadie. «Cuando los puntos lleguen a 5» espera hasta que tengas 5 puntos, y recién ahí hace lo de abajo.',
+      hints: ['Seleccioná al segundo dragón abajo, en «Personajes».', 'Con la bandera: «esconder». Con «cuando los puntos lleguen a 5»: «mostrar».'],
+      unlock: ['a_hide', 'a_show', 'a_points'],
+      example: [{ sprite: 'Chispita', scripts: [onFlag(hide()), onPoints(5, show())] }],
     },
-    cae: {
-      explain: 'La pantalla tiene coordenadas: x es izquierda-derecha e y es arriba-abajo. Restar a y hace bajar. «Repetir hasta que» repite hasta que se cumple algo, por ejemplo que y sea muy chica (que llegó abajo). «Número al azar» elige un número distinto cada vez.',
+    vertical: {
+      text: 'Cuando aparece, el segundo dragón patrulla de arriba para abajo: primero apunta hacia arriba y después, por siempre, avanza y rebota.',
+      explain: '«Apuntar en dirección» cambia hacia dónde mira: 0 es arriba, 90 a la derecha, 180 abajo.',
+      hints: ['Agregalo abajo de «mostrar», en el bloque de los 5 puntos.', '«Apuntar en dirección 0», y después «por siempre» con «mover» y «rebotar».'],
+      example: [{ sprite: 'Chispita', scripts: [onPoints(5, show(), point('0'), forever(move(3), bounce()))] }],
     },
-    atrapar: {
-      explain: '«Si … entonces» es una pregunta: solo hace lo de adentro cuando la respuesta es sí. Por ejemplo: ¿la estrella está tocando a Nova? Entonces, un punto.',
-    },
-    vidas: {
-      explain: 'Una variable es una cajita con nombre que guarda un número. Creá una que se llame «vidas»: «fijar» pone un valor y «sumar a» lo cambia (con -1 resta).',
-    },
-    escapa: {
-      explain: '«Si … entonces … si no» elige uno de dos caminos: si atrapó, suma un punto; si no, resta una vida. Nunca hace los dos.',
-    },
-    bomba: {},
-    'bomba-golpe': {},
-    cero: {
-      explain: '«Esperar hasta que» se queda quieto hasta que pasa algo, por ejemplo que las vidas sean 0. Recién ahí sigue con el bloque de abajo.',
-    },
+    pierde2: {},
+    ganar: winStep(10),
+    mostrar: {},
   },
 });
 
-export const MUESTRA: GameDefinition[] = [MASCOTA_FACIL, BANDA_FACIL, PULPI_FACIL, CHISPA_FACIL, TRES_VIDAS_FACIL];
+export const MUESTRA: GameDefinition[] = [MASCOTA_FACIL, BANDA_FACIL, PULPI_FACIL, CHISPA_FACIL, DOS_DRAGONES];

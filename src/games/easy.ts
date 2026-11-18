@@ -1,10 +1,11 @@
 /**
  * Versiones fáciles para la muestra (Clase 2). Cada una toma un juego de la Clase 1 sin modificarlo:
- * se queda con algunos pasos, puede cambiar sus textos o aflojar su control, y suma «Hacelo tuyo» como
- * primer desafío. Los bloques que desbloqueaban los pasos que se sacan pasan al paso siguiente que queda,
- * así la solución de referencia sigue usando solo bloques ofrecidos y las pruebas del catálogo la validan.
+ * se queda con algunos pasos, puede cambiar sus textos, ejemplos y bloques o aflojar su control, y suma
+ * «Hacelo tuyo» como primer desafío. Los bloques de los pasos que se sacan NO aparecen: así no se cuelan
+ * ideas de otro nivel (sobres, operadores). Si un paso que queda necesita un bloque de uno que se sacó,
+ * se agrega con `unlock`.
  */
-import type { GameChallenge, GameDefinition, GamePhase, GameStep, StepContext } from './types.ts';
+import type { GameChallenge, GameDefinition, GamePhase, GameSolution, GameStep, StepContext } from './types.ts';
 import type { BlockType } from '../language/catalog.ts';
 
 export interface StepChange {
@@ -13,6 +14,10 @@ export interface StepChange {
   hints?: string[];
   /** Recuadro «¿Qué es esto?» con la idea nueva del paso. */
   explain?: string;
+  /** Reemplaza los bloques que desbloquea el paso. */
+  unlock?: BlockType[];
+  /** Reemplaza el ejemplo del último escalón de pistas. */
+  example?: GameStep['example'];
   /** Solo para aflojar: la solución completa tiene que seguir pasándolo. */
   check?: (ctx: StepContext) => boolean;
 }
@@ -21,6 +26,12 @@ export interface EasySpec {
   /** Pasos que quedan, por id, en el orden original. */
   keep: Record<string, StepChange>;
   pitch: string;
+  /** Para armar otro juego fácil del mismo original (otro nivel). */
+  id?: string;
+  title?: string;
+  level?: GameDefinition['level'];
+  /** Una solución propia cuando la versión fácil se arma distinto que el original. */
+  solution?: GameSolution;
   /** Agrega el paso final «Mostrá tu juego» si el original no lo tiene. */
   addShow?: boolean;
 }
@@ -45,45 +56,35 @@ export function easyVersion(game: GameDefinition, spec: EasySpec): GameDefinitio
   const known = new Set(game.phases.flatMap((p) => p.steps.map((s) => s.id)));
   for (const id of Object.keys(spec.keep)) if (!known.has(id)) throw new Error(`${game.id}: no existe el paso ${id}`);
 
-  let pending: BlockType[] = [];
   const phases: GamePhase[] = [];
   for (const phase of game.phases) {
     const steps: GameStep[] = [];
     for (const step of phase.steps) {
       const change = spec.keep[step.id];
-      if (!change) {
-        pending.push(...(step.unlock ?? []));
-        continue;
-      }
-      const unlock = [...new Set([...pending, ...(step.unlock ?? [])])];
-      pending = [];
-      steps.push({ ...step, ...change, ...(unlock.length ? { unlock } : {}) });
+      if (change) steps.push({ ...step, ...change });
     }
     if (steps.length) phases.push({ ...phase, steps });
   }
   if (spec.addShow) phases[phases.length - 1].steps.push({ ...SHOW_STEP });
-  if (pending.length) {
-    const last = phases[phases.length - 1].steps.at(-1)!;
-    last.unlock = [...new Set([...(last.unlock ?? []), ...pending])];
-  }
 
-  const play = game.solution.play;
+  const base = spec.solution ?? game.solution;
   return {
     ...game,
-    id: game.id + EASY_SUFFIX,
+    id: spec.id ?? game.id + EASY_SUFFIX,
+    level: spec.level ?? game.level,
     class: 2,
-    title: `${game.title} ⭐`,
+    title: `${spec.title ?? game.title} ⭐`,
     pitch: spec.pitch,
     phases,
     challenges: [MAKE_IT_YOURS, ...game.challenges],
     solution: spec.addShow
       ? {
-          program: game.solution.program,
+          program: base.program,
           play: async (g) => {
-            await play(g);
+            await base.play(g);
             g.machine.setShown(true);
           },
         }
-      : game.solution,
+      : base,
   };
 }

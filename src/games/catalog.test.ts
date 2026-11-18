@@ -119,7 +119,22 @@ describe('catalog', () => {
       }
     });
 
+    it('shows, in every example, only blocks the child already has at that step', () => {
+      /* The class 1 games were written before this rule; the easy versions (class 2) must follow it. */
+      if (game.class !== 2) return;
+      const missing: string[] = [];
+      for (const step of stepsOf(game)) {
+        const offered = offeredAt(game, step.id);
+        for (const ex of step.example ?? []) {
+          for (const b of flattenScripts(ex.scripts)) if (!IMPLICIT.has(b.type) && !offered.has(b.type)) missing.push(`${step.id}: ${b.type}`);
+        }
+      }
+      expect(missing).toEqual([]);
+    });
+
     it('solves itself using only the blocks it offers', () => {
+      /* An easy version that keeps the original reference solution: that one uses blocks of the steps it dropped. */
+      if (game.class === 2 && GAMES.some((g) => g.class === 1 && g.solution === game.solution)) return;
       const allowed = allowedBlocks(game);
       for (const block of blocksOfProject(game.solution.program)) {
         if (IMPLICIT.has(block.type)) continue;

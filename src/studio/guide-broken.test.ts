@@ -36,14 +36,11 @@ describe('the guide notices deleted code', () => {
 });
 
 describe('a concrete deletion', () => {
-  it('chispa-facil: deleting the envelopes points at «La moneda se mueve»', async () => {
+  it('chispa-facil: deleting the coin jump points at «La moneda salta»', async () => {
     const game = GAMES.find((g) => g.id === 'chispa-facil')!;
     const { driver, tracker, program } = await finished(game);
     const edited = clone(program);
-    for (const s of edited.sprites) {
-      s.scripts = s.scripts.filter((sc) => sc.hat.type !== 'a_recv');
-      for (const sc of s.scripts) sc.body = sc.body.filter((blk) => blk.type !== 'a_send');
-    }
+    for (const sc of edited.sprites.find((s) => s.id === 'moneda')!.scripts) sc.body = sc.body.filter((blk) => blk.type !== 'a_random');
     expect(tracker.broken(edited)?.step.id).toBe('reaparece');
     driver.machine.dispose();
   });

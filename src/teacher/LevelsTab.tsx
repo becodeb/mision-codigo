@@ -18,7 +18,7 @@ export function LevelsTab() {
         return (
           <section key={guide.id} className="t-card" aria-labelledby={`nivel-${guide.id}`}>
             <h2 id={`nivel-${guide.id}`}>
-              Nivel {guide.id} · {info.teamName}
+              Nivel {guide.id} · {info.teamName} · <span className="t-muted">{guide.grades}</span>
             </h2>
             <p>
               <strong>Lógica que exige.</strong> {guide.logic}

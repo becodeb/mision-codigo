@@ -35,5 +35,5 @@ export const KNOWN_GAME_IDS: ReadonlySet<string> = new Set([
   'banda-parque-facil',
   'caza-pulpi-facil',
   'chispa-facil',
-  'tres-vidas-facil',
+  'dos-dragones',
 ]);
