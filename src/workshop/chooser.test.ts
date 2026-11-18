@@ -73,10 +73,15 @@ describe('buildChooser', () => {
     expect(buildChooser(1, 2, [], catalog).cards.map((x) => x.game.id)).toEqual(['c']);
   });
 
-  it('keeps games already started from another class or level, after the offered ones', () => {
+  it('keeps a game started at another level of the same class, after the offered ones', () => {
+    const { cards } = buildChooser(2, 1, [summary('a', { finished: true })], catalog);
+    expect(cards.map((x) => x.game.id)).toEqual(['d', 'a']);
+    expect(cards[1].status).toEqual({ kind: 'finished' });
+  });
+
+  it('does not offer games started in another class', () => {
     const { cards } = buildChooser(1, 2, [summary('a'), summary('d', { finished: true })], catalog);
-    expect(cards.map((x) => x.game.id)).toEqual(['c', 'a', 'd']);
-    expect(cards[2].status).toEqual({ kind: 'finished' });
+    expect(cards.map((x) => x.game.id)).toEqual(['c']);
   });
 
   it('does not duplicate a started game that is also offered', () => {

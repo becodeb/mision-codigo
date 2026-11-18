@@ -31,7 +31,7 @@ describe('child session', () => {
     expect(login.status).toBe(200);
     expect(login.body).toEqual({
       student: { id: lunaId, name: 'Luna', group: '3° A', level: 4 },
-      activeClass: 1,
+      activeClass: 2,
     });
     const setCookie = login.headers.getSetCookie().join('\n');
     expect(setCookie).toContain('HttpOnly');
@@ -100,12 +100,12 @@ describe('child session', () => {
     expect((await child.get('/api/session')).status).toBe(401);
   });
 
-  it('reports the active class', async () => {
+  it('always reports class 2, even if class 1 is stored', async () => {
     const child = server.client();
-    expect((await child.get('/api/settings')).body).toEqual({ activeClass: 1 });
+    expect((await child.get('/api/settings')).body).toEqual({ activeClass: 2 });
     const admin = server.client();
     await loginAdmin(admin);
-    await admin.patch('/api/admin/settings', { activeClass: 2 });
+    await admin.patch('/api/admin/settings', { activeClass: 1 });
     expect((await child.get('/api/settings')).body).toEqual({ activeClass: 2 });
     await child.post('/api/session', { studentId: lunaId });
     expect((await child.get('/api/session')).body.activeClass).toBe(2);

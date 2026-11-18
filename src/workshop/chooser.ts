@@ -60,8 +60,9 @@ export function buildChooser(
   const byGame = new Map(projects.map((p) => [p.gameId, p]));
   const offered = catalog.gamesFor(level, activeClass);
   const offeredIds = new Set(offered.map((g) => g.id));
-  // A game the child already started stays reachable even if the class or their level changed.
-  const carried = catalog.games.filter((g) => !offeredIds.has(g.id) && byGame.has(g.id));
+  // A game the child already started stays reachable if their level changed, but only within the active class:
+  // games of another class are not offered at all, so children are not confused by last class's games.
+  const carried = catalog.games.filter((g) => g.class === activeClass && !offeredIds.has(g.id) && byGame.has(g.id));
   return {
     cards: [...offered, ...carried].map((game) => ({ game, status: statusOf(game, byGame.get(game.id)) })),
     freeStarted: byGame.has(FREE_GAME_ID),

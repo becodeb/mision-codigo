@@ -1,10 +1,13 @@
 // «Clase activa»: which class the children see, and which games each level gets in each class.
 import { useEffect, useState } from 'react';
 import { gamesFor } from '../games/catalog.ts';
-import { CLASS_IDS, LEVELS } from '../shared/levels.ts';
+import { LEVELS } from '../shared/levels.ts';
 import type { ClassId } from '../shared/levels.ts';
 import * as adminApi from './adminApi.ts';
 import { errorMessage } from './StudentsTab.tsx';
+
+/** Solo se ofrece la Clase 2 (misiones). La Clase 1 sigue en el código pero no se muestra. */
+const CLASS_IDS: readonly ClassId[] = [2];
 
 export function ClassTab() {
   const [active, setActive] = useState<ClassId | null>(null);

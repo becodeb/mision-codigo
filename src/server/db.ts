@@ -194,7 +194,9 @@ export function createStore(db: DatabaseSync, now: () => number = Date.now) {
       const row = db.prepare("SELECT value FROM settings WHERE key = 'activeClass'").get() as
         | { value: string }
         | undefined;
-      return row?.value === '2' ? 2 : 1;
+      // Desde la clase pre-muestra solo se usa la Clase 2 (misiones). La Clase 1 queda en el código, sin ofrecerse.
+      void row;
+      return 2;
     },
 
     setActiveClass(value: ClassId): void {
