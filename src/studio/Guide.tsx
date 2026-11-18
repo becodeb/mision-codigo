@@ -130,8 +130,13 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
         {celebrate && snap.celebrating?.phaseDone && <p className="mc-phase-done">¡Terminaste la fase! {game.phases[flat.phaseIndex + 1] ? `Sigue: ${game.phases[flat.phaseIndex + 1].goal}` : ''}</p>}
         {snap.broken && !celebrate && snap.broken.index !== flat.index && (
           <div className="mc-broken" role="alert">
-            <b>¡Ups! Parece que borraste algo del paso «{snap.broken.title}».</b> Volvé a ponerlo para que tu juego siga andando. Tocá «Ver ese paso» para acordarte cómo era.
+            <b>¡Ups! Parece que borraste algo del paso «{snap.broken.title}».</b> Tocá «Volver a como estaba» y tu juego vuelve a como lo tenías, o ponelo vos de nuevo.
             <span className="mc-broken-actions">
+              {session.canRestore && (
+                <button type="button" className="mc-gbtn primary" onClick={() => session.restoreGood()}>
+                  ↺ Volver a como estaba
+                </button>
+              )}
               <button type="button" className="mc-gbtn" onClick={() => session.viewStep(snap.broken!.index)}>
                 Ver ese paso
               </button>

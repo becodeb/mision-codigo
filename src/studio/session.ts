@@ -97,6 +97,8 @@ export class StudioSession {
   private dirtySave = false;
   private needsCheck = true;
   private broken: { index: number; title: string } | null = null;
+  /** The project as it was the last time it was whole: when a step was completed, or when it opened fine. */
+  private lastGood: Pick<ProjectDoc, 'sprites' | 'variables' | 'lists' | 'selected'> | null = null;
   private pendingProgram = false;
   private lastOffered = new Set<string>();
   private glowTypes = new Set<string>();
@@ -124,7 +126,34 @@ export class StudioSession {
     );
     this.clock = new ActiveClock(opts.initial?.progress.activeSeconds ?? 0);
     this.onFinishedOnce = this.tracker.finished;
+    if (!this.tracker.broken(this.program)) this.keepGood();
     this.snap = this.buildSnapshot();
+  }
+
+  private keepGood(): void {
+    const { sprites, variables, lists, selected } = this.doc;
+    this.lastGood = JSON.parse(JSON.stringify({ sprites, variables, lists, selected })) as NonNullable<typeof this.lastGood>;
+  }
+
+  /** «Volver a como estaba»: puts back the project as it was when the last step was completed. */
+  restoreGood(): void {
+    if (!this.lastGood) return;
+    this.editor?.flushPending();
+    this.machine?.stopAll();
+    const good = JSON.parse(JSON.stringify(this.lastGood)) as NonNullable<typeof this.lastGood>;
+    this.doc.sprites = good.sprites;
+    this.doc.variables = good.variables;
+    this.doc.lists = good.lists;
+    this.doc.selected = good.sprites.some((s) => s.id === this.doc.selected) ? this.doc.selected : good.selected;
+    this.loadSelectedIntoEditor();
+    this.applyProgram();
+    this.broken = null;
+    this.markChanged();
+    this.checkBroken();
+  }
+
+  get canRestore(): boolean {
+    return this.lastGood !== null;
   }
 
   /* ---------- subscription ---------- */
@@ -808,6 +837,8 @@ export class StudioSession {
   }
 
   private stepsCompleted(fresh: FlatStep[]): void {
+    this.captureCode();
+    if (!this.tracker.broken(this.program)) this.keepGood();
     const last = fresh[fresh.length - 1];
     const phaseDone = fresh.some((f) => this.tracker.phaseClosed(f.phaseIndex));
     const finishedNow = this.tracker.finished && !this.onFinishedOnce;
