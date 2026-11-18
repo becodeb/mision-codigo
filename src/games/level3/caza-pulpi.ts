@@ -20,8 +20,14 @@ const loopHas = (loop: Block, types: readonly string[]): boolean => blocksInList
 /** Every wait length inside a repeat. */
 const loopWaits = (loop: Block): number[] => blocksInList(loop.body).filter((b) => b.type === 'a_wait').map((b) => numField(b, 'N'));
 
-/** Click scripts that score and move. */
-const catchers = (ctx: StepContext) => refsOfHat(ctx, 'a_click').filter((r) => refHas(r, ['a_addscore']) && refHas(r, PLACES));
+/** Click scripts of sprites that score and move when clicked: in one script or split in two, they all run on the click. */
+const catchers = (ctx: StepContext) => {
+  const clicks = refsOfHat(ctx, 'a_click');
+  return clicks.filter((r) => {
+    const own = clicks.filter((o) => o.sprite.id === r.sprite.id);
+    return own.some((o) => refHas(o, ['a_addscore'])) && own.some((o) => refHas(o, PLACES));
+  });
+};
 
 /** Points thresholds of scripts that do not win. */
 const phaseHats = (ctx: StepContext) => refsOfHat(ctx, 'a_points').filter((r) => !refHas(r, ['a_win']));

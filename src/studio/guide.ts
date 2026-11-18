@@ -7,6 +7,8 @@ import type { GamePhase, GameDefinition, GameStep, StepContext } from '../games/
 import type { CompletedStep, GameProgress } from '../shared/api.ts';
 import type { Block, ProjectProgram, Script } from '../language/ir.ts';
 import { blocksOfProject } from '../games/checks.ts';
+import type { Machine } from '../runtime/machine.ts';
+import { StatsRecorder, type Sampled } from '../runtime/stats.ts';
 
 export interface FlatStep {
   step: GameStep;
@@ -117,20 +119,33 @@ export class GuideTracker {
   }
 
   /**
-   * The first completed step whose code is gone: none of the new blocks it taught (the ones it unlocks and
-   * shows in its example) is left in the project. Judging only the program keeps it quiet when a project is
-   * reopened or a run ends, and asking for none of them avoids complaining when a child picked another block.
+   * The first completed step whose code is gone (see `brokenSteps`), leaving out the ones in `ignore`: the child
+   * already said «Seguir igual» about them.
    */
-  broken(program: ProjectProgram): FlatStep | null {
+  broken(program: ProjectProgram, ctx?: StepContext | null, ignore?: ReadonlySet<string>): FlatStep | null {
+    return this.brokenSteps(program, ctx).find((f) => !ignore?.has(f.step.id)) ?? null;
+  }
+
+  /**
+   * Completed steps whose code is gone: none of the new blocks it taught (the ones it unlocks and shows in its
+   * example) is left in the project, and the program no longer does what the step asks. The second test is the
+   * step's own check, run on the code with every run assumed to have happened (and with the real runs, when
+   * `ctx` is given): so a child who rebuilt it another way, with other blocks or in another order, is never told
+   * that something was erased. Judging the program and not the runs keeps it quiet when a project is reopened.
+   */
+  brokenSteps(program: ProjectProgram, ctx?: StepContext | null): FlatStep[] {
     const present = new Set<string>(blocksOfProject(program).map((b) => b.type));
     const upTo = this.activeIndex;
+    const out: FlatStep[] = [];
     for (const flat of this.steps) {
       if (flat.index >= upTo) break;
       if (!this.done.has(flat.step.id)) continue;
       const taught = taughtBlocks(flat.step);
-      if (taught.length > 0 && taught.every((t) => !present.has(t))) return flat;
+      if (taught.length === 0 || taught.some((t) => present.has(t))) continue;
+      if (stillHolds(flat.step, program, ctx)) continue;
+      out.push(flat);
     }
-    return null;
+    return out;
   }
 
   /** Moves past a step without completing it. Used only after every hint was shown, so nobody is stuck for good. */
@@ -160,6 +175,39 @@ export class GuideTracker {
       finished: this.finished,
     };
   }
+}
+
+/** Stats where everything already happened: the hats ran, the blocks ran, the game was won and lost. */
+class EverythingRan extends StatsRecorder {
+  override won = true;
+  override lost = true;
+  override shown = true;
+  override maxScore = 1e6;
+  override scoreDrops = 1e6;
+  override count(): number { return 1e6; }
+  override ran(): boolean { return true; }
+  override ranBy(): boolean { return true; }
+  override ranHat(): boolean { return true; }
+  override ranHatBy(): boolean { return true; }
+  override touched(): boolean { return true; }
+  override blockRuns(): number { return 1e6; }
+  override sampled(): Sampled { return { count: 1e6, first: 0, last: 0, changes: 1e6, min: -1e6, max: 1e6, distinct: 64 }; }
+}
+const EVERYTHING_RAN = new EverythingRan();
+
+/** Whether the program still does what the step asks, judged with the real runs or with every run assumed. */
+function stillHolds(step: GameStep, program: ProjectProgram, ctx?: StepContext | null): boolean {
+  const tries: StepContext[] = [
+    ...(ctx ? [{ ...ctx, program }] : []),
+    { stats: EVERYTHING_RAN, program, machine: ctx?.machine as Machine, ui: { backdropChosen: true } },
+  ];
+  return tries.some((c) => {
+    try {
+      return step.check(c) === true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 /** Blocks a step introduces and uses in its own example: the code that proves it was done. */

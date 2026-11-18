@@ -5,7 +5,7 @@ import {
   score, send, show, sound, sprite, stopOthers, win,
 } from '../../language/ir.ts';
 import {
-  PLACES, appearLater, blocksInList, chosenBackdrop, lethalTargets, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount, travelled,
+  PLACES, appearLater, blocksInList, chosenBackdrop, lethalPairs, messageReaches, nestedIn, numField, patrolSprites, refBlocks, refHas, refsOfHat, spriteCount, travelled,
 } from '../checks.ts';
 import type { GameDefinition, StepContext } from '../types.ts';
 import { Pilot, centerOf, touchingNow } from './autopilot.ts';
@@ -88,7 +88,7 @@ export const chispa: GameDefinition = {
           unlock: ['a_touching', 'a_lose', 'a_face', 'a_sound'],
           demoScript: onTouching('chispa', lose()),
           demoSprite: 'michi',
-          check: (ctx) => lethalTargets(ctx).size >= 1 && ctx.stats.ranHat('touching') && ctx.stats.lost,
+          check: (ctx) => lethalPairs(ctx).size >= 1 && ctx.stats.ranHat('touching') && ctx.stats.lost,
         },
       ],
     },
@@ -202,7 +202,7 @@ export const chispa: GameDefinition = {
           text: 'El segundo dragón también tiene que hacer perder si toca a Michi. Fijate qué hiciste con el primero.',
           hints: ['Michi necesita otro «cuando toque a …», ahora con el segundo dragón.'],
           example: [{ sprite: 'Michi', scripts: [onTouching('chispita', face('triste'), lose())] }],
-          check: (ctx) => lethalTargets(ctx).size >= 2,
+          check: (ctx) => lethalPairs(ctx).size >= 2,
         },
       ],
     },

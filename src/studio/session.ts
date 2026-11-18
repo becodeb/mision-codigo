@@ -47,7 +47,10 @@ export interface SessionSnapshot {
   needsKeys: boolean;
   /** The finish panel (challenges and next game) is on. */
   finished: boolean;
-  /** A step already done whose code the child deleted, so the current one may not work. */
+  /**
+   * A step already done whose code the child deleted, so the current one may not work. Goes away by itself as
+   * soon as the program does what that step asks again, in any way, or when the child taps «Seguir igual».
+   */
   broken: { index: number; title: string } | null;
 }
 
@@ -98,6 +101,8 @@ export class StudioSession {
   private dirtySave = false;
   private needsCheck = true;
   private broken: { index: number; title: string } | null = null;
+  /** Broken steps the child chose to leave as they are («Seguir igual»). Only for this visit: never saved. */
+  private brokenDismissed = new Set<string>();
   /** The project as it was the last time it was whole: when a step was completed, or when it opened fine. */
   private lastGood: Pick<ProjectDoc, 'sprites' | 'variables' | 'lists' | 'selected'> | null = null;
   private pendingProgram = false;
@@ -150,6 +155,14 @@ export class StudioSession {
     this.applyProgram();
     this.broken = null;
     this.markChanged();
+    this.checkBroken();
+  }
+
+  /** «Seguir igual»: the child keeps the program as it is. The warning comes back only if that step breaks again later. */
+  dismissBroken(): void {
+    const flat = this.broken ? this.tracker.steps[this.broken.index] : null;
+    if (!flat) return;
+    this.brokenDismissed.add(flat.step.id);
     this.checkBroken();
   }
 
@@ -326,6 +339,8 @@ export class StudioSession {
       render: guard((view: StageView) => {
         this.renderer?.render(view, { selectedId: this.doc.selected, idle: !view.running });
         if (view.running !== this.running || view.ended !== this.ended) {
+          /* Scripts cut short (the game ended, «Parar») never turn their block off: clear what is left lit. */
+          if (!view.running || view.ended) this.editor?.clearHighlights();
           this.running = view.running;
           this.ended = view.ended;
           this.emit();
@@ -561,7 +576,9 @@ export class StudioSession {
     if (!editor || this.tier !== 'picture') return;
     const used = editor.usedTypes();
     for (const sp of this.doc.sprites) if (sp.id !== this.doc.selected) JSON.stringify(sp.code ?? {}).match(/"type":"(\w+)"/g)?.forEach((m) => used.add(m.slice(8, -1)));
-    this.glowTypes = new Set([...this.glowTypes].filter((t) => !used.has(t)));
+    /* Blocks of a step that is already done (or skipped) stop glowing even if the child solved it with others. */
+    const open = new Set<string>(this.tracker.steps.filter((s) => !this.tracker.isDone(s.step.id) && !this.tracker.isSkipped(s.step.id)).flatMap((s) => s.step.unlock ?? []));
+    this.glowTypes = new Set([...this.glowTypes].filter((t) => !used.has(t) && open.has(t)));
     editor.glow(this.glowTypes);
   }
 
@@ -823,9 +840,17 @@ export class StudioSession {
     if (edited || fresh.length) this.checkBroken();
   }
 
+  /**
+   * Recomputes the «borraste algo» warning from the program as it is now, on every edit and every check. It is
+   * never stored: fixing the program in any way that passes the step, or reopening the project, clears it.
+   */
   private checkBroken(): void {
-    let flat: FlatStep | null = null;
-    try { flat = this.tracker.broken(this.program); } catch { flat = null; }
+    let all: FlatStep[] = [];
+    try { all = this.tracker.brokenSteps(this.program, this.stepContext); } catch { all = []; }
+    /* A dismissed step that got fixed is forgotten, so breaking it again warns again. */
+    const ids = new Set(all.map((f) => f.step.id));
+    for (const id of [...this.brokenDismissed]) if (!ids.has(id)) this.brokenDismissed.delete(id);
+    const flat = all.find((f) => !this.brokenDismissed.has(f.step.id)) ?? null;
     const next = flat ? { index: flat.index, title: flat.step.title } : null;
     if (next?.index === this.broken?.index) return;
     this.broken = next;
@@ -839,7 +864,7 @@ export class StudioSession {
 
   private stepsCompleted(fresh: FlatStep[]): void {
     this.captureCode();
-    if (!this.tracker.broken(this.program)) this.keepGood();
+    if (!this.tracker.broken(this.program, this.stepContext)) this.keepGood();
     const last = fresh[fresh.length - 1];
     const phaseDone = fresh.some((f) => this.tracker.phaseClosed(f.phaseIndex));
     const finishedNow = this.tracker.finished && !this.onFinishedOnce;

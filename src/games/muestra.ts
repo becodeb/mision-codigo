@@ -3,10 +3,10 @@ import type { BlockType } from '../language/catalog.ts';
 import {
   addScore, bounce, face, forever, goToRandom, hide, lose, move, moveWithArrows, onFlag, onPoints, onTouching, point, project, show, sound, sprite, win,
 } from '../language/ir.ts';
-import { PLACES, isCharacter, refHas, refsOfHat, spritesWithHat } from './checks.ts';
+import { PLACES, blocksOfSprite, isCharacter, refHas, refsOfHat, spritesWithHat, touchBetween } from './checks.ts';
 import { easyVersion } from './easy.ts';
 import { miMascota } from './level1/mi-mascota.ts';
-import { bandaParque } from './level2/banda-parque.ts';
+import { bandaParque, chorusSingers } from './level2/banda-parque.ts';
 import { cazaPulpi } from './level3/caza-pulpi.ts';
 import { chispa } from './level4/chispa.ts';
 import { Pilot, centerOf, touchingNow } from './level4/autopilot.ts';
@@ -59,6 +59,8 @@ export const BANDA_FACIL = easyVersion(bandaParque, {
     vueltas: {
       text: 'Usá las vueltas, el bloque de flechitas que giran, y poné dos notas adentro. Después tocá al músico.',
       explain: 'Las vueltas repiten lo que tienen adentro. El número dice cuántas veces. Así no hace falta poner la misma nota muchas veces.',
+      /* El texto pide dos notas adentro, no que sean distintas. */
+      check: (ctx) => chorusSingers(ctx, 2, 1).length >= 1,
     },
     coro: {},
     mostrar: {},
@@ -96,11 +98,18 @@ export const PULPI_FACIL = easyVersion(cazaPulpi, {
 
 /* ---------- Nivel 4 y 5: Chispa sin sobres ---------- */
 
-/** La moneda se mueve sola cuando la toca el personaje que junta puntos con ella: sin mensajes. */
+/**
+ * La moneda se mueve sola cuando la toca el personaje que junta puntos con ella: sin mensajes. El punto puede
+ * estar en Michi («cuando toque a moneda») o en la misma moneda («cuando toque a Michi»: sumar y saltar).
+ */
 function coinJumps(ctx: StepContext): boolean {
-  const pickups = refsOfHat(ctx, 'a_touching').filter((r) => refHas(r, ['a_addscore']) && !refHas(r, ['a_lose']));
-  const targets = new Set(pickups.map((r) => String(r.script.hat.fields.T)));
-  return refsOfHat(ctx, 'a_touching').some((r) => targets.has(r.sprite.id) && refHas(r, PLACES)) && ctx.stats.maxScore >= 3;
+  /* El que salta es la moneda, no el que se maneja con las flechas. */
+  const driven = new Set(ctx.program.sprites.filter((s) => blocksOfSprite(s).some((b) => b.type === 'a_arrows')).map((s) => s.id));
+  const jumps = refsOfHat(ctx, 'a_touching').filter((r) => !driven.has(r.sprite.id) && refHas(r, PLACES));
+  const scored = jumps.some((jump) =>
+    touchBetween(ctx, jump.sprite.id, String(jump.script.hat.fields.T)).some((r) => refHas(r, ['a_addscore']) && !refHas(r, ['a_lose'])),
+  );
+  return scored && ctx.stats.maxScore >= 3;
 }
 
 const COIN_STEP = {

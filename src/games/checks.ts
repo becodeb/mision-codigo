@@ -112,15 +112,17 @@ export interface HatQuery {
   kinds?: number;
 }
 
-/** Sprites with a script under `hat` that holds what the query asks, whose hat has already run. */
+/**
+ * Sprites whose scripts under `hat` hold what the query asks, whose hat has already run. Every script with that
+ * hat starts at the same moment (two «al tocarme» both run on a tap), so their blocks count together: a child who
+ * split the reactions in two stacks did the same thing.
+ */
 export function spritesWithHat(ctx: StepContext, q: HatQuery): SpriteProgram[] {
   const kind = blockInfo(q.hat)?.hat;
   return ctx.program.sprites.filter((s) => {
     if (!kind || !ctx.stats.ranHatBy(s.id, kind)) return false;
-    return scriptsOfHat(s, q.hat).some((sc) => {
-      const found = blocksInList(sc.body).filter((b) => q.types.includes(b.type));
-      return found.length >= (q.min ?? 1) && new Set(found.map((b) => b.type)).size >= (q.kinds ?? 1);
-    });
+    const found = scriptsOfHat(s, q.hat).flatMap((sc) => blocksInList(sc.body)).filter((b) => q.types.includes(b.type));
+    return found.length >= (q.min ?? 1) && new Set(found.map((b) => b.type)).size >= (q.kinds ?? 1);
   });
 }
 
@@ -259,6 +261,31 @@ export function patrolSprites(ctx: StepContext): SpriteProgram[] {
   );
 }
 
+/** Blocks that ask «¿tocando …?» and do something when the answer is yes: «si» and «si … si no». */
+const IFS: readonly BlockType[] = ['a_if', 'a_ifelse'];
+
+/**
+ * The contacts that end the game, as pairs of sprite ids: «al tocar … perder» or «si tocando … perder», written
+ * in either of the two sprites (Michi «cuando toque a Chispa» or Chispa «cuando toque a Michi» is the same rule).
+ */
+export function lethalPairs(ctx: StepContext): Set<string> {
+  const out = new Set<string>();
+  const add = (a: string, b: string): void => void out.add([a, b].sort().join('|'));
+  for (const ref of refsOfHat(ctx, 'a_touching')) if (refHas(ref, ['a_lose'])) add(ref.sprite.id, String(ref.script.hat.fields.T));
+  for (const s of ctx.program.sprites) {
+    for (const sc of s.scripts) {
+      for (const b of blocksInList(sc.body)) {
+        if (!IFS.includes(b.type) || b.inputs.C?.type !== 'v_touching') continue;
+        if (blocksInList(b.body).some((x) => x.type === 'a_lose')) add(s.id, String(b.inputs.C.fields.T));
+      }
+    }
+  }
+  return out;
+}
+
+/** Whether touching this sprite ends the game, whichever of the two sprites holds the rule. */
+export const lethalWith = (ctx: StepContext, id: string): boolean => [...lethalPairs(ctx)].some((pair) => pair.split('|').includes(id));
+
 /** Ids of the sprites that end the game when touched: «al tocar … perder», or «si tocando … perder». */
 export function lethalTargets(ctx: StepContext): Set<string> {
   const out = new Set<string>();
@@ -266,10 +293,16 @@ export function lethalTargets(ctx: StepContext): Set<string> {
   for (const s of ctx.program.sprites) {
     for (const sc of s.scripts) {
       for (const b of blocksInList(sc.body)) {
-        if (b.type !== 'a_if' || b.inputs.C?.type !== 'v_touching') continue;
+        if (!IFS.includes(b.type) || b.inputs.C?.type !== 'v_touching') continue;
         if (blocksInList(b.body).some((x) => x.type === 'a_lose')) out.add(String(b.inputs.C.fields.T));
       }
     }
   }
   return out;
 }
+
+/** The «cuando toque a» scripts between two sprites, written in either one. */
+export const touchBetween = (ctx: StepContext, a: string, b: string): ScriptRef[] => [
+  ...refsOfHat(ctx, 'a_touching', (h) => String(h.fields.T) === b).filter((r) => r.sprite.id === a),
+  ...refsOfHat(ctx, 'a_touching', (h) => String(h.fields.T) === a).filter((r) => r.sprite.id === b),
+];

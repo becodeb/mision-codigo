@@ -22,7 +22,7 @@ const notesIn = (list: readonly Block[]): string[] =>
   blocksInList(list).filter((b) => b.type === 'f_note').map((b) => String(b.fields.S));
 
 /** Sprites with a «repetir» that holds at least `min` notes, and that the stats saw looping. */
-const chorusSingers = (ctx: StepContext, min: number, distinct: number): SpriteProgram[] =>
+export const chorusSingers = (ctx: StepContext, min: number, distinct: number): SpriteProgram[] =>
   ctx.program.sprites.filter(
     (s) =>
       ctx.stats.ranBy(s.id, 'repeat') &&
