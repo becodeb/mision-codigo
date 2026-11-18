@@ -223,4 +223,9 @@ export const DOS_DRAGONES = easyVersion(chispa, {
   },
 });
 
-export const MUESTRA: GameDefinition[] = [MASCOTA_FACIL, BANDA_FACIL, PULPI_FACIL, CHISPA_FACIL, DOS_DRAGONES];
+/** After the four short missions of each level: the «Gran desafío», for whoever finishes them. */
+export const MUESTRA: GameDefinition[] = [MASCOTA_FACIL, BANDA_FACIL, PULPI_FACIL, CHISPA_FACIL, DOS_DRAGONES].map((g) => ({
+  ...g,
+  order: 10,
+  title: `Gran desafío: ${g.title}`,
+}));
