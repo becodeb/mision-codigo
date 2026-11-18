@@ -77,6 +77,8 @@ export class StageRenderer {
     this.listen('pointermove', (e) => this.move(e as PointerEvent));
     this.listen('pointerup', (e) => this.up(e as PointerEvent));
     this.listen('pointercancel', (e) => this.up(e as PointerEvent, true));
+    /* A drag whose pointer was lost without an up or a cancel would otherwise block every later touch. */
+    this.listen('lostpointercapture', (e) => this.up(e as PointerEvent, true));
   }
 
   private listen(type: string, fn: (e: Event) => void): void {
@@ -100,6 +102,11 @@ export class StageRenderer {
   }
 
   private down(e: PointerEvent): void {
+    /* One sprite at a time: a second finger used to take over the drag and leave the first sprite half moved. */
+    if (this.drag && e.pointerId !== this.drag.pointerId) {
+      e.preventDefault();
+      return;
+    }
     this.cb.onActivity();
     const g = (e.target as Element).closest('.spr') as SVGGElement | null;
     if (!g) return;

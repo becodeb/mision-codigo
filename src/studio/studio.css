@@ -220,6 +220,21 @@
 .blocklyDropDownDiv { z-index: 300; }
 .blocklyWidgetDiv { z-index: 300; }
 
+/*
+ * Touch: fingers move blocks and sprites, never the page. One finger still scrolls the page and the panels, but
+ * nothing pinch- or double-tap-zooms, rubber-bands or pulls to refresh (`touch.ts` adds the class while the studio
+ * is open). The editor, the stage, the keys and the hand overlay take every touch for themselves.
+ */
+html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscroll-behavior: none; }
+.mc-studio { touch-action: pan-x pan-y; overscroll-behavior: none; -webkit-touch-callout: none; }
+.mc-studio .mc-guide, .mc-studio .mc-sprites, .mc-studio .mc-modal-card { touch-action: pan-x pan-y; }
+.mc-studio .injectionDiv, .mc-demo { touch-action: none; }
+/* A long press selects text and shows selection handles; on touch screens only form fields keep selection. */
+@media (any-pointer: coarse) {
+  .mc-studio { -webkit-user-select: none; user-select: none; }
+  .mc-studio input, .mc-studio textarea { -webkit-user-select: text; user-select: text; }
+}
+
 /* The picture toolbox is a long column: make its scroll bar easy to see and to grab. */
 .tier-picture .blocklyFlyout ~ .blocklyScrollbarVertical .blocklyScrollbarHandle, .tier-picture .blocklyFlyoutScrollbar .blocklyScrollbarHandle { fill: #1F5DBD; fill-opacity: .55; }
 

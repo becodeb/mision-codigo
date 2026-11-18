@@ -10,6 +10,7 @@ import type { Block, Script } from '../language/ir.ts';
 import { blocklyThemes } from '../language/themes.ts';
 import { CREATE_LIST_KEY, CREATE_VARIABLE_KEY, type ToolboxDefinition } from '../language/toolbox.ts';
 import { starterCode } from './doc.ts';
+import { installBlocklyTouchFixes } from './touch.ts';
 
 export type Tier = 'picture' | 'text';
 
@@ -26,6 +27,23 @@ const narrow = (): boolean => typeof window !== 'undefined' && window.innerWidth
 /** Laptop screens: smaller picture blocks so more of the toolbox shows without scrolling. */
 const short = (): boolean => typeof window !== 'undefined' && window.innerHeight < 820;
 
+/**
+ * Something is being pressed or dragged in a Blockly workspace. While a finger drags a block nothing may move the
+ * workspace under it: the guide reacting to a change, or a resize, would shift the editor on screen and the block
+ * would land away from the finger.
+ */
+const gestureInProgress = (): boolean => {
+  try { return Blockly.Gesture.inProgress(); } catch { return false; }
+};
+
+/**
+ * The size of the blocks never changes. Pinch zoom used to: two fingers zoomed the workspace (or, mid-drag, made
+ * the block jump) and children ended up in a giant or tiny workspace with no button to come back. Without zoom
+ * there is nothing to come back from, and Blockly never lets the blocks scroll more than half out of view.
+ * (Blockly's zoom buttons would load their icons from the internet: `pathToMedia` is not bundled.)
+ */
+export const ZOOM = (startScale: number) => ({ controls: false, wheel: false, pinch: false, startScale });
+
 export class BlockEditor {
   readonly ws: Blockly.WorkspaceSvg;
   private loading = false;
@@ -33,6 +51,9 @@ export class BlockEditor {
   private readonly observer: ResizeObserver;
   private disposed = false;
   private rebuilding = false;
+  private resizeTimer: ReturnType<typeof setTimeout> | null = null;
+  private scrollFrame = 0;
+  private readonly onPageScroll: (e: Event) => void;
 
   private readonly host: HTMLElement;
   private readonly handlers: EditorHandlers;
@@ -43,6 +64,7 @@ export class BlockEditor {
     this.tier = tier;
     this.handlers = handlers;
     registerBlocks();
+    installBlocklyTouchFixes();
     const themes = blocklyThemes();
     const picture = tier === 'picture';
     this.ws = Blockly.inject(host, {
@@ -54,7 +76,7 @@ export class BlockEditor {
       comments: false,
       collapse: false,
       disable: false,
-      zoom: { controls: false, wheel: false, pinch: true, startScale: picture ? (narrow() ? 0.85 : short() ? 0.8 : 1) : narrow() ? 0.7 : 0.8 },
+      zoom: ZOOM(picture ? (narrow() ? 0.85 : short() ? 0.8 : 1) : narrow() ? 0.7 : 0.8),
       move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: true },
       grid: { spacing: 32, length: 3, colour: picture ? '#EFE6D3' : '#E4DDF0', snap: false },
     } as Blockly.BlocklyOptions);
@@ -64,6 +86,24 @@ export class BlockEditor {
     this.ws.addChangeListener((e) => this.onEvent(e));
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
+    /*
+     * Blockly only notices when the document scrolls. On laptops the studio scrolls inside its own box, and Blockly
+     * kept stale screen positions for the toolbox and the flyout: a block dropped near them could vanish, or stay
+     * on top of them. Refresh those positions when anything around the editor scrolls.
+     */
+    this.onPageScroll = (e) => {
+      const t = e.target;
+      if (this.scrollFrame || (t instanceof Node && t !== document && !t.contains(this.host))) return;
+      this.scrollFrame = requestAnimationFrame(() => {
+        this.scrollFrame = 0;
+        if (this.disposed) return;
+        try {
+          this.ws.updateInverseScreenCTM();
+          this.ws.recordDragTargets();
+        } catch { /* detached while the page changes */ }
+      });
+    };
+    document.addEventListener('scroll', this.onPageScroll, { capture: true, passive: true });
   }
 
   private onEvent(e: Blockly.Events.Abstract): void {
@@ -75,15 +115,30 @@ export class BlockEditor {
       return;
     }
     if (e.isUiEvent) return;
+    this.scheduleChange();
+  }
+
+  /**
+   * Reports a change once the code settles and no finger is down in the editor. Pulling a block out of a script
+   * changes the code mid-drag; the guide reacting to it right away grows or shrinks and pushes the editor.
+   */
+  private scheduleChange(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       this.timer = null;
-      if (!this.disposed) this.handlers.onChange();
+      if (this.disposed) return;
+      if (gestureInProgress()) this.scheduleChange();
+      else this.handlers.onChange();
     }, 150);
   }
 
   resize(): void {
     if (this.disposed) return;
+    if (gestureInProgress()) {
+      /* Resizing under a dragged block moves it away from the finger: wait until it is dropped. */
+      this.resizeTimer ??= setTimeout(() => { this.resizeTimer = null; this.resize(); }, 120);
+      return;
+    }
     try { Blockly.svgResize(this.ws); } catch { /* the host may be detached while the page changes */ }
   }
 
@@ -317,6 +372,9 @@ export class BlockEditor {
     if (this.disposed) return;
     this.disposed = true;
     if (this.timer) clearTimeout(this.timer);
+    if (this.resizeTimer) clearTimeout(this.resizeTimer);
+    if (this.scrollFrame) cancelAnimationFrame(this.scrollFrame);
+    document.removeEventListener('scroll', this.onPageScroll, { capture: true });
     this.observer.disconnect();
     try { this.ws.dispose(); } catch { /* already gone */ }
     this.host.innerHTML = '';
@@ -326,6 +384,7 @@ export class BlockEditor {
 /** A small read-only workspace showing example scripts. Returns a function that removes it. */
 export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Script[]): () => void {
   registerBlocks();
+  installBlocklyTouchFixes();
   const themes = blocklyThemes();
   const picture = tier === 'picture';
   const ws = Blockly.inject(host, {
@@ -333,7 +392,7 @@ export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Sc
     renderer: 'zelos',
     theme: picture ? themes.picture : themes.text,
     sounds: false,
-    zoom: { controls: false, wheel: false, pinch: true, startScale: picture ? 0.7 : 0.62 },
+    zoom: ZOOM(picture ? 0.7 : 0.62),
     move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: true },
   } as Blockly.BlocklyOptions);
   Blockly.Events.disable();
