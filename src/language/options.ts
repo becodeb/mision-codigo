@@ -5,7 +5,9 @@ export type Option = readonly [label: string, value: string];
 export const PHRASES: readonly Option[] = [
   ['👋 ¡Hola!', 'HOLA'], ['😊 ¿Cómo te llamás?', 'NOMBRE'], ['🤝 ¿Querés ser mi amigo?', 'AMIGO'], ['⚽ ¡Vamos a jugar!', 'JUGAR'],
   ['🍰 ¡Tengo hambre!', 'HAMBRE'], ['😂 ¡Ja, ja, ja!', 'RISA'], ['😮 ¡Guau!', 'GUAU'], ['😱 ¡Qué miedo!', 'MIEDO'],
-  ['🆘 ¡Ayuda!', 'AYUDA'], ['🙏 ¡Gracias!', 'GRACIAS'], ['❤️ ¡Te quiero!', 'QUIERO'], ['👍 ¡Sí!', 'SI'], ['👎 ¡No!', 'NO'], ['👋 ¡Chau!', 'CHAU'],
+  ['🆘 ¡Ayuda!', 'AYUDA'], ['🙏 ¡Gracias!', 'GRACIAS'], ['❤️ ¡Te quiero!', 'QUIERO'], ['👍 ¡Sí!', 'SI'], ['👎 ¡No!', 'NO'],
+  ['🎂 ¡Feliz cumpleaños!', 'CUMPLE'], ['☀️ ¡Buenos días!', 'DIAS'], ['🌙 ¡Buenas noches!', 'NOCHES'], ['😋 ¡Qué rico!', 'RICO'],
+  ['🗺️ ¡Me perdí!', 'PERDI'], ['😴 Tengo sueño', 'SUENO'], ['🎉 ¡Sorpresa!', 'SORPRESA'], ['🏆 ¡Lo logramos!', 'LOGRAMOS'], ['👋 ¡Chau!', 'CHAU'],
 ];
 /** Phrase id to the text a picture-tier `f_say` speaks. */
 export const PHRASE: Readonly<Record<string, string>> = Object.fromEntries(PHRASES.map(([text, id]) => [id, text]));
@@ -18,6 +20,7 @@ export const FACES_TEXT: readonly Option[] = [
 
 export const SOUNDS_PICTURE: readonly Option[] = [
   ['🐱 miau', 'miau'], ['🐶 guau', 'guau'], ['👏 aplausos', 'aplauso'], ['🥁 tambor', 'tambor'], ['✨ magia', 'magia'], ['🦘 boing', 'boing'], ['🤖 bip', 'bip'],
+  ['😂 risa', 'risa'], ['🔔 campana', 'campana'], ['📣 silbato', 'silbato'], ['🦖 rugido', 'rugido'], ['🐦 pajaritos', 'pajaros'], ['🎺 fanfarria', 'fanfarria'], ['💥 explosión', 'explosion'], ['😘 beso', 'beso'],
 ];
 export const SOUNDS_TEXT: readonly Option[] = SOUNDS_PICTURE.map(([label, id]) => [label.replace(/^\S+\s/, ''), id] as const);
 

@@ -99,6 +99,20 @@ const SFX: Record<string, () => void> = {
   magia() { [784, 988, 1175, 1568, 1976].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.09, at: i * 0.07 })); },
   boing() { tone(180, 0.4, { vol: 0.16, slide: 640 }); },
   bip() { [0, 0.12, 0.24].forEach((at, i) => tone([880, 660, 990][i], 0.08, { type: 'square', vol: 0.05, at })); },
+  risa() { [0, .17, .34, .51].forEach((at, i) => { tone(560 - i * 35, .12, { type: 'sawtooth', vol: .05, at, slide: 400 - i * 25 }); noise(.07, { vol: .05, freq: 1800, at }); }); },
+  campana() { [880, 1320, 2210].forEach((f, i) => tone(f, 1.5 - i * .35, { vol: .11 / (i + 1) })); },
+  silbato() {
+    const c = unlockAudio(); if (!c) return;
+    const t0 = c.currentTime, o = c.createOscillator(), l = c.createOscillator(), lg = c.createGain(), g = c.createGain();
+    o.frequency.value = 2100; l.frequency.value = 28; lg.gain.value = 140; l.connect(lg).connect(o.frequency);
+    g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.07, t0 + .03); g.gain.setValueAtTime(.07, t0 + .45); g.gain.exponentialRampToValueAtTime(.0001, t0 + .56);
+    o.connect(g).connect(c.destination); o.start(t0); l.start(t0); o.stop(t0 + .6); l.stop(t0 + .6);
+  },
+  rugido() { noise(.9, { vol: .45, freq: 480 }); tone(95, .9, { type: 'sawtooth', vol: .1, slide: 55 }); },
+  pajaros() { [0, .11, .48, .6, .72].forEach(at => tone(2300, .08, { vol: .07, at, slide: 3500 })); },
+  fanfarria() { [[523, 0, .11], [523, .13, .11], [523, .26, .11], [659, .39, .2], [784, .62, .5]].forEach(([f, at, d]) => tone(f, d, { type: 'sawtooth', vol: .06, at })); },
+  explosion() { noise(1.3, { vol: .6, freq: 650 }); tone(70, 1, { vol: .2, slide: 30 }); },
+  beso() { noise(.05, { vol: .3, freq: 3000, type: 'highpass' }); tone(900, .14, { vol: .06, slide: 1600, at: .03 }); },
 };
 
 /** Plays a named effect (`pop`, `step`, `miau`, ...). Unknown names are ignored. */

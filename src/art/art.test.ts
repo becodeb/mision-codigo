@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { ART, BACKDROPS, CHARACTERS, IMG, OBJECTS, robiSVG } from './index.ts';
 
 describe('art catalog', () => {
-  it('has the six characters and the twelve objects', () => {
-    expect(Object.keys(CHARACTERS).sort()).toEqual(['chispa', 'michi', 'nova', 'pulpi', 'robi', 'toby']);
+  it('has the twelve characters and the twelve objects', () => {
+    expect(Object.keys(CHARACTERS).sort()).toEqual(['boo', 'chispa', 'coni', 'juli', 'lumi', 'michi', 'nova', 'pipo', 'pulpi', 'robi', 'toby', 'tomi']);
     expect(Object.keys(OBJECTS).sort()).toEqual(['apple', 'ball', 'bolt', 'bomb', 'car', 'cloud', 'coin', 'heart', 'paddle', 'rock', 'star', 'treasure']);
-    expect(Object.keys(ART)).toHaveLength(18);
+    expect(Object.keys(ART)).toHaveLength(24);
   });
 
   it('every entry has a drawing and positive hit dimensions', () => {
@@ -38,8 +38,8 @@ describe('art catalog', () => {
     expect([ART.michi, ART.toby, ART.robi, ART.chispa, ART.nova, ART.pulpi].map((d) => [d.h, d.r])).toEqual([[92, 38], [90, 38], [122, 40], [96, 40], [112, 40], [92, 38]]);
   });
 
-  it('has the six backdrops, namespaced by prefix', () => {
-    expect(Object.keys(BACKDROPS).sort()).toEqual(['castillo', 'ciudad', 'espacio', 'mar', 'parque', 'teatro']);
+  it('has the eleven backdrops, namespaced by prefix', () => {
+    expect(Object.keys(BACKDROPS).sort()).toEqual(['aula', 'castillo', 'ciudad', 'espacio', 'granja', 'mar', 'nieve', 'parque', 'playa', 'selva', 'teatro']);
     expect(BACKDROPS.parque.svg('a-')).toContain('id="a-a"');
     expect(BACKDROPS.parque.svg('b-')).not.toContain('a-a');
   });

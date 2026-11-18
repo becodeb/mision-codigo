@@ -1,5 +1,5 @@
 /**
- * The six characters. Every drawing has its feet at (0, 0) and grows toward negative y, so the sprite
+ * The twelve characters. Every drawing has its feet at (0, 0) and grows toward negative y, so the sprite
  * position is the point on the ground. `h` is the height and `r` the collision radius at 100% size.
  */
 import { faceSVG, type FaceParams } from './face.ts';
@@ -19,7 +19,7 @@ export interface CharacterDef {
   art: (face: string) => string;
 }
 
-export type CharacterId = 'michi' | 'toby' | 'robi' | 'chispa' | 'nova' | 'pulpi';
+export type CharacterId = 'michi' | 'toby' | 'robi' | 'chispa' | 'nova' | 'pulpi' | 'lumi' | 'boo' | 'coni' | 'pipo' | 'juli' | 'tomi';
 
 export const CHARACTERS: Record<CharacterId, CharacterDef> = {
   michi: {
@@ -111,6 +111,93 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
       <ellipse cx="0" cy="-56" rx="34" ry="32" fill="#B86BFF"/>
       <circle cx="-19" cy="-74" r="5" fill="#9B4FE8"/><circle cx="16" cy="-80" r="4" fill="#9B4FE8"/><circle cx="24" cy="-62" r="3" fill="#9B4FE8"/>
       <g transform="translate(0 -50)"><circle cx="-18" cy="6" r="5" fill="#FF7FA8" opacity=".55"/><circle cx="18" cy="6" r="5" fill="#FF7FA8" opacity=".55"/><g class="face">${f}</g></g>`,
+  },
+  lumi: {
+    name: 'Lumi', what: 'unicornio', h: 110, r: 38, pitch: 1.6, rate: 1, sound: 'magia',
+    face: { ex: 8, ey: -6, er: 4.2, my: 13, mw: 5 },
+    art: (f) => `<path d="M-26 -32 C -48 -32 -52 -10 -40 -2" stroke="#B08BFF" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M-27 -36 C -46 -42 -52 -22 -46 -14" stroke="#FF9EC7" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <rect x="-24" y="-16" width="10" height="18" rx="4" fill="#F4E6F0"/><rect x="-24" y="-3" width="10" height="5" rx="2" fill="#B08BFF"/>
+      <rect x="6" y="-16" width="10" height="18" rx="4" fill="#F4E6F0"/><rect x="6" y="-3" width="10" height="5" rx="2" fill="#B08BFF"/>
+      <ellipse cx="-4" cy="-29" rx="28" ry="19" fill="#FFF6FB" stroke="#E8D3F0" stroke-width="2"/>
+      <g transform="translate(14 -60)">
+        <path d="M-25 8 C -32 -12 -16 -30 2 -24 C -10 -18 -18 -6 -15 12 Z" fill="#B08BFF"/><path d="M-27 18 C -34 4 -28 -6 -21 -4 C -23 6 -21 12 -15 22Z" fill="#FF9EC7"/>
+        <path d="M-16 -14 L-12 -33 L-3 -19Z" fill="#FFF6FB" stroke="#E8D3F0" stroke-width="2"/>
+        <circle r="23" fill="#FFF6FB" stroke="#E8D3F0" stroke-width="2"/>
+        <path d="M3 -21 L9 -48 L15 -19Z" fill="#FFD84D" stroke="#E6B800" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 -28 l8 -3 M6 -36 l6 -2" stroke="#E6B800" stroke-width="1.5"/>
+        <path d="M-8 -21 C -2 -30 10 -29 13 -21 C 5 -24 -1 -20 -6 -13Z" fill="#B08BFF"/>
+        <ellipse cx="7" cy="10" rx="13" ry="9" fill="#FFE3F0"/><circle cx="4" cy="8" r="1.6" fill="#C08AA8"/><circle cx="11" cy="8" r="1.6" fill="#C08AA8"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
+  boo: {
+    name: 'Boo', what: 'fantasma', h: 92, r: 34, pitch: 1.3, rate: .9, sound: 'risa',
+    face: { ex: 10, ey: -2, er: 5, my: 10, mw: 7 },
+    art: (f) => `<ellipse cx="-33" cy="-40" rx="8" ry="6" fill="#F7F8FF" stroke="#C9D1EE" stroke-width="2"/><ellipse cx="33" cy="-40" rx="8" ry="6" fill="#F7F8FF" stroke="#C9D1EE" stroke-width="2"/>
+      <path d="M-30 -10 V-58 A30 30 0 0 1 30 -58 V-10 Q22 -18 15 -10 Q8 -2 0 -10 Q-8 -18 -15 -10 Q-22 -2 -30 -10Z" fill="#F7F8FF" stroke="#C9D1EE" stroke-width="2.5" stroke-linejoin="round"/>
+      <g transform="translate(0 -58)"><circle cx="-17" cy="8" r="5" fill="#FF9EC7" opacity=".5"/><circle cx="17" cy="8" r="5" fill="#FF9EC7" opacity=".5"/><g class="face">${f}</g></g>`,
+  },
+  coni: {
+    name: 'Coni', what: 'coneja', h: 120, r: 36, pitch: 1.5, rate: 1.05, sound: 'boing',
+    face: { ex: 8, ey: -3, er: 4.2, my: 13, mw: 4 },
+    art: (f) => `<g transform="translate(12 -62)">
+        <g transform="rotate(-10 -6 -22)"><ellipse cx="-6" cy="-40" rx="7.5" ry="22" fill="#F1EDF5" stroke="#D6CFE0" stroke-width="2"/><ellipse cx="-6" cy="-38" rx="3.5" ry="15" fill="#FFB8C9"/></g>
+        <g transform="rotate(14 8 -22)"><ellipse cx="8" cy="-40" rx="7.5" ry="22" fill="#F1EDF5" stroke="#D6CFE0" stroke-width="2"/><ellipse cx="8" cy="-38" rx="3.5" ry="15" fill="#FFB8C9"/></g>
+      </g>
+      <circle cx="-28" cy="-24" r="8" fill="#fff" stroke="#D6CFE0" stroke-width="2"/>
+      <ellipse cx="-14" cy="-3" rx="11" ry="5" fill="#E2DCEA"/><ellipse cx="12" cy="-3" rx="11" ry="5" fill="#E2DCEA"/>
+      <ellipse cx="-2" cy="-26" rx="24" ry="22" fill="#F1EDF5" stroke="#D6CFE0" stroke-width="2"/><ellipse cx="2" cy="-22" rx="13" ry="14" fill="#fff"/>
+      <g transform="translate(12 -62)">
+        <circle r="23" fill="#F1EDF5" stroke="#D6CFE0" stroke-width="2"/>
+        <circle cx="-14" cy="7" r="4.5" fill="#FF9EC7" opacity=".55"/><circle cx="14" cy="7" r="4.5" fill="#FF9EC7" opacity=".55"/>
+        <path d="M-2.5 5 h5 l-2.5 3z" fill="#FF7FA8"/>
+        <path d="M-10 6 h-11 M10 6 h11" stroke="#241A4D" stroke-width="1.3" stroke-linecap="round" opacity=".45"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
+  pipo: {
+    name: 'Pipo', what: 'pingüino', h: 84, r: 34, pitch: 1.2, rate: 1.05, sound: 'silbato',
+    face: { ex: 7, ey: -2, er: 3.6, my: 13, mw: 3 },
+    art: (f) => `<ellipse cx="-10" cy="-2" rx="9" ry="4" fill="#FF9A3C"/><ellipse cx="10" cy="-2" rx="9" ry="4" fill="#FF9A3C"/>
+      <path d="M-25 -54 q-15 18 -7 36 q7 -10 9 -26z" fill="#243052"/><path d="M25 -54 q15 18 7 36 q-7 -10 -9 -26z" fill="#243052"/>
+      <ellipse cx="0" cy="-42" rx="27" ry="38" fill="#2E3A5C"/>
+      <ellipse cx="2" cy="-34" rx="18" ry="27" fill="#fff"/>
+      <path d="M-22 -52 q22 10 44 0 v7 q-22 10 -44 0z" fill="#F0524F"/><path d="M14 -48 l6 16 h-8z" fill="#F0524F"/>
+      <g transform="translate(2 -66)">
+        <ellipse cx="0" cy="0" rx="16" ry="11" fill="#fff"/>
+        <path d="M-5 4 h10 l-5 6z" fill="#FFB020"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
+  juli: {
+    name: 'Juli', what: 'nena', h: 100, r: 32, pitch: 1.4, rate: 1, sound: 'risa',
+    face: { ex: 8, ey: 2, er: 3.4, my: 11, mw: 5 },
+    art: (f) => `<rect x="-12" y="-24" width="9" height="24" rx="4" fill="#FFD7B5"/><rect x="3" y="-24" width="9" height="24" rx="4" fill="#FFD7B5"/>
+      <rect x="-15" y="-6" width="13" height="7" rx="3" fill="#7C4DFF"/><rect x="2" y="-6" width="13" height="7" rx="3" fill="#7C4DFF"/>
+      <rect x="-26" y="-55" width="8" height="25" rx="4" fill="#FFD7B5" transform="rotate(14 -22 -55)"/><rect x="18" y="-55" width="8" height="25" rx="4" fill="#FFD7B5" transform="rotate(-14 22 -55)"/>
+      <path d="M-24 -18 L-15 -56 H15 L24 -18 Q0 -12 -24 -18Z" fill="#FF6FA5"/><path d="M-15 -56 H15 L13 -48 H-13Z" fill="#FFB3D1"/>
+      <g transform="translate(0 -77)">
+        <circle cx="-26" cy="-2" r="9" fill="#5A3420"/><circle cx="26" cy="-2" r="9" fill="#5A3420"/>
+        <path d="M-31 -12 l8 5 l-8 5z M31 -12 l-8 5 l8 5z" fill="#FFC93C"/>
+        <circle r="22" fill="#FFD7B5"/>
+        <path d="M-23 0 C -24 -27 24 -27 23 0 C 18 -13 6 -15 0 -10 C -6 -15 -18 -13 -23 0Z" fill="#5A3420"/>
+        <circle cx="-12" cy="9" r="3.5" fill="#FF9AA8" opacity=".55"/><circle cx="12" cy="9" r="3.5" fill="#FF9AA8" opacity=".55"/>
+        <g class="face">${f}</g>
+      </g>`,
+  },
+  tomi: {
+    name: 'Tomi', what: 'nene', h: 102, r: 32, pitch: 1.15, rate: 1, sound: 'fanfarria',
+    face: { ex: 8, ey: 2, er: 3.4, my: 11, mw: 5 },
+    art: (f) => `<rect x="-13" y="-28" width="11" height="28" rx="4" fill="#3D5A9E"/><rect x="2" y="-28" width="11" height="28" rx="4" fill="#3D5A9E"/>
+      <rect x="-15" y="-6" width="14" height="7" rx="3" fill="#fff" stroke="#C9D1EE" stroke-width="1.5"/><rect x="1" y="-6" width="14" height="7" rx="3" fill="#fff" stroke="#C9D1EE" stroke-width="1.5"/>
+      <rect x="-26" y="-55" width="9" height="26" rx="4.5" fill="#C98D63" transform="rotate(10 -22 -55)"/><rect x="17" y="-55" width="9" height="26" rx="4.5" fill="#C98D63" transform="rotate(-10 22 -55)"/>
+      <rect x="-18" y="-57" width="36" height="33" rx="10" fill="#2DB34A"/><path d="M-18 -44 H18" stroke="#fff" stroke-width="4" opacity=".7"/>
+      <g transform="translate(0 -78)">
+        <circle r="22" fill="#C98D63"/>
+        <path d="M-22 -2 C -22 -20 22 -20 22 -2 C 14 -9 -14 -9 -22 -2Z" fill="#2A1B12"/>
+        <path d="M-22 -8 C -21 -31 21 -31 22 -8Z" fill="#F0524F"/><path d="M12 -10 h20 a4 4 0 0 1 0 7 h-20z" fill="#C93D3D"/><circle cx="0" cy="-27" r="3" fill="#C93D3D"/>
+        <circle cx="-12" cy="9" r="3.5" fill="#E07A6A" opacity=".45"/><circle cx="12" cy="9" r="3.5" fill="#E07A6A" opacity=".45"/>
+        <g class="face">${f}</g>
+      </g>`,
   },
 };
 

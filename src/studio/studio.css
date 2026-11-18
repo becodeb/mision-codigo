@@ -116,7 +116,7 @@
 .mc-panel { background: var(--card); border: 3px solid var(--line); border-radius: 18px; padding: 8px 12px 10px; display: grid; gap: 6px; }
 .mc-panel-head { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
 .mc-panel-head h4 { font: 800 17px/1 var(--font-display); }
-.mc-bd-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.mc-bd-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
 .mc-places .mc-panel-head h4, .mc-tray .mc-panel-head h4 { font-size: 15px; }
 .mc-bd { padding: 0; border: 3px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; aspect-ratio: 4 / 3; display: block; position: relative; min-width: 44px; }
 .mc-bd svg { width: 100%; height: 100%; display: block; }
