@@ -103,7 +103,7 @@ export function GamesTable({ rows }: { rows: GameRow[] }) {
             <th className="t-num">Empezaron</th>
             <th className="t-num">Terminaron</th>
             <th className="t-num">Minutos (promedio)</th>
-            <th>Pasos donde se traban</th>
+            <th>Dónde quedaron (los que no terminaron)</th>
           </tr>
         </thead>
         <tbody>
@@ -115,7 +115,7 @@ export function GamesTable({ rows }: { rows: GameRow[] }) {
               <td className="t-num">{row.averageMinutes}</td>
               <td>
                 {row.stuck.length === 0 ? (
-                  <span className="t-muted">Nadie trabado</span>
+                  <span className="t-muted">Todos terminaron</span>
                 ) : (
                   <ul className="t-stuck">
                     {row.stuck.map((step) => (

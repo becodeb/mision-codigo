@@ -6,7 +6,7 @@ import { flattenScripts } from '../language/convert.ts';
 import type { Block, ProjectProgram, Script, SpriteProgram } from '../language/ir.ts';
 import { Game } from '../runtime/testing.ts';
 import { applyPlan, planDemo, type DemoPlan, type SpriteView } from '../studio/demoPlan.ts';
-import { GAMES, MIN_STEPS } from './catalog.ts';
+import { EASY_MIN_PHASES, EASY_MIN_STEPS, GAMES, MIN_STEPS } from './catalog.ts';
 import { blocksOfProject } from './checks.ts';
 import { ProofGame, proveGame, stepsOf } from './proof.ts';
 import { NO_UI, type GameDefinition, type GameStep, type StepContext } from './types.ts';
@@ -85,8 +85,9 @@ describe('catalog', () => {
 
   describe.each(GAMES.map((g) => [g.id, g] as const))('%s', (_id, game) => {
     it('has the phases, steps and challenges a class needs', () => {
-      expect(game.phases.length).toBeGreaterThanOrEqual(3);
-      expect(stepsOf(game).length).toBeGreaterThanOrEqual(MIN_STEPS[game.level]);
+      const easy = game.class === 2;
+      expect(game.phases.length).toBeGreaterThanOrEqual(easy ? EASY_MIN_PHASES : 3);
+      expect(stepsOf(game).length).toBeGreaterThanOrEqual(easy ? EASY_MIN_STEPS : MIN_STEPS[game.level]);
       expect(game.challenges.length).toBeGreaterThanOrEqual(3);
       const ids = stepsOf(game).map((s) => s.id);
       expect(new Set(ids).size).toBe(ids.length);
