@@ -262,3 +262,8 @@
 @media (prefers-reduced-motion: reduce) {
   .mc-studio *, .mc-studio *::before, .mc-studio *::after, .mc-demo *, .mc-glow, .mc-attn { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* «¿Qué es esto?» and «¡Ups! borraste algo» in the guide. */
+.mc-explain { margin: 8px 0 0; padding: 8px 12px; max-width: 70ch; border-radius: 10px; background: #e8f3ff; border-left: 4px solid #3d8bfd; color: #1d2a44; font-size: 15px; }
+.mc-broken { margin: 0 0 8px; padding: 8px 12px; max-width: 70ch; border-radius: 10px; background: #fff1e0; border-left: 4px solid #f08c00; color: #3a2400; font-size: 15px; display: grid; gap: 6px; }
+.mc-broken-actions { display: flex; gap: 8px; flex-wrap: wrap; }

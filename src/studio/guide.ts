@@ -5,6 +5,8 @@
 import type { BlockType } from '../language/catalog.ts';
 import type { GamePhase, GameDefinition, GameStep, StepContext } from '../games/types.ts';
 import type { CompletedStep, GameProgress } from '../shared/api.ts';
+import type { Block, ProjectProgram, Script } from '../language/ir.ts';
+import { blocksOfProject } from '../games/checks.ts';
 
 export interface FlatStep {
   step: GameStep;
@@ -114,6 +116,23 @@ export class GuideTracker {
     return fresh;
   }
 
+  /**
+   * The first completed step whose code is gone: none of the new blocks it taught (the ones it unlocks and
+   * shows in its example) is left in the project. Judging only the program keeps it quiet when a project is
+   * reopened or a run ends, and asking for none of them avoids complaining when a child picked another block.
+   */
+  broken(program: ProjectProgram): FlatStep | null {
+    const present = new Set<string>(blocksOfProject(program).map((b) => b.type));
+    const upTo = this.activeIndex;
+    for (const flat of this.steps) {
+      if (flat.index >= upTo) break;
+      if (!this.done.has(flat.step.id)) continue;
+      const taught = taughtBlocks(flat.step);
+      if (taught.length > 0 && taught.every((t) => !present.has(t))) return flat;
+    }
+    return null;
+  }
+
   /** Moves past a step without completing it. Used only after every hint was shown, so nobody is stuck for good. */
   skip(id: string): boolean {
     if (this.done.has(id) || !this.steps.some((s) => s.step.id === id)) return false;
@@ -141,6 +160,28 @@ export class GuideTracker {
       finished: this.finished,
     };
   }
+}
+
+/** Blocks a step introduces and uses in its own example: the code that proves it was done. */
+export function taughtBlocks(step: GameStep): string[] {
+  const unlocked = new Set<string>(step.unlock ?? []);
+  if (unlocked.size === 0) return [];
+  const scripts: Script[] = [
+    ...(step.demoScript ? (Array.isArray(step.demoScript) ? step.demoScript : [step.demoScript as Script]) : []),
+    ...(step.example ?? []).flatMap((e) => e.scripts),
+  ];
+  const used = new Set<string>();
+  const walk = (b: Block): void => {
+    used.add(b.type);
+    b.body.forEach(walk);
+    b.elseBody.forEach(walk);
+    Object.values(b.inputs ?? {}).forEach(walk);
+  };
+  for (const sc of scripts) {
+    walk(sc.hat);
+    sc.body.forEach(walk);
+  }
+  return [...unlocked].filter((t) => used.has(t));
 }
 
 /** Rungs of the hint ladder for a step: each hint, then the example when there is one. */

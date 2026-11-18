@@ -11,6 +11,8 @@ export interface StepChange {
   title?: string;
   text?: string;
   hints?: string[];
+  /** Recuadro «¿Qué es esto?» con la idea nueva del paso. */
+  explain?: string;
   /** Solo para aflojar: la solución completa tiene que seguir pasándolo. */
   check?: (ctx: StepContext) => boolean;
 }

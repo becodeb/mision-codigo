@@ -128,8 +128,23 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
           </span>
         </div>
         {celebrate && snap.celebrating?.phaseDone && <p className="mc-phase-done">¡Terminaste la fase! {game.phases[flat.phaseIndex + 1] ? `Sigue: ${game.phases[flat.phaseIndex + 1].goal}` : ''}</p>}
+        {snap.broken && !celebrate && snap.broken.index !== flat.index && (
+          <div className="mc-broken" role="alert">
+            <b>¡Ups! Parece que borraste algo del paso «{snap.broken.title}».</b> Volvé a ponerlo para que tu juego siga andando. Tocá «Ver ese paso» para acordarte cómo era.
+            <span className="mc-broken-actions">
+              <button type="button" className="mc-gbtn" onClick={() => session.viewStep(snap.broken!.index)}>
+                Ver ese paso
+              </button>
+            </span>
+          </div>
+        )}
         <h3>{step.title}</h3>
         <p className="mc-steptext">{step.text}</p>
+        {step.explain && (
+          <p className="mc-explain">
+            <b>¿Qué es esto?</b> {step.explain}
+          </p>
+        )}
         {hintsRevealed.length > 0 && (
           <ol className="mc-hints">
             {hintsRevealed.map((h, i) => (
@@ -145,6 +160,9 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
         {exampleShown && <Example session={session} scripts={step.example!} />}
       </div>
       <div className="mc-gactions">
+        <button type="button" className="mc-gbtn" onClick={() => session.undo()} title="Deshace el último cambio en los bloques">
+          ↶ Deshacer
+        </button>
         <button type="button" className="mc-gbtn" onClick={() => session.listen()}>
           <Icon html={ICON.sound} /> {session.spoken ? 'Escuchar de nuevo' : 'Escuchar'}
         </button>

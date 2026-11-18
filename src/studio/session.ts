@@ -46,6 +46,8 @@ export interface SessionSnapshot {
   needsKeys: boolean;
   /** The finish panel (challenges and next game) is on. */
   finished: boolean;
+  /** A step already done whose code the child deleted, so the current one may not work. */
+  broken: { index: number; title: string } | null;
 }
 
 const realTime: TimeSource = {
@@ -94,6 +96,7 @@ export class StudioSession {
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private dirtySave = false;
   private needsCheck = true;
+  private broken: { index: number; title: string } | null = null;
   private pendingProgram = false;
   private lastOffered = new Set<string>();
   private glowTypes = new Set<string>();
@@ -147,6 +150,7 @@ export class StudioSession {
       celebrating: this.celebrating,
       needsKeys: this.machine ? usesKeys(this.program) : false,
       finished: this.tracker.finished,
+      broken: this.broken,
     };
   }
 
@@ -779,12 +783,28 @@ export class StudioSession {
     const m = this.machine;
     if (!m || !this.tracker.hasGuide) return;
     if (!this.needsCheck && !m.running) return;
+    const edited = this.needsCheck;
     this.needsCheck = false;
     const ctx = this.stepContext;
     if (!ctx) return;
     let fresh: FlatStep[] = [];
     try { fresh = this.tracker.evaluate(ctx); } catch (e) { this.fail(e); }
     if (fresh.length) this.stepsCompleted(fresh);
+    if (edited || fresh.length) this.checkBroken();
+  }
+
+  private checkBroken(): void {
+    let flat: FlatStep | null = null;
+    try { flat = this.tracker.broken(this.program); } catch { flat = null; }
+    const next = flat ? { index: flat.index, title: flat.step.title } : null;
+    if (next?.index === this.broken?.index) return;
+    this.broken = next;
+    this.emit();
+  }
+
+  /** «Deshacer»: undoes the last change in the block editor. */
+  undo(): void {
+    try { this.editor?.ws.undo(false); } catch { /* nothing to undo */ }
   }
 
   private stepsCompleted(fresh: FlatStep[]): void {

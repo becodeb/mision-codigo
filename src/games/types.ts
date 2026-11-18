@@ -35,6 +35,8 @@ export interface GameStep {
   title: string;
   /** The goal, in Spanish voseo. Read aloud on levels 1 and 2. */
   text: string;
+  /** «¿Qué es esto?»: explains the new block or idea this step introduces, before the child needs a hint. */
+  explain?: string;
   /** Hint ladder, gentlest first. The child asks for each one. Do not give the answer in `text`. */
   hints: string[];
   /** Blocks that appear in the toolbox from this step on. */
