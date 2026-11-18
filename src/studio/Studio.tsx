@@ -7,6 +7,7 @@ import { StudioErrorBoundary } from './ErrorBoundary.tsx';
 import { Guide } from './Guide.tsx';
 import { Modal } from './Modal.tsx';
 import { StudioSession } from './session.ts';
+import { lockPageGestures } from './touch.ts';
 import './studio.css';
 
 const Icon = ({ html }: { html: string }) => <span className="mc-icon" dangerouslySetInnerHTML={{ __html: html }} />;
@@ -49,6 +50,9 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
     session.mount({ root: root.current!, stage: stageSvg.current!, editor: editorHost.current! });
     return () => session.unmount();
   }, [session]);
+
+  /* While the studio is open, fingers move blocks and sprites, never the page (no zoom, no rubber band). */
+  useEffect(() => lockPageGestures(root.current!), []);
 
   /* Escape closes show mode. */
   useEffect(() => {

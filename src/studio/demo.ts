@@ -15,6 +15,16 @@ const HAND =
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 const ease = (t: number): number => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+/** A wait that ends early when the child stops the hand, so the overlay never lingers under their finger. */
+const pause = (ms: number, alive: () => boolean): Promise<void> =>
+  new Promise((r) => {
+    const end = performance.now() + ms;
+    const tick = (): void => {
+      if (!alive() || performance.now() >= end) r();
+      else setTimeout(tick, Math.min(50, end - performance.now()));
+    };
+    tick();
+  });
 
 function tween(ms: number, fn: (t: number) => void, alive: () => boolean): Promise<void> {
   return new Promise((resolve) => {
@@ -74,7 +84,17 @@ function clearLayer(root: HTMLElement): void {
   if (!layer) return;
   layer.hidden = true;
   layer.innerHTML = '';
-  layer.onclick = null;
+  layer.onpointerdown = null;
+}
+
+/**
+ * The tap that stopped the hand must not land on what was under it: on touch the click comes after the finger
+ * lifts, when the overlay is already gone, and it would press the flag or open a category.
+ */
+function swallowNextClick(): void {
+  const stop = (e: Event): void => { e.stopPropagation(); e.preventDefault(); };
+  window.addEventListener('click', stop, { capture: true, once: true });
+  window.setTimeout(() => window.removeEventListener('click', stop, { capture: true }), 600);
 }
 
 function setCaption(layer: HTMLElement, text: string): void {
@@ -150,7 +170,13 @@ function begin(deps: DemoDeps, token: number, caption: string): Run {
   layer.innerHTML = `<div class="hand">${HAND}</div><button class="demo-skip" type="button">Saltar</button>`;
   const hand = layer.querySelector<HTMLElement>('.hand')!;
   let skip = false;
-  layer.onclick = () => { skip = true; };
+  /* Any touch stops the hand at once, so it never fights the child's own finger for the screen. */
+  layer.onpointerdown = (e) => {
+    e.preventDefault();
+    if (skip) return;
+    skip = true;
+    swallowNextClick();
+  };
   const run: Run = {
     layer,
     hand,
@@ -199,11 +225,11 @@ async function tryGesture(deps: DemoDeps, run: Run, token: number, how: ReturnTy
   setCaption(run.layer, how.caption);
   deps.say(how.caption);
   if (!el) {
-    await sleep(1500);
+    await pause(1500, run.alive);
     return;
   }
   el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  await sleep(300);
+  await pause(300, run.alive);
   if (token !== running) return;
   const rb = el.getBoundingClientRect();
   const tx = rb.left + rb.width / 2;
@@ -217,9 +243,9 @@ async function tryGesture(deps: DemoDeps, run: Run, token: number, how: ReturnTy
   ring.style.left = `${tx}px`;
   ring.style.top = `${ty}px`;
   run.layer.appendChild(ring);
-  await sleep(900);
+  await pause(900, run.alive);
   run.hand.classList.remove('press');
-  await sleep(600);
+  await pause(600, run.alive);
 }
 
 type Drag = Extract<DemoPlan, { kind: 'hat' | 'block' | 'move' }>;
@@ -307,7 +333,7 @@ async function dragDemo(deps: DemoDeps, plan: Drag, caption: string): Promise<vo
     deps.sfx('pop');
     place(o.x, o.y);
     layer.appendChild(ghost);
-    await sleep(250);
+    await pause(250, alive);
     const dx = grabX - o.x;
     const dy = grabY - o.y;
     await tween(1150, (t) => {
@@ -331,16 +357,16 @@ async function dragDemo(deps: DemoDeps, plan: Drag, caption: string): Promise<vo
         slot.style.transform = `translate(${dest.x.toFixed(1)}px, ${(dest.y + o.r.height - 2).toFixed(1)}px)`;
         slot.style.width = `${Math.max(120, o.r.width * 0.9).toFixed(0)}px`;
         layer.appendChild(slot);
-        await sleep(500);
+        await pause(500, alive);
         if (alive()) {
           const sx = dest.x + 56;
           const sy = dest.y + o.r.height + 22;
           await tween(700, (t) => { const e = ease(t); setHand(lerp(rest.x, sx, e), lerp(rest.y, sy, e) + Math.abs(Math.sin(t * Math.PI * 2)) * 10); }, alive);
           rest = { x: sx, y: sy };
-          await sleep(plan.completes ? 600 : 1200);
+          await pause(plan.completes ? 600 : 1200, alive);
         }
       } else {
-        await sleep(plan.completes ? 900 : 1300);
+        await pause(plan.completes ? 900 : 1300, alive);
       }
       if (alive() && plan.completes) await tryGesture(deps, run, token, tryTarget(plan.completes.hat, plan.completes.spriteId), rest);
     }
