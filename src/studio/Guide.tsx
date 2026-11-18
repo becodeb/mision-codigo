@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ICON, robiSVG } from '../art/index.ts';
 import type { GameDefinition } from '../games/types.ts';
 import { hintRungs } from './guide.ts';
+import { Rich } from './rich.tsx';
 import { mountExample } from './workspace.ts';
 import type { SessionSnapshot, StudioSession } from './session.ts';
 
@@ -63,7 +64,7 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
             {game.challenges.map((c) => (
               <li key={c.title}>
                 <strong>{c.title}</strong>
-                <span>{c.text}</span>
+                <span><Rich text={c.text} /></span>
               </li>
             ))}
           </ul>
@@ -144,17 +145,17 @@ export function Guide({ session, snap, next, onFinish }: GuideProps) {
           </div>
         )}
         <h3>{step.title}</h3>
-        <p className="mc-steptext">{step.text}</p>
+        <p className="mc-steptext"><Rich text={step.text} /></p>
         {step.explain && (
           <p className="mc-explain">
-            <b>¿Qué es esto?</b> {step.explain}
+            <b>¿Qué es esto?</b> <Rich text={step.explain} />
           </p>
         )}
         {hintsRevealed.length > 0 && (
           <ol className="mc-hints">
             {hintsRevealed.map((h, i) => (
               <li key={i}>
-                <b>Pista {i + 1}.</b> {h}{' '}
+                <b>Pista {i + 1}.</b> <Rich text={h} />{' '}
                 <button type="button" className="mc-listen" aria-label={`Escuchar la pista ${i + 1}`} title="Escuchar" onClick={() => session.listenHint(i)}>
                   <Icon html={ICON.sound} />
                 </button>

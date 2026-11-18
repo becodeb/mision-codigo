@@ -28,10 +28,14 @@ export const MASCOTA_FACIL = easyVersion(miMascota, {
       hints: ['Poné los bloques uno abajo del otro, debajo de la manito.', 'Probá con la carita, el giro y el salto.'],
       check: (ctx) => spritesWithHat(ctx, { hat: 'f_click', types: PET_REACTIONS, min: 3, kinds: 2 }).some(isCharacter),
     },
+    nombre: {},
+    comer: {},
     crece: {
       text: 'Tu mascota crece. Cuando la tocás, que se agrande dos veces. Después tocala.',
       explain: 'Los bloques se hacen en orden, de arriba hacia abajo. Si ponés dos veces «agrandar», crece dos veces.',
     },
+    gracias: {},
+    'otra-cosa': {},
     mostrar: {},
   },
 });
@@ -49,10 +53,14 @@ export const BANDA_FACIL = easyVersion(bandaParque, {
     baile: {
       text: 'Que baile mientras toca: poné un salto y un giro entre las notas. Después tocalo.',
     },
+    banda: {},
+    melodias: {},
+    ensayo: {},
     vueltas: {
       text: 'Usá las vueltas, el bloque de flechitas que giran, y poné dos notas adentro. Después tocá al músico.',
       explain: 'Las vueltas repiten lo que tienen adentro. El número dice cuántas veces. Así no hace falta poner la misma nota muchas veces.',
     },
+    coro: {},
     mostrar: {},
   },
 });
@@ -73,6 +81,9 @@ export const PULPI_FACIL = easyVersion(cazaPulpi, {
     escapa: {
       explain: '«Ir a posición aleatoria» manda al personaje a un lugar al azar del escenario: ni vos sabés dónde va a aparecer.',
     },
+    solo: {},
+    repite: {},
+    nada: {},
     ganar: {
       text: 'Cuando juntes 10 puntos, ganás. Armá la victoria y ganalo de verdad.',
       unlock: ['a_points', 'a_win'],

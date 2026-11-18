@@ -267,3 +267,7 @@
 .mc-explain { margin: 8px 0 0; padding: 8px 12px; max-width: 70ch; border-radius: 10px; background: #e8f3ff; border-left: 4px solid #3d8bfd; color: #1d2a44; font-size: 15px; }
 .mc-broken { margin: 0 0 8px; padding: 8px 12px; max-width: 70ch; border-radius: 10px; background: #fff1e0; border-left: 4px solid #f08c00; color: #3a2400; font-size: 15px; display: grid; gap: 6px; }
 .mc-broken-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Lo que pide la consigna, resaltado; los nombres de bloque en color. */
+.mc-pide { background: #ffe066; color: #2b1d00; padding: 1px 6px; border-radius: 6px; font-weight: 700; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.mc-block-name { color: #6a3fd1; font-weight: 700; }

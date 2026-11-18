@@ -14,6 +14,7 @@ import { buildToolbox, tierOf } from '../language/toolbox.ts';
 import { Machine, type Host, type StageView, type TimeSource } from '../runtime/index.ts';
 import type { GameProgress } from '../shared/api.ts';
 import type { LevelId } from '../shared/levels.ts';
+import { plain } from './rich.tsx';
 import { ActiveClock, GuideTracker, hintRungs, type FlatStep } from './guide.ts';
 import { addSpriteDoc, newDoc, parseDoc, programOf, scriptsOf, usesKeys, type ProjectDoc, type SpriteDoc } from './doc.ts';
 import { cancelDemo, pointAt, runDemo } from './demo.ts';
@@ -723,7 +724,7 @@ export class StudioSession {
   speakStepIfSpoken(): void {
     if (!this.spoken || this.celebrating) return;
     const flat = this.viewedStep;
-    if (flat) void this.say(flat.step.text);
+    if (flat) void this.say(plain(flat.step.text));
   }
 
   /** Reads text aloud as Robi, even when the sound switch is off: the child asked for it. */
@@ -747,14 +748,14 @@ export class StudioSession {
   /** Reads the step on screen. Available on every level. */
   listen(): void {
     const flat = this.viewedStep;
-    if (flat) void this.say(flat.step.text, true);
+    if (flat) void this.say(plain(flat.step.text), true);
   }
 
   /** Reads one revealed hint of the step on screen. Available on every level. */
   listenHint(index: number): void {
     const flat = this.viewedStep;
     const hint = flat?.step.hints[index];
-    if (hint) void this.say(hint, true);
+    if (hint) void this.say(plain(hint), true);
   }
 
   /** Pressing «Mostrame» or «¿Dónde?» counts as help, so a step with no hints can be moved past after it. */

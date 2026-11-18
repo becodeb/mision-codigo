@@ -37,6 +37,13 @@ export const KNOWN_GAME_IDS: ReadonlySet<string> = new Set([
   'chispa-facil',
   'dos-dragones',
   // Misiones cortas de la Clase 2 (games/misiones.ts).
+  'm1-arregla',
+  'm2-arregla',
+  'm3-arregla',
+  'm4-arregla',
+  'm5-fases',
+  'm5-si',
+  'm5-arregla',
   'm1-circo',
   'm1-robi-espacio',
   'm1-mar',

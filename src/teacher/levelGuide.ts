@@ -55,7 +55,7 @@ export const LEVEL_GUIDES: readonly LevelGuide[] = [
   {
     id: 5,
     grades: '6.º y 7.º grado',
-    logic: 'Lo del nivel anterior en un juego más largo: un personaje que aparece al llegar a un puntaje (esconder y mostrar) y direcciones (apuntar arriba o abajo).',
+    logic: 'Lo del nivel anterior en juegos más largos: fases (el juego cambia al llegar a un puntaje), esconder y mostrar, y «si … entonces» con «¿tocando?».',
     signs: [
       'Terminó un juego de esquivar sin ayuda y quiere uno más largo.',
       'Sabe depurar: cuando algo no anda, busca por qué.',
@@ -65,7 +65,7 @@ export const LEVEL_GUIDES: readonly LevelGuide[] = [
 ];
 
 export const LEVEL_ADVICE = [
-  'En la Clase 2 ningún nivel usa sobres (mensajes), operadores (<, =, +), variables ni coordenadas: para estas edades son demasiado abstractos.',
+  'En la Clase 2 ningún nivel usa sobres (mensajes), operadores (<, =, +), variables ni coordenadas. Cada nivel tiene misiones en escalera: Construí, Construí, Completá (ya viene algo armado) y Arreglá (hay que encontrar errores), y después el Gran desafío.',
   'El grado no define el nivel: chicos del mismo grado pueden estar en niveles distintos según su experiencia.',
   'Ante la duda, conviene el nivel más bajo. Se puede subir en cualquier momento y el avance que ya tienen se conserva.',
   'Los chicos nunca ven el número: solo ven el nombre de su equipo.',
