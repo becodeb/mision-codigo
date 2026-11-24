@@ -7,14 +7,16 @@ import { LevelsTab } from './LevelsTab.tsx';
 import { Login } from './Login.tsx';
 import { ProgressTab } from './ProgressTab.tsx';
 import { StudentsTab } from './StudentsTab.tsx';
+import { TryTab } from './TryTab.tsx';
 import './teacher.css';
 
-type TabId = 'alumnos' | 'clase' | 'progreso' | 'niveles';
+type TabId = 'alumnos' | 'clase' | 'progreso' | 'niveles' | 'probar';
 const TABS: { id: TabId; label: string }[] = [
   { id: 'alumnos', label: 'Alumnos' },
   { id: 'clase', label: 'Clase activa' },
   { id: 'progreso', label: 'Progreso' },
   { id: 'niveles', label: 'Niveles' },
+  { id: 'probar', label: 'Probar' },
 ];
 
 /** Teacher-facing wording for the login failures, whatever the server says. */
@@ -133,6 +135,7 @@ export function TeacherApp() {
         {tab === 'clase' && <ClassTab />}
         {tab === 'progreso' && <ProgressTab />}
         {tab === 'niveles' && <LevelsTab />}
+        {tab === 'probar' && <TryTab />}
       </main>
     </div>
   );

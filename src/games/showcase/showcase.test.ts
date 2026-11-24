@@ -59,8 +59,19 @@ describe('showcase games', () => {
     });
 
     it('names only sprites of the game in its texts', () => {
-      const texts = cards.flatMap((c) => [c.text, ...c.card!.how]).concat(game.showcase!.pillars.map((p) => p.broken));
+      const texts = cards.flatMap((c) => c.card!.how.map((h) => h.t)).concat(game.showcase!.pillars.map((p) => p.broken));
       for (const t of texts) for (const m of t.matchAll(/\{(\w+)\}/g)) expect(game.setup.sprites.some((s) => s.id === m[1]), t).toBe(true);
+    });
+
+    it('draws real blocks in its steps, and every step belongs to something the hand does', () => {
+      for (const c of cards) {
+        for (const h of c.card!.how) {
+          for (const m of h.t.matchAll(/\[(\w+)\]/g)) expect(game.toolbox, `${c.id}: ${m[1]}`).toContain(m[1]);
+          expect(['add', 'point', 'modal', 'change', 'tune', 'try'].includes(h.on) || game.toolbox.includes(h.on as BlockType), `${c.id}: ${h.on}`).toBe(true);
+        }
+        expect(new Set(c.card!.how.map((h) => h.on)).size, c.id).toBe(c.card!.how.length);
+        if (c.id !== 'fondo' && c.id !== 'personaje') expect(c.card!.how.at(-1)!.on, c.id).toBe('try');
+      }
     });
 
     it('offers every block it is made of and every block a card needs', () => {

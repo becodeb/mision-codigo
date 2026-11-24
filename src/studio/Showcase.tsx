@@ -2,13 +2,17 @@
  * Las pantallas de los juegos de la muestra: la entrada, la pared de tarjetas con sus tutoriales, el aviso de lo que
  * dejó de andar y el resumen de cómo está programado. Todo lo que deciden está en la sesión; acá solo se dibuja.
  */
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ART, ICON, type ArtId } from '../art/index.ts';
 import type { GameDefinition, GameStep } from '../games/types.ts';
 import { programOf } from './doc.ts';
 import { Modal } from './Modal.tsx';
 import { recapOf } from './recap.ts';
-import { Rich } from './rich.tsx';
+import { chipLabel, isBlockType, parseHow } from './chips.ts';
+import { blockImage } from '../language/blocks.ts';
+import type { BlockType } from '../language/catalog.ts';
+import { BLOCK_SPECS } from '../language/spec.ts';
+import { blocklyThemes } from '../language/themes.ts';
 import type { SessionSnapshot, StudioSession } from './session.ts';
 import { mountExample } from './workspace.ts';
 
@@ -55,40 +59,25 @@ export function Intro({ game, author, mine, onPlay, onExit }: IntroProps) {
 interface WallProps {
   session: StudioSession;
   snap: SessionSnapshot;
-  title: string;
   onExit: () => void;
   onRecap: () => void;
-}
-
-/** The one bar on top: the way out, whatever the screen is about, and the sound. */
-function Bar({ session, onExit, children }: { session: StudioSession; onExit: () => void; children: ReactNode }) {
-  const on = session.doc.ui.sound;
-  return (
-    <header className="sc-bar-top">
-      <button type="button" className="mc-ibtn" aria-label="Volver al inicio" data-point="exit" onClick={onExit}><Icon html={ICON.home} /></button>
-      {children}
-      <button type="button" className="mc-ibtn" aria-pressed={on} aria-label={on ? 'Voces y sonidos activados' : 'Voces y sonidos apagados'} data-point="sound" onClick={() => session.setSound(!on)}>
-        <Icon html={on ? ICON.sound : ICON.mute} />
-      </button>
-    </header>
-  );
 }
 
 export function CardWall(props: WallProps) {
   return props.snap.card ? <Tutorial {...props} /> : <Wall {...props} />;
 }
 
-function Wall({ session, snap, title, onExit, onRecap }: WallProps) {
+/** One row: the way out, the cards, and how many are done. */
+function Wall({ session, snap, onExit, onRecap }: WallProps) {
   const { tracker } = session;
   const steps = tracker.steps.map((s) => s.step);
-  const done = steps.filter((s) => tracker.isDone(s.id));
+  const done = steps.filter((s) => tracker.isDone(s.id)).length;
   const fresh = snap.celebrating?.stepId;
-  const all = done.length === steps.length;
-  const group = (kind: 'look' | 'code', label: string) => (
-    <div className={`sc-group ${kind}`} role="group" aria-label={label} style={{ flexGrow: steps.filter((s) => s.card!.kind === kind).length }}>
-      <span className="sc-group-label">{label}</span>
-      <div className="sc-cards">
-        {steps.filter((s) => s.card!.kind === kind).map((s) => {
+  const group = (kind: 'look' | 'code', label: string) => {
+    const list = steps.filter((s) => s.card!.kind === kind);
+    return (
+      <div className={`sc-cards ${kind}`} role="group" aria-label={label} style={{ flexGrow: list.length }}>
+        {list.map((s) => {
           const ok = tracker.isDone(s.id);
           return (
             <button
@@ -106,25 +95,17 @@ function Wall({ session, snap, title, onExit, onRecap }: WallProps) {
           );
         })}
       </div>
-    </div>
-  );
+    );
+  };
   return (
-    <section className={`sc-wall${all ? ' all' : ''}`} data-point="guide" aria-live="polite">
-      <Bar session={session} onExit={onExit}>
-        <div className="sc-wall-text">
-          <h2>{title}</h2>
-          <p>{all ? '¡Hiciste todo! Este juego es tuyo.' : done.length === 0 ? '¿Qué le querés cambiar? Tocá un cuadrado, o cambiá lo que quieras por tu cuenta.' : '¿Qué más le querés cambiar?'}</p>
-        </div>
-        <div className="sc-count" role="img" aria-label={`${done.length} de ${steps.length} cambios hechos`}>
-          <strong>{done.length}</strong> de {steps.length}
-          <span className="sc-bar"><i style={{ width: `${(done.length / steps.length) * 100}%` }} /></span>
-        </div>
-        {done.length > 0 && <button type="button" className="mc-gbtn" onClick={onRecap}>📋 Cómo lo programé</button>}
-      </Bar>
-      <div className="sc-groups">
-        {group('look', 'Cambiá cómo es')}
-        {group('code', 'Programá qué pasa')}
-      </div>
+    <section className={`sc-wall${done === steps.length ? ' all' : ''}`} data-point="guide" aria-live="polite">
+      <button type="button" className="sc-round" aria-label="Volver al inicio" data-point="exit" onClick={onExit}><Icon html={ICON.home} /></button>
+      {group('look', 'Cambiá cómo es')}
+      {group('code', 'Programá qué pasa')}
+      <button type="button" className="sc-sum" aria-label={`${done} de ${steps.length} hechos. Ver cómo lo programé`} title="Cómo lo programé" onClick={onRecap}>
+        <strong>{done}<i>/{steps.length}</i></strong>
+        <span className="sc-bar"><i style={{ width: `${(done / steps.length) * 100}%` }} /></span>
+      </button>
     </section>
   );
 }
@@ -143,66 +124,55 @@ function Blocks({ session, scripts }: { session: StudioSession; scripts: Scripts
   return <div className="mc-example-ws" ref={host} data-point="example" />;
 }
 
-const examples = new WeakMap<GameStep, { sprite: string; scripts: Scripts }[]>();
-/** The scripts to look at in a card: its own example, or what the hand builds. */
-function examplesOf(step: GameStep): { sprite: string; scripts: Scripts }[] {
-  let list = examples.get(step);
-  if (!list) {
-    const demo = step.demoScript && !step.card!.block ? (Array.isArray(step.demoScript) ? [...step.demoScript] : [step.demoScript as Scripts[number]]) : [];
-    list = step.example ?? (demo.length ? [{ sprite: step.card!.sprite ?? 'Nuevo', scripts: demo }] : []);
-    examples.set(step, list);
-  }
-  return list;
+/** One step drawn: words, buttons, blocks as they look in the toolbox, and sprites with their face. */
+function How({ session, text }: { session: StudioSession; text: string }) {
+  return (
+    <>
+      {parseHow(text).map((p, i) => {
+        if (p.kind === 'text') return <span key={i}>{p.value}</span>;
+        if (p.kind === 'button') return <span key={i} className={`how-btn${p.value === '▶' ? ' go' : ''}`}>{p.value}</span>;
+        if (p.kind === 'sprite') {
+          const art = session.doc.sprites.find((s) => s.id === p.value)?.art ?? session.game?.setup.sprites.find((s) => s.id === p.value)?.art;
+          return <span key={i} className="how-spr">{art && <svg viewBox="-60 -134 120 140" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ART[art as ArtId]?.svg() ?? '' }} />}{session.named(`{${p.value}}`)}</span>;
+        }
+        if (!isBlockType(p.value)) return null;
+        const type = p.value as BlockType;
+        const spec = BLOCK_SPECS[type];
+        const img = session.tier === 'picture' ? blockImage(type) : null;
+        const styles = (session.tier === 'picture' ? blocklyThemes().picture : blocklyThemes().text).blockStyles as Record<string, { colourPrimary: string } | undefined>;
+        return (
+          <span key={i} className={`how-block${spec.shape === 'hat' ? ' hat' : ''}${spec.shape === 'value' ? ' value' : ''}`} style={{ background: styles[spec.style]?.colourPrimary }}>
+            {img ? <img src={img} alt={chipLabel(type)} /> : chipLabel(type)}
+          </span>
+        );
+      })}
+    </>
+  );
 }
 
-function Tutorial({ session, snap, onExit }: WallProps) {
+/** The same row: the way back, which card it is, and its steps. The hand shows the rest by itself. */
+function Tutorial({ session, snap }: WallProps) {
   const step = session.cardStep;
-  const [example, setExample] = useState(false);
-  const [tab, setTab] = useState(0);
-  useEffect(() => { setExample(false); setTab(0); }, [step?.id]);
   if (!step?.card) return null;
   const card = step.card;
   const celebrate = snap.celebrating?.stepId === step.id;
-  const scripts = examplesOf(step);
-  const current = scripts[Math.min(tab, scripts.length - 1)];
+  const at = Math.max(0, card.how.findIndex((h) => h.on === snap.on));
   return (
     <section className={`sc-wall sc-tutorial${celebrate ? ' all' : ''}`} data-point="guide" aria-live="polite">
-      <Bar session={session} onExit={onExit}>
-        <button type="button" className="mc-gbtn" onClick={() => session.openCard(null)}>← Volver</button>
-        <h3 className="sc-title"><span aria-hidden="true">{card.icon}</span> {step.title}</h3>
-        <button type="button" className="mc-gbtn" onClick={() => session.undo()} title="Deshace el último cambio en los bloques">↶ Deshacer</button>
-        <button type="button" className="mc-gbtn" onClick={() => session.listen()}><Icon html={ICON.sound} /> Escuchar</button>
-        {scripts.length > 0 && <button type="button" className="mc-gbtn" aria-pressed={example} onClick={() => setExample((v) => !v)}>Ejemplo</button>}
-        <button type="button" className="mc-gbtn primary" disabled={celebrate} onClick={() => void session.demoCard()}><Icon html={ICON.eye} /> Mostrame</button>
-      </Bar>
-      <div className="sc-tut-body">
-        <p className="sc-tut-text">
-          <Rich text={session.named(step.text)} /> <span className="sc-idea">{card.concept}</span>
-        </p>
-        {celebrate ? (
-          <p className="sc-yes">¡Lo lograste! Este cambio es tuyo.</p>
-        ) : snap.almost ? (
-          <p className="sc-almost" role="status">¡Muy bien! Ahora <b>probalo</b>: tocá Empezar{session.tier === 'picture' ? ' o al personaje' : ''}.</p>
-        ) : (
-          <ol className="sc-steps">
-            {card.how.map((h, i) => (
-              <li key={i}><Rich text={session.named(h)} /></li>
-            ))}
-          </ol>
-        )}
-      </div>
-      {example && current && (
-        <div className="sc-example">
-          <div className="mc-tabs" role="tablist">
-            {scripts.map((x, i) => (
-              <button key={x.sprite} type="button" role="tab" aria-selected={i === tab} className={i === tab ? 'on' : ''} onClick={() => setTab(i)}>
-                {session.named(`{${x.sprite}}`)}
-              </button>
-            ))}
-            <button type="button" className="sc-close" aria-label="Cerrar el ejemplo" onClick={() => setExample(false)}>×</button>
-          </div>
-          <Blocks session={session} scripts={current.scripts} />
-        </div>
+      <button type="button" className="sc-round" aria-label="Volver" onClick={() => session.openCard(null)}><span aria-hidden="true">←</span></button>
+      <button type="button" className={`sc-card ${card.kind} on${celebrate ? ' done fresh' : ''}`} aria-label={`Escuchar: ${step.title}`} onClick={() => session.listen()}>
+        <span className="ic" aria-hidden="true">{card.icon}</span>
+        <span className="lb">{card.label}</span>
+        {celebrate && <span className="ok" aria-hidden="true">✓</span>}
+      </button>
+      {celebrate ? (
+        <p className="sc-yes">¡Lo lograste!</p>
+      ) : (
+        <ol className="sc-steps">
+          {card.how.map((h, i) => (
+            <li key={i} className={i < at ? 'done' : i === at ? 'on' : ''} aria-current={i === at ? 'step' : undefined}><How session={session} text={h.t} /></li>
+          ))}
+        </ol>
       )}
     </section>
   );

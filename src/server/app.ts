@@ -22,7 +22,7 @@ import type {
   SettingsResponse,
   StudentsResponse,
 } from '../shared/api.ts';
-import { GAME_ID_PATTERN, MAX_BODY_BYTES } from '../shared/api.ts';
+import { GAME_ID_PATTERN, MAX_BODY_BYTES, isTestGroup } from '../shared/api.ts';
 import { KNOWN_GAME_IDS } from '../shared/gameIds.ts';
 import type { ClassId, LevelId } from '../shared/levels.ts';
 import { createAuth } from './auth.ts';
@@ -123,7 +123,7 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
 
   api.get('/students', (_req, res) => {
     const body: StudentsResponse = {
-      students: store.listStudents().map((s) => ({ id: s.id, name: s.name, group: s.group })),
+      students: store.listStudents().filter((s) => !isTestGroup(s.group)).map((s) => ({ id: s.id, name: s.name, group: s.group })),
     };
     res.json(body);
   });
@@ -136,7 +136,7 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
   api.post('/session', (req, res) => {
     const { studentId } = parse(sessionBody, req.body);
     const student = store.getStudent(studentId);
-    if (!student) throw new AppError(404, 'student_not_found', 'No encontramos ese nombre.');
+    if (!student || (isTestGroup(student.group) && !auth.isAdmin(req))) throw new AppError(404, 'student_not_found', 'No encontramos ese nombre.');
     auth.issueChild(res, student.id);
     res.json(sessionResponse(student));
   });

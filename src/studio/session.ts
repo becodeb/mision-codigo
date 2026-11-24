@@ -18,7 +18,8 @@ import { plain } from './rich.tsx';
 import { ActiveClock, GuideTracker, hintRungs, type FlatStep } from './guide.ts';
 import { flattenScripts, irToBlockly } from '../language/convert.ts';
 import { addSpriteDoc, newDoc, parseDoc, programOf, scriptsOf, usesKeys, type ProjectDoc, type SpriteDoc } from './doc.ts';
-import { cancelDemo, pointAt, runDemo } from './demo.ts';
+import { sayHow } from './chips.ts';
+import { cancelDemo, pointAt, runDemo, type DemoDeps } from './demo.ts';
 import { planDemo, type DemoPlan, type SpriteView } from './demoPlan.ts';
 import { StageRenderer } from './stage.ts';
 import { BlockEditor } from './workspace.ts';
@@ -57,6 +58,8 @@ export interface SessionSnapshot {
   card: string | null;
   /** The open card is built, and only trying it is missing. */
   almost: boolean;
+  /** What the hand is about in the open card (see `StepCard.how`): which step is the current one. */
+  on: string | null;
   /**
    * Showcase games: an event block the game runs on was left empty, so nothing happens. Said after pressing
    * «Empezar», and only then: a child who took something out or changed the logic on purpose is told nothing.
@@ -224,6 +227,7 @@ export class StudioSession {
       broken: this.broken,
       card: this.cardId,
       almost: !!this.cardStep?.card?.built(this.program) && !this.tried && !this.tracker.isDone(this.cardId!),
+      on: this.cardOn,
       health: this.healthAsked ? this.deadIssues().filter((h) => !this.healthDismissed.has(h.id)) : [],
       undo: this.undoable?.label ?? null,
     };
@@ -287,7 +291,10 @@ export class StudioSession {
     this.machine.host.render(this.machine);
     this.machine.dirty = true;
 
-    const input = (): void => this.clock.input();
+    const input = (): void => {
+      this.clock.input();
+      if (this.handTimer) this.scheduleHand(5000);
+    };
     for (const type of ['pointerdown', 'keydown', 'touchstart', 'wheel']) {
       window.addEventListener(type, input, { capture: true, passive: true });
       this.offs.push(() => window.removeEventListener(type, input, { capture: true }));
@@ -333,6 +340,7 @@ export class StudioSession {
     if (this.celebrateTimer) clearTimeout(this.celebrateTimer);
     if (this.noticeTimer) clearTimeout(this.noticeTimer);
     if (this.undoTimer) clearTimeout(this.undoTimer);
+    this.stopHand();
     if (this.root) cancelDemo(this.root);
     this.ask?.resolve('');
     this.ask = null;
@@ -492,6 +500,7 @@ export class StudioSession {
       this.pendingProgram = true;
     }
     this.needsCheck = true;
+    this.refreshOn();
   }
 
   /* ---------- keyboard and pointer ---------- */
@@ -646,6 +655,8 @@ export class StudioSession {
   }
 
   private codeChanged(): void {
+    this.scheduleHand(1400);
+    if (this.showcase) this.editor?.tidy();
     this.captureCode();
     this.applyProgram();
     this.markChanged();
@@ -658,6 +669,7 @@ export class StudioSession {
     this.captureCode();
     this.doc.selected = id;
     this.loadSelectedIntoEditor();
+    this.scheduleHand(900);
     this.machine && (this.machine.dirty = true);
     this.markChanged();
   }
@@ -666,7 +678,8 @@ export class StudioSession {
     this.editor?.flushPending();
     this.captureCode();
     this.machine?.stopAll();
-    addSpriteDoc(this.doc, art, this.tier);
+    const added = addSpriteDoc(this.doc, art, this.tier);
+    if (this.showcase) this.giveRoom(added);
     this.loadSelectedIntoEditor();
     this.applyProgram();
     const sound = (ART as Record<string, { sound: string } | undefined>)[art]?.sound;
@@ -795,7 +808,6 @@ export class StudioSession {
   speakStepIfSpoken(): void {
     if (!this.spoken || this.celebrating) return;
     if (this.showcase) {
-      if (this.cardStep) void this.say(plain(this.named(this.cardStep.text)));
       return;
     }
     const flat = this.viewedStep;
@@ -824,7 +836,7 @@ export class StudioSession {
   listen(): void {
     if (this.showcase) {
       const step = this.cardStep;
-      if (step?.card) void this.say(plain(this.named([step.text, ...step.card.how].join(' '))), true);
+      if (step?.card) void this.say(step.card.how.map((h) => sayHow(h.t, (id) => this.named(`{${id}}`))).join('. '), true);
       return;
     }
     const flat = this.viewedStep;
@@ -966,17 +978,46 @@ export class StudioSession {
   }
 
   openCard(id: string | null): void {
+    this.stopHand();
     if (this.root) cancelDemo(this.root);
     if (this.celebrateTimer) clearTimeout(this.celebrateTimer);
     this.celebrating = null;
     this.cardId = id;
+    this.cardOn = null;
     const card = this.cardStep?.card;
     const target = card?.newSprite ? this.newSpriteId() : card?.sprite;
     if (target) this.selectSprite(target);
     playSfx('pop');
     hush();
     this.emit();
-    this.speakStepIfSpoken();
+    this.refreshOn();
+    this.scheduleHand(450);
+  }
+
+  /* The hand of an open card plays by itself: at once, after each change, and again when nothing happens for a while. */
+  private handTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private stopHand(): void {
+    if (this.handTimer) clearTimeout(this.handTimer);
+    this.handTimer = null;
+  }
+
+  private scheduleHand(ms: number): void {
+    this.stopHand();
+    if (!this.showcase || !this.cardId || !this.mounted) return;
+    this.handTimer = setTimeout(() => void this.autoHand(), ms);
+  }
+
+  private async autoHand(): Promise<void> {
+    this.handTimer = null;
+    const card = this.cardStep?.card;
+    if (!card || !this.root || this.celebrating) return;
+    const busy = this.fullScreen || this.editor?.busy || this.ask || (this.tried && (this.machine?.threadCount ?? 0) > 0) || this.root.querySelector('.mc-modal') || document.activeElement?.tagName === 'INPUT';
+    if (!busy) {
+      this.refreshOn();
+      await this.demoCard();
+    }
+    if (!this.handTimer) this.scheduleHand(5000);
   }
 
   /** A sprite the child added, the selected one first. */
@@ -985,47 +1026,106 @@ export class StudioSession {
     return (mine.find((s) => s.id === this.doc.selected) ?? mine[mine.length - 1])?.id ?? null;
   }
 
-  /** «Mostrame» of a card: the hand brings the next block, or points at the block or button to change. */
-  async demoCard(): Promise<void> {
+  /** A new sprite lands where nobody is, not on top of another one. */
+  private giveRoom(sprite: SpriteDoc): void {
+    const others = this.doc.sprites.filter((s) => s !== sprite);
+    let best = -1;
+    for (const x of [-60, 60, 0, -120, 120, -180, 180]) for (const y of [-110, -30, 50]) {
+      const room = Math.min(...others.map((o) => Math.hypot(o.x - x, o.y - y)));
+      if (room > best + 1) [best, sprite.x, sprite.y] = [room, x, y];
+    }
+  }
+
+  /** What is left to do in the open card, and which step it belongs to. */
+  private nextMove(): { on: string; show: (deps: DemoDeps) => Promise<void> } | null {
     const step = this.cardStep;
     const card = step?.card;
-    if (!this.root || !step || !card) return;
-    this.editor?.flushPending();
-    const deps = this.depsForDemo();
-    if (card.sprite && !this.doc.sprites.some((s) => s.id === card.sprite)) {
-      this.notice = this.named(`Falta {${card.sprite}}. Tocá «Arreglar mi juego» para traerlo de vuelta.`);
-      this.emit();
-      return pointAt(deps, 'repair');
+    const editor = this.editor;
+    if (!step || !card || !editor) return null;
+    const has = (id: string): boolean => this.doc.sprites.some((s) => s.id === id);
+    if (card.sprite && !has(card.sprite)) return { on: 'repair', show: (d) => pointAt(d, 'repair') };
+    const target = card.newSprite ? this.newSpriteId() : (card.sprite ?? null);
+
+    if (card.built(this.program)) {
+      /* A machine still running the old program only takes the new one from the green button. */
+      const tap = this.pendingProgram ? undefined : card.tap === 'new' ? target : card.tap;
+      /* A key is pressed on the keyboard: there is nothing on screen to point at. */
+      if (tap === 'stage') return { on: 'try', show: () => Promise.resolve() };
+      const el = tap && has(tap) ? `.mc-stage .spr[data-id="${tap}"]` : 'flag';
+      return { on: 'try', show: (d) => pointAt(d, el) };
     }
-    let target = card.sprite ?? null;
-    if (card.newSprite) {
-      target = this.newSpriteId();
-      if (!target) return pointAt(deps, 'add-sprite', 'Primero agregá a alguien con este botón.');
-    }
-    if (target) this.selectSprite(target);
-    if (card.block) {
+    if (card.newSprite && !target) return { on: 'add', show: (d) => pointAt(d, 'add-sprite') };
+
+    const all = flattenScripts(editor.scripts());
+    const here = (id: string): boolean => this.doc.selected === id;
+    const choose = (id: string) => (d: DemoDeps): Promise<void> => pointAt(d, `[data-sprite="${id}"]`);
+    const fromToolbox = (type: BlockType) => (d: DemoDeps): Promise<void> => {
+      editor.openCategoryOf(type);
+      const fresh = editor.flyoutBlock(type);
+      if (fresh) editor.showInFlyout(fresh);
+      return pointAt(d, fresh ? fresh.getSvgRoot() : 'toolbox');
+    };
+    const pointIn = (id: string | undefined, field?: string) => async (d: DemoDeps): Promise<void> => {
+      const block = editor.blockById(id);
+      if (!block) return;
+      editor.reveal(block);
+      await pointAt(d, (field ? block.getField(field)?.getSvgRoot() : null) ?? editor.editableOf(block));
+    };
+
+    if (card.block && target) {
+      if (!here(target)) return { on: 'change', show: choose(target) };
       const want = card.block;
-      const found = flattenScripts(this.editor?.scripts() ?? []).find((b) => b.type === want.type && (!want.where || want.where(b)))
-        ?? flattenScripts(this.editor?.scripts() ?? []).find((b) => b.type === want.type);
-      const block = this.editor?.blockById(found?.id);
-      if (block && this.editor) {
-        this.editor.reveal(block);
-        return pointAt(deps, this.editor.editableOf(block), want.caption);
-      }
-      this.editor?.openCategoryOf(want.type);
-      const fresh = this.editor?.flyoutBlock(want.type);
-      if (fresh && this.editor) this.editor.showInFlyout(fresh);
-      return pointAt(deps, fresh ? fresh.getSvgRoot() : 'toolbox', 'Ese bloque ya no está. Traé este y ponelo en tu programa.');
+      const found = all.find((b) => b.type === want.type && (!want.where || want.where(b))) ?? all.find((b) => b.type === want.type);
+      return { on: 'change', show: found ? pointIn(found.id) : fromToolbox(want.type) };
     }
-    if (step.demoScript && target) {
-      const scripts = Array.isArray(step.demoScript) ? step.demoScript : [step.demoScript as Script];
-      try {
-        return await runDemo(deps, planDemo({ scripts, sprite: target }, this.demoSprites(), this.doc.selected));
-      } catch (e) {
-        console.warn('The hand could not plan this card', e);
+
+    const demo = step.demoScript ? (Array.isArray(step.demoScript) ? [...step.demoScript] : [step.demoScript as Script]) : [];
+    if (demo.length && target) {
+      const tune = card.tune;
+      if (tune && here(target)) {
+        const pending = [...all].reverse().find((b) => b.type === tune.type && tune.when(b, this.program, all));
+        if (pending) return { on: 'tune', show: pointIn(pending.id, tune.field) };
+      }
+      /* An example with several sprites is done one sprite at a time. */
+      const parts = (step.example?.length ?? 0) > 1 ? step.example! : [{ sprite: target, scripts: demo }];
+      for (const part of parts) {
+        const goal = { scripts: part.scripts, sprite: part.sprite };
+        const inside = planDemo(goal, this.demoSprites(), part.sprite);
+        if (inside.kind === 'try') continue;
+        const on = inside.kind === 'hat' ? inside.hat.type : inside.kind === 'block' || inside.kind === 'move' ? inside.block.type : 'add';
+        if (!here(part.sprite)) return { on, show: choose(part.sprite) };
+        return { on, show: (d) => runDemo(d, inside) };
+      }
+      for (const v of card.values ?? []) {
+        if (!here(target)) return { on: v.type, show: choose(target) };
+        const holders = all.filter((b) => b.type === v.into);
+        if (!holders.length || holders.some((b) => b.inputs[v.input]?.type === v.type)) continue;
+        const owner = holders[0];
+        return { on: v.type, show: (d) => runDemo(d, { kind: 'block', block: { type: v.type, fields: {}, inputs: {}, body: [], elseBody: [] }, slot: { parent: owner.id, kind: 'input', input: v.input, parentType: owner.type }, completes: null }) };
       }
     }
-    if (step.point) return pointAt(deps, step.point);
+    return step.point ? { on: 'point', show: (d) => pointAt(d, step.point!) } : null;
+  }
+
+  private cardOn: string | null = null;
+
+  /** Works out the current step again. A new one is read aloud to the younger children. */
+  private refreshOn(): void {
+    let on: string | null = null;
+    try { on = this.cardId ? (this.nextMove()?.on ?? this.cardOn) : null; } catch { on = this.cardOn; }
+    if (on === this.cardOn) return;
+    this.cardOn = on;
+    const how = this.cardStep?.card?.how.find((h) => h.on === on);
+    if (how && this.spoken && !this.celebrating) void this.say(sayHow(how.t, (id) => this.named(`{${id}}`)));
+    this.emit();
+  }
+
+  /** Shows, with the hand, what is left to do in the open card. */
+  async demoCard(): Promise<void> {
+    if (!this.root) return;
+    this.editor?.flushPending();
+    const move = this.nextMove();
+    if (move) await move.show({ ...this.depsForDemo(), passive: true, sfx: () => undefined });
   }
 
   private cardsCompleted(fresh: FlatStep[]): void {

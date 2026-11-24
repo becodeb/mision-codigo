@@ -54,6 +54,11 @@ export interface DemoDeps {
   editor: BlockEditor | null;
   sfx(name: string): void;
   say(text: string): void;
+  /**
+   * The hand plays by itself, over a child who may be working: it never blocks the screen, says nothing, writes
+   * nothing, goes away at the first touch, and leaves the workspace where it showed it.
+   */
+  passive?: boolean;
 }
 
 function overlay(root: HTMLElement): HTMLElement {
@@ -128,10 +133,25 @@ export async function pointAt(deps: DemoDeps, target: string | Element, caption 
   layer.className = 'mc-demo passive';
   layer.hidden = false;
   layer.innerHTML = `<div class="hand">${HAND}</div>`;
-  setCaption(layer, caption);
-  if (caption) deps.say(caption);
+  if (!deps.passive) setCaption(layer, caption);
+  if (caption && !deps.passive) deps.say(caption);
+  if (deps.passive) {
+    /* The child did something: whatever the hand was pointing at may already be done. */
+    const stop = (): void => {
+      if (token !== running) return;
+      running++;
+      clearLayer(deps.root);
+    };
+    window.addEventListener('pointerdown', stop, { capture: true, once: true });
+    window.setTimeout(() => window.removeEventListener('pointerdown', stop, { capture: true }), 2700);
+  }
   const hand = layer.querySelector<HTMLElement>('.hand')!;
-  await tween(caption ? 3200 : 1800, (t) => { hand.style.transform = `translate(${x - 22}px, ${(y - 6 + Math.abs(Math.sin(t * Math.PI * 3)) * 18).toFixed(1)}px)`; }, () => token === running);
+  /* No room under it (a button at the bottom of the screen): the hand comes from above, upside down. */
+  const above = y + 80 > window.innerHeight;
+  await tween(caption || deps.passive ? 2600 : 1800, (t) => {
+    const away = Math.abs(Math.sin(t * Math.PI * 3)) * 18;
+    hand.style.transform = above ? `translate(${x - 42}px, ${(y - 66 - away).toFixed(1)}px) rotate(180deg)` : `translate(${x - 22}px, ${(y - 6 + away).toFixed(1)}px)`;
+  }, () => token === running);
   if (token === running && layer.classList.contains('passive')) clearLayer(deps.root);
 }
 
@@ -149,7 +169,7 @@ function originOf(block: { getSvgRoot(): SVGGElement }): Origin {
 function slotPoint(editor: BlockEditor, slot: Slot): { x: number; y: number } | null {
   const owner = editor.blockById(slot.parent);
   if (!owner) return null;
-  const conn = slot.kind === 'next' ? owner.nextConnection : owner.getInput(slot.kind === 'do' ? 'DO' : 'ELSE')?.connection;
+  const conn = slot.kind === 'next' ? owner.nextConnection : owner.getInput(slot.kind === 'input' ? (slot.input ?? '') : slot.kind === 'do' ? 'DO' : 'ELSE')?.connection;
   if (!conn) return null;
   const ao = originOf(owner);
   const off = (conn as unknown as { getOffsetInBlock(): { x: number; y: number } }).getOffsetInBlock();
@@ -166,7 +186,7 @@ interface Run {
 
 function begin(deps: DemoDeps, token: number, caption: string): Run {
   const layer = overlay(deps.root);
-  layer.className = 'mc-demo';
+  layer.className = deps.passive ? 'mc-demo passive' : 'mc-demo';
   layer.hidden = false;
   layer.innerHTML = `<div class="hand">${HAND}</div><button class="demo-skip" type="button">Saltar</button>`;
   const hand = layer.querySelector<HTMLElement>('.hand')!;
@@ -178,6 +198,17 @@ function begin(deps: DemoDeps, token: number, caption: string): Run {
     skip = true;
     swallowNextClick();
   };
+  if (deps.passive) {
+    restoreView = null;
+    caption = '';
+    const stop = (): void => {
+      skip = true;
+      window.removeEventListener('pointerdown', stop, true);
+      if (token === running) clearLayer(deps.root);
+    };
+    window.addEventListener('pointerdown', stop, true);
+    window.setTimeout(() => window.removeEventListener('pointerdown', stop, true), 8000);
+  }
   const run: Run = {
     layer,
     hand,
@@ -223,8 +254,10 @@ async function tryGesture(deps: DemoDeps, run: Run, token: number, how: ReturnTy
     how.target === 'sprite' ? (root.querySelector<HTMLElement>(`.mc-stage .spr[data-id="${how.spriteId}"]`) ?? resolvePoint(root, 'stage'))
     : how.target === 'keys' ? (resolvePoint(root, 'keys') ?? resolvePoint(root, 'stage'))
     : resolvePoint(root, how.target);
-  setCaption(run.layer, how.caption);
-  deps.say(how.caption);
+  if (!deps.passive) {
+    setCaption(run.layer, how.caption);
+    deps.say(how.caption);
+  }
   if (!el) {
     await pause(1500, run.alive);
     return;
@@ -295,10 +328,15 @@ async function dragDemo(deps: DemoDeps, plan: Drag, caption: string): Promise<vo
     await sleep(450);
     if (token !== running) return;
   }
+  if (plan.kind === 'hat' && deps.passive) {
+    editor.showFreeSpot();
+    await sleep(60);
+    if (token !== running) return;
+  }
   if (plan.kind !== 'hat') {
     const owner = editor.blockById(plan.slot.parent);
     if (owner) {
-      const back = editor.reveal(owner);
+      const back = editor.reveal(owner, deps.passive ? 110 : 16);
       restoreView ??= back;
       await sleep(150);
       if (token !== running) return;
@@ -349,8 +387,10 @@ async function dragDemo(deps: DemoDeps, plan: Drag, caption: string): Promise<vo
     if (alive()) {
       deps.sfx('tick');
       ghost.classList.add('dropped');
-      setCaption(layer, caption);
-      deps.say(caption);
+      if (!deps.passive) {
+        setCaption(layer, caption);
+        deps.say(caption);
+      }
       if (plan.kind === 'hat') {
         /* An empty mouth under the new hat says «something goes here». */
         const slot = document.createElement('div');

@@ -129,6 +129,12 @@ class FieldTapNumber extends Blockly.Field<number> {
 
 const IMAGES: Record<string, string> = { ...IMG, ...BLOCK_IMG };
 
+/** The picture on a picture-tier block, for drawing it outside the editor. */
+export function blockImage(type: BlockType): string | null {
+  const arg = BLOCK_SPECS[type].args.find((a) => a.k === 'image');
+  return arg && arg.k === 'image' ? (IMAGES[arg.img] ?? null) : null;
+}
+
 function backdropImageOptions(): unknown[] {
   return Object.entries(BACKDROPS).map(([id, def]) => [
     { src: svgURI(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360">${def.svg(`bt${id}-`)}</svg>`), width: 60, height: 45, alt: def.name }, id,

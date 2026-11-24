@@ -326,6 +326,44 @@ export class BlockEditor {
     return looseStacks(this.save());
   }
 
+  /** Scrolls to the empty space under every program, for a new one. */
+  showFreeSpot(): void {
+    try {
+      const box = this.ws.getBlocksBoundingBox();
+      const tops = this.ws.getTopBlocks(false);
+      if (!tops.length) return;
+      const left = Math.min(...tops.map((b) => b.getRelativeToSurfaceXY().x));
+      this.ws.scroll(24 - left * this.ws.scale, 70 - box.bottom * this.ws.scale);
+    } catch { /* an empty or detached workspace has nothing to scroll */ }
+  }
+
+  /** A program that grew over another one pushes it down, so no block is ever hidden under another. */
+  tidy(): void {
+    if (this.disposed || gestureInProgress()) return;
+    const GAP = 22;
+    const tops = (this.ws.getTopBlocks(false) as Blockly.BlockSvg[]).sort((a, b) => a.getRelativeToSurfaceXY().y - b.getRelativeToSurfaceXY().y);
+    const placed: { left: number; right: number; top: number; bottom: number }[] = [];
+    const undo = Blockly.Events.getRecordUndo();
+    Blockly.Events.setRecordUndo(false);
+    try {
+      for (const b of tops) {
+        const r = b.getBoundingRectangle();
+        let top = r.top;
+        for (const p of placed) if (r.left < p.right && r.right > p.left && top < p.bottom + GAP && top + (r.bottom - r.top) > p.top) top = p.bottom + GAP;
+        if (top > r.top + 1) b.moveBy(0, top - r.top);
+        placed.push({ left: r.left, right: r.right, top, bottom: top + (r.bottom - r.top) });
+        placed.sort((x, y) => x.top - y.top);
+      }
+    } catch { /* a block being disposed is left where it is */ } finally {
+      Blockly.Events.setRecordUndo(undo);
+    }
+  }
+
+  /** A block is being dragged, or one of its menus or numbers is open. */
+  get busy(): boolean {
+    return gestureInProgress() || Blockly.DropDownDiv.isVisible() || Blockly.WidgetDiv.isVisible();
+  }
+
   /** The part of a block a child taps to change it: its number, its menu or its text. */
   editableOf(block: Blockly.BlockSvg): Element {
     for (const name of ['N', 'P', 'S', 'T']) {
@@ -344,19 +382,21 @@ export class BlockEditor {
    * Scrolls the workspace, as little as it takes, so a block is on screen for a hand about to point at it.
    * Returns a function that puts the view back, or `null` when nothing moved.
    */
-  reveal(block: Blockly.BlockSvg): (() => void) | null {
+  reveal(block: Blockly.BlockSvg, below = 16): (() => void) | null {
     try {
       const r = block.getSvgRoot().getBoundingClientRect();
       const v = this.viewRect();
       const margin = 16;
-      const fit = (lo: number, hi: number, vLo: number, vHi: number): number => {
-        if (hi - lo > vHi - vLo - 2 * margin) return vLo + margin - lo;
+      const fit = (lo: number, hi: number, vLo: number, vHi: number, after: number): number => {
+        if (hi - lo > vHi - vLo - margin - after) return vLo + margin - lo;
         if (lo < vLo + margin) return vLo + margin - lo;
-        if (hi > vHi - margin) return vHi - margin - hi;
+        if (hi > vHi - after) return vHi - after - hi;
         return 0;
       };
-      const dx = fit(r.left, r.right, v.left, v.right);
-      const dy = fit(r.top, r.bottom, v.top, v.bottom);
+      const dx = fit(r.left, r.right, v.left, v.right, margin);
+      let dy = fit(r.top, r.bottom, v.top, v.bottom, below);
+      /* A block taller than the view: what matters is its end, where the next one goes. */
+      if (below > margin && r.bottom - r.top > v.height - margin - below) dy = v.bottom - below - r.bottom;
       if (!dx && !dy) return null;
       const { scrollX, scrollY } = this.ws;
       this.ws.scroll(scrollX + dx, scrollY + dy);

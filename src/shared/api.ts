@@ -14,6 +14,10 @@ export interface OkResponse {
   ok: true;
 }
 
+/** Names in this group are for teachers to try the games: never listed to children, entered only from the panel. */
+export const TEST_GROUP = 'Pruebas';
+export const isTestGroup = (group: string): boolean => group.trim().toLowerCase() === TEST_GROUP.toLowerCase();
+
 // ---- Child ----
 
 export interface StudentListItem {

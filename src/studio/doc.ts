@@ -64,7 +64,7 @@ export function starterCode(tier: 'picture' | 'text'): WorkspaceState {
  * blocks are tall and narrow, so each script gets its own column; text blocks are wide, so there are two columns.
  */
 function sideBySide(scripts: readonly Script[], picture: boolean): WorkspaceState {
-  if (picture) return { blocks: { languageVersion: 0, blocks: scripts.flatMap((sc, i) => irToBlockly([sc], { x: 30 + i * 250, y: 36 }).blocks?.blocks ?? []) } };
+  if (picture) return { blocks: { languageVersion: 0, blocks: scripts.flatMap((sc, i) => irToBlockly([sc], { x: 30 + i * 350, y: 36 }).blocks?.blocks ?? []) } };
   if (scripts.length < 3) return irToBlockly(scripts);
   const half = Math.ceil(scripts.length / 2);
   const left = irToBlockly(scripts.slice(0, half));

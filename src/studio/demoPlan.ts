@@ -10,7 +10,7 @@ import { KEYS } from '../language/options.ts';
 import type { Block, Script } from '../language/ir.ts';
 import { BLOCK_SPECS, hasBody } from '../language/spec.ts';
 
-export type SlotKind = 'next' | 'do' | 'else';
+export type SlotKind = 'next' | 'do' | 'else' | 'input';
 
 /** A connection on a block of the workspace: under it, or inside its «do» / «si no» mouth. */
 export interface Slot {
@@ -19,6 +19,8 @@ export interface Slot {
   kind: SlotKind;
   /** Type of that block, for the words. */
   parentType?: string;
+  /** The socket, when `kind` is `input`. */
+  input?: string;
 }
 
 export interface SpriteView {
@@ -175,6 +177,7 @@ function missingAt(want: readonly Block[], built: readonly Block[], matchOf: rea
 /** Event hats that are told apart by their menu: a key script is for one key. */
 function sameEvent(want: Block, hat: Block): boolean {
   if (want.type === 'a_key') return String(want.fields.K ?? '') === String(hat.fields.K ?? '');
+  if (want.type === 'a_points') return Number(want.fields.N ?? 0) === Number(hat.fields.N ?? 0);
   return true;
 }
 
@@ -224,7 +227,7 @@ function planScript(want: Script, sprite: SpriteView, claimed: Set<string>): Pie
   const sameType = sprite.scripts.filter((s) => s.hat.type === want.hat.type);
   let candidates = sameType.filter((s) => sameEvent(want.hat, s.hat));
   /* A key hat dropped and not set yet counts as the one being built. */
-  if (!candidates.length) candidates = sameType.filter((s) => s.body.length === 0 && want.hat.type === 'a_key');
+  if (!candidates.length) candidates = sameType.filter((s) => s.body.length === 0 && (want.hat.type === 'a_key' || want.hat.type === 'a_points'));
   if (!candidates.length) return { kind: 'hat', hat: want.hat, reason: 'missing', completes: null };
 
   const fits = candidates.map((s, order) => ({ s, order, ...fit(want.body, s.body, { parent: s.hat.id, kind: 'next', parentType: s.hat.type }) }));

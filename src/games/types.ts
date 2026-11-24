@@ -65,20 +65,29 @@ export interface GameStep {
 export interface StepCard {
   /** Emoji drawn on the square. */
   icon: string;
-  /** Two or three words, starting with a verb. */
+  /** One or two words: what it changes. */
   label: string;
   /** `look` changes how the game looks or sounds; `code` changes what happens. */
   kind: 'look' | 'code';
   /** The programming idea behind it: a name, then a plain explanation. */
   concept: string;
-  /** The tutorial, one short action per line. `{id}` becomes the current name of that sprite. */
-  how: string[];
+  /**
+   * The tutorial, one short action each, written with marks that are drawn (`studio/chips.ts`). `on` is what the hand is
+   * doing during that step: a block type, or `add`, `point`, `modal`, `change`, `tune` and `try`.
+   */
+  how: { t: string; on: string }[];
+  /** What to tap to try it, when it is not the green button: a sprite, `new` for the added one, or `stage`. */
+  tap?: string;
   /** A question to explain it in their own words. */
   ask: string;
   /** The sprite the tutorial is about: it is picked when the tutorial opens. */
   sprite?: string;
   /** «Mostrame» for a change of a number or a menu: the hand points at that block of the sprite. */
   block?: { type: BlockType; caption: string; where?: (b: Block) => boolean };
+  /** A menu left to choose once the block is in: the hand points at that field while `when` holds. */
+  tune?: { type: BlockType; field: string; when: (b: Block, program: ProjectProgram, all: readonly Block[]) => boolean };
+  /** Value blocks that go inside a socket, in order, once the rest is built. */
+  values?: { type: BlockType; into: BlockType; input: string }[];
   /** The tutorial starts by adding a sprite, and its demo script is for that new one. */
   newSprite?: boolean;
   /** The program already has what the card asks for. Most cards also need the child to try it. */

@@ -44,6 +44,18 @@ describe('child session', () => {
     expect((await child.get('/api/session')).status).toBe(401);
   });
 
+  it('keeps the test names out of the list and only lets a signed-in teacher enter with them', async () => {
+    const admin = server.client();
+    await loginAdmin(admin);
+    const testId = await addStudent(admin, 'Prueba Sol', 'Pruebas', 1);
+    const child = server.client();
+    expect((await child.get('/api/students')).body.students.map((s: { name: string }) => s.name)).toEqual(['Luna', 'Mateo']);
+    expect((await child.post('/api/session', { studentId: testId })).status).toBe(404);
+    expect((await admin.get('/api/students')).body.students).toHaveLength(2);
+    expect((await admin.post('/api/session', { studentId: testId })).status).toBe(200);
+    expect((await admin.get('/api/session')).body.student.name).toBe('Prueba Sol');
+  });
+
   it('answers 404 for an unknown student and sets Secure when configured', async () => {
     const child = server.client();
     const missing = await child.post('/api/session', { studentId: 9999 });

@@ -110,7 +110,7 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
   const picture = session.tier === 'picture';
 
   return (
-    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${snap.running ? ' running' : ''}`} data-level={level}>
+    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${snap.almost ? ' try-now' : ''}${snap.running ? ' running' : ''}`} data-level={level}>
       {!showcase && <header className="mc-topbar">
         <button type="button" className="mc-ibtn" aria-label="Volver al inicio" data-point="exit" onClick={onExit}>
           <Icon html={ICON.home} />
@@ -131,7 +131,7 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
         </button>
       </header>}
 
-      {showcase ? <CardWall session={session} snap={snap} title={title} onExit={leave} onRecap={() => setDialog('recap')} /> : game ? <Guide session={session} snap={snap} next={next} onFinish={() => { session.markDone(); setDialog('finish'); }} /> : <FreePrompt />}
+      {showcase ? <CardWall session={session} snap={snap} onExit={leave} onRecap={() => setDialog('recap')} /> : game ? <Guide session={session} snap={snap} next={next} onFinish={() => { session.markDone(); setDialog('finish'); }} /> : <FreePrompt />}
 
       <div className="mc-main">
         <div className="mc-code" data-point="workspace">
@@ -203,7 +203,7 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
                   </button>
                   {showcase ? (
                     <>
-                      {mine && <button type="button" className="sc-recapbtn" onClick={() => setDialog('recap')}>📋 Cómo lo programé</button>}
+                      {mine && <button type="button" className="sc-recapbtn" onClick={() => setDialog('recap')}>Cómo lo programé</button>}
                       <button type="button" className={`sc-inside${nudge || snap.ended ? ' nudge' : ''}`} onClick={closeShow}>
                         <Icon html={ICON.code} /> Ver por dentro
                       </button>
@@ -224,7 +224,10 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
           {showcase ? (
             <div className="sc-tools">
               <button type="button" className="sc-tool" data-point="backdrops" onClick={() => setDialog('places')}>🖼️ Fondo</button>
-              <button type="button" className="sc-tool" data-point="repair" onClick={() => setDialog('repair')}>🛟 Arreglar mi juego</button>
+              <button type="button" className="sc-tool" data-point="repair" onClick={() => setDialog('repair')}>🛟 Arreglar</button>
+              <button type="button" className="sc-tool icon" aria-pressed={doc.ui.sound} aria-label={doc.ui.sound ? 'Voces y sonidos activados' : 'Voces y sonidos apagados'} data-point="sound" onClick={() => session.setSound(!doc.ui.sound)}>
+                <Icon html={doc.ui.sound ? ICON.sound : ICON.mute} />
+              </button>
             </div>
           ) : (
             <div className="mc-panel mc-places" data-point="backdrops">
@@ -443,12 +446,15 @@ function SpritePanel({ session, onAdd, onCostume, onRemoveCast }: SpritePanelPro
       <div className="mc-panel-head">
         <h4>Personajes</h4>
         {selected && onCostume && (
-          <button type="button" className="sc-costume" data-point="costume" onClick={onCostume}>🎭 Cambiar dibujo</button>
+          <button type="button" className="sc-act" data-point="costume" aria-label="Cambiar dibujo" onClick={onCostume}><span aria-hidden="true">🎭</span>Cambiar</button>
+        )}
+        {onCostume && (
+          <button type="button" className="sc-act" aria-label="Deshacer el último cambio" onClick={() => session.undo()}><span aria-hidden="true">↶</span>Deshacer</button>
         )}
         {selected && onCostume && session.isCast(selected.id) && (
-          <button type="button" className="sc-costume" onClick={() => session.resetCode(selected.id)}>↺ Reiniciar código</button>
+          <button type="button" className="sc-act" aria-label="Reiniciar código" onClick={() => session.resetCode(selected.id)}><span aria-hidden="true">↺</span>Reiniciar</button>
         )}
-        {selected && (
+        {selected && !onCostume && (
           <label className="mc-name-row">
             <span>Nombre</span>
             <input maxLength={16} autoComplete="off" value={selected.name} onChange={(e) => session.renameSprite(selected.id, e.target.value)} />

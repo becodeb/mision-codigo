@@ -68,7 +68,6 @@ interface CardSpec extends Omit<StepCard, 'kind'> {
   id: string;
   kind?: StepCard['kind'];
   title: string;
-  text: string;
   demo?: GameStep['demoScript'];
   example?: GameStep['example'];
   point?: string;
@@ -77,9 +76,9 @@ interface CardSpec extends Omit<StepCard, 'kind'> {
 }
 
 export function card(c: CardSpec): GameStep {
-  const { id, title, text, demo, example, point, instant, kind = 'code', ...rest } = c;
+  const { id, title, demo, example, point, instant, kind = 'code', ...rest } = c;
   return {
-    id, title, text, hints: [], example, point,
+    id, title, text: c.how.map((h) => h.t).join(' '), hints: [], example, point,
     demoScript: demo,
     demoSprite: c.newSprite ? undefined : c.sprite,
     card: { ...rest, kind },
@@ -95,33 +94,34 @@ interface LookOptions {
   sayBlock: BlockType;
   newPlace: string;
   newArt: string;
+  /** The sound plays when this sprite is tapped; otherwise the child plays to hear it. */
+  soundTap?: string;
 }
 
 /** Las cuatro tarjetas de apariencia, iguales en todos los juegos. */
 export function lookCards(base: P, o: LookOptions): GameStep[] {
-  const sayHow = o.picture ? 'Tocá el **globito** y elegí otra frase.' : 'Tocá el texto del bloque «decir» y **escribí lo que quieras**.';
   const soundBlock: BlockType = o.picture ? 'f_sound' : 'a_sound';
   return [
     card({
-      id: 'fondo', icon: '🖼️', label: 'Cambiar el fondo', kind: 'look', instant: true, point: 'backdrops',
-      title: 'Cambiá el fondo', text: '¿Dónde pasa tu juego? Elegí otro lugar.',
-      how: ['Tocá el botón **Fondo**, abajo del escenario.', 'Elegí el lugar que más te guste.'],
+      id: 'fondo', icon: '🖼️', label: 'Fondo', kind: 'look', instant: true, point: 'backdrops',
+      title: 'Cambiá el fondo',
+      how: [{ t: 'Tocá **🖼️ Fondo**', on: 'point' }, { t: 'Elegí otro', on: 'modal' }],
       concept: 'Diseño: elegir dónde pasa el juego.', ask: '¿Por qué elegiste ese lugar?',
       built: (p) => p.backdrop !== base.backdrop,
       solve: (p) => { p.backdrop = o.newPlace; },
     }),
     card({
-      id: 'personaje', icon: '🎭', label: 'Cambiar personaje', kind: 'look', instant: true, point: 'costume', sprite: o.hero,
-      title: 'Cambiá un personaje', text: 'Cambiá a alguien por otro. **Sus bloques se quedan**, así que sigue haciendo lo mismo.',
-      how: ['Elegí un personaje, arriba de los bloques.', 'Tocá **Cambiar dibujo**.', 'Elegí otro.'],
+      id: 'personaje', icon: '🎭', label: 'Personaje', kind: 'look', instant: true, point: 'costume', sprite: o.hero,
+      title: 'Cambiá un personaje',
+      how: [{ t: 'Tocá **🎭 Cambiar**', on: 'point' }, { t: 'Elegí otro', on: 'modal' }],
       concept: 'El programa y el dibujo son cosas distintas: cambia uno y el otro sigue funcionando.', ask: '¿Por qué sigue haciendo lo mismo si cambió el dibujo?',
       built: (p) => base.sprites.some((s) => p.sprites.some((x) => x.id === s.id && x.art !== s.art)),
       solve: (p) => { spriteOf(p, o.hero).art = o.newArt; },
     }),
     card({
-      id: 'frase', icon: '💬', label: 'Cambiar lo que dice', kind: 'look', sprite: o.talker,
-      title: 'Que diga lo que vos quieras', text: `Cambiá lo que dice {${o.talker}}, o hacé que hable alguien más.`,
-      how: [`Buscá el bloque de hablar de {${o.talker}}.`, sayHow, 'Probalo con **Empezar**.'],
+      id: 'frase', icon: '💬', label: 'Qué dice', kind: 'look', sprite: o.talker,
+      title: 'Que diga lo que vos quieras',
+      how: [{ t: o.picture ? 'Cambiá [f_say]' : 'Cambiá [a_sayfor]', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
       block: { type: o.sayBlock, caption: o.picture ? 'Tocá el globito y elegí otra frase.' : 'Tocá el texto y escribí otra cosa.' },
       concept: 'Datos: lo que el programa dice se puede cambiar.', ask: '¿En qué bloque cambiaste lo que dice?',
       built: (p) => differs(says(p), says(base)),
@@ -132,9 +132,9 @@ export function lookCards(base: P, o: LookOptions): GameStep[] {
       },
     }),
     card({
-      id: 'sonido', icon: '🔊', label: 'Cambiar un sonido', kind: 'look', sprite: o.sounder,
-      title: 'Cambiá un sonido', text: 'Elegí otro sonido, o agregá uno nuevo donde quieras.',
-      how: [`Buscá el bloque de sonido de {${o.sounder}}.`, 'Tocá el nombre del sonido y **elegí otro**.', 'Jugá para escucharlo.'],
+      id: 'sonido', icon: '🔊', label: 'Sonido', kind: 'look', sprite: o.sounder,
+      title: 'Cambiá un sonido',
+      how: [{ t: o.picture ? 'Cambiá [f_sound]' : 'Cambiá [a_sound]', on: 'change' }, { t: o.soundTap ? `Tocá a {${o.soundTap}}` : 'Probá **▶**', on: 'try' }], tap: o.soundTap,
       block: { type: soundBlock, caption: 'Tocá el sonido y elegí otro.' },
       concept: 'Datos: cada sonido suena cuando el programa llega a ese bloque.', ask: '¿Cuándo suena ese sonido?',
       built: (p) => differs(sounds(p), sounds(base)),
