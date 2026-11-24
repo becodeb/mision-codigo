@@ -59,12 +59,25 @@ export function starterCode(tier: 'picture' | 'text'): WorkspaceState {
   return { blocks: { languageVersion: 0, blocks: [{ type: tier === 'picture' ? 'f_flag' : 'a_flag', x: 30, y: 36 }] } };
 }
 
+/**
+ * The showcase games come with several scripts per sprite. Side by side, a child sees them in a small editor. Picture
+ * blocks are tall and narrow, so each script gets its own column; text blocks are wide, so there are two columns.
+ */
+function sideBySide(scripts: readonly Script[], picture: boolean): WorkspaceState {
+  if (picture) return { blocks: { languageVersion: 0, blocks: scripts.flatMap((sc, i) => irToBlockly([sc], { x: 30 + i * 250, y: 36 }).blocks?.blocks ?? []) } };
+  if (scripts.length < 3) return irToBlockly(scripts);
+  const half = Math.ceil(scripts.length / 2);
+  const left = irToBlockly(scripts.slice(0, half));
+  const right = irToBlockly(scripts.slice(half), { x: 390, y: 36 });
+  return { blocks: { languageVersion: 0, blocks: [...(left.blocks?.blocks ?? []), ...(right.blocks?.blocks ?? [])] } };
+}
+
 /** A fresh project: the game's setup, with its scripts turned into Blockly state. */
 export function newDoc(game: GameDefinition | null): ProjectDoc {
   const setup = game?.setup;
   const sprites: SpriteDoc[] = (setup?.sprites ?? []).map((sp) => ({
     id: sp.id, art: sp.art, name: sp.name, x: sp.x, y: sp.y, size: sp.size ?? 100, dir: sp.dir ?? 90, flip: sp.flip ?? 1, visible: sp.visible ?? true,
-    code: sp.scripts.length ? irToBlockly(sp.scripts) : null,
+    code: sp.scripts.length ? (game?.showcase ? sideBySide(sp.scripts, game.level <= 2) : irToBlockly(sp.scripts)) : null,
   }));
   return {
     version: DOC_VERSION,
@@ -73,7 +86,7 @@ export function newDoc(game: GameDefinition | null): ProjectDoc {
     sprites,
     variables: [...(setup?.variables ?? [])],
     lists: [...(setup?.lists ?? [])],
-    selected: sprites[0]?.id ?? null,
+    selected: (game?.showcase ? sprites.find((s) => s.art === game.cover) : undefined)?.id ?? sprites[0]?.id ?? null,
     ui: defaultUi(),
   };
 }

@@ -107,17 +107,18 @@ function setCaption(layer: HTMLElement, text: string): void {
 }
 
 /** Bounces the hand over an element and flashes it. */
-export async function pointAt(deps: DemoDeps, selector: string, caption = ''): Promise<void> {
+export async function pointAt(deps: DemoDeps, target: string | Element, caption = ''): Promise<void> {
   const token = ++running;
   clearLayer(deps.root);
   putViewBack();
-  const el = resolvePoint(deps.root, selector);
+  const el = typeof target === 'string' ? resolvePoint(deps.root, target) : target;
   if (!el) return;
-  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  /* Scrolling a block into view would scroll the page around the editor, which scrolls itself. */
+  if (el instanceof HTMLElement) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   await sleep(250);
   if (token !== running) return;
   el.classList.remove('mc-attn');
-  void el.offsetWidth;
+  void el.getBoundingClientRect();
   el.classList.add('mc-attn');
   window.setTimeout(() => el.classList.remove('mc-attn'), 3200);
   const layer = overlay(deps.root);
@@ -130,7 +131,7 @@ export async function pointAt(deps: DemoDeps, selector: string, caption = ''): P
   setCaption(layer, caption);
   if (caption) deps.say(caption);
   const hand = layer.querySelector<HTMLElement>('.hand')!;
-  await tween(1800, (t) => { hand.style.transform = `translate(${x - 22}px, ${(y - 6 + Math.abs(Math.sin(t * Math.PI * 3)) * 18).toFixed(1)}px)`; }, () => token === running);
+  await tween(caption ? 3200 : 1800, (t) => { hand.style.transform = `translate(${x - 22}px, ${(y - 6 + Math.abs(Math.sin(t * Math.PI * 3)) * 18).toFixed(1)}px)`; }, () => token === running);
   if (token === running && layer.classList.contains('passive')) clearLayer(deps.root);
 }
 

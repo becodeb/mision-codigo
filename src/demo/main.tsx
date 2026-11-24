@@ -15,6 +15,8 @@ import '../workshop/workshop.css';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gameById } from '../games/catalog.ts';
+import { showcaseFor } from '../games/showcase/index.ts';
+import { SHOWCASE_ON } from '../shared/showcase.ts';
 import type { GameProgress, ProjectSummary } from '../shared/api.ts';
 import { LEVELS, isLevelId, type LevelId } from '../shared/levels.ts';
 import { Studio } from '../studio/Studio.tsx';
@@ -98,8 +100,9 @@ function App() {
     return () => window.removeEventListener('hashchange', on);
   }, []);
 
-  const { level, gameId } = route;
+  const { level } = route;
   if (level === null) return <Teams />;
+  const gameId = route.gameId ?? (SHOWCASE_ON ? showcaseFor(level).id : null);
 
   if (gameId) {
     const game = gameId === FREE_GAME_ID ? null : (gameById(gameId) ?? null);
@@ -111,7 +114,7 @@ function App() {
         level={level}
         initial={load(level, gameId)}
         onSave={(project, progress) => store(level, gameId, { project, progress, updatedAt: new Date().toISOString() })}
-        onExit={() => go(level)}
+        onExit={() => go(SHOWCASE_ON ? null : level)}
         next={next ? { title: next.title, open: () => go(level, next.id) } : null}
       />
     );

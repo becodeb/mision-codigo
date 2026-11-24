@@ -6,9 +6,13 @@ import { LEVEL_4 } from './level4/index.ts';
 import { LEVEL_5 } from './level5/index.ts';
 import { MISIONES } from './misiones.ts';
 import { MUESTRA } from './muestra.ts';
+import { SHOWCASE } from './showcase/index.ts';
 import type { GameDefinition } from './types.ts';
 
 export const GAMES: GameDefinition[] = [...LEVEL_1, ...LEVEL_2, ...LEVEL_3, ...LEVEL_4, ...LEVEL_5, ...MISIONES, ...MUESTRA];
+
+/** Every game there is, the showcase ones included. `GAMES` is what the mission list offers. */
+export const ALL_GAMES: GameDefinition[] = [...GAMES, ...SHOWCASE];
 
 /** The minimum guide length per level, from the design's class length rules. */
 export const MIN_STEPS: Record<LevelId, number> = { 1: 8, 2: 10, 3: 10, 4: 12, 5: 12 };
@@ -18,7 +22,7 @@ export const EASY_MIN_STEPS = 4;
 export const EASY_MIN_PHASES = 1;
 
 export function gameById(id: string): GameDefinition | undefined {
-  return GAMES.find((g) => g.id === id);
+  return ALL_GAMES.find((g) => g.id === id);
 }
 
 /** Games offered to a level in a class, easier first. */

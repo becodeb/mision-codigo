@@ -30,6 +30,12 @@ export const KNOWN_GAME_IDS: ReadonlySet<string> = new Set([
   'rebote',
   'defensa',
   'memoria',
+  // Juegos de la muestra (games/showcase).
+  'muestra-estrella',
+  'muestra-boo',
+  'muestra-nova',
+  'muestra-manzanas',
+  'muestra-chispa',
   // Versiones fáciles de la Clase 2 (games/muestra.ts).
   'mi-mascota-facil',
   'banda-parque-facil',

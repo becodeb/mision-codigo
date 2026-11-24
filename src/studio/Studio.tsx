@@ -6,6 +6,7 @@ import type { StudioProps } from './contract.ts';
 import { StudioErrorBoundary } from './ErrorBoundary.tsx';
 import { Guide } from './Guide.tsx';
 import { Modal } from './Modal.tsx';
+import { CardWall, RecapDialog, HealthBar, Intro, RemoveDialog, RepairDialog, signedTitle } from './Showcase.tsx';
 import { StudioSession } from './session.ts';
 import { lockPageGestures } from './touch.ts';
 import './studio.css';
@@ -33,17 +34,33 @@ export function Studio(props: StudioProps) {
   );
 }
 
-type Dialog = null | 'sprites' | 'variable' | 'list' | 'finish';
+type Dialog = null | 'sprites' | 'variable' | 'list' | 'finish' | 'costume' | 'places' | 'repair' | 'recap' | { remove: string };
 
-function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps) {
+function StudioView({ game, level, initial, onSave, onExit, next, author }: StudioProps) {
+  const showcase = game?.showcase ?? null;
   const session = useMemo(() => new StudioSession({ game, level, initial, onSave }), []); // eslint-disable-line react-hooks/exhaustive-deps
   const snap = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const root = useRef<HTMLDivElement>(null);
   const stageSvg = useRef<SVGSVGElement>(null);
   const editorHost = useRef<HTMLDivElement>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
-  const [show, setShow] = useState(false);
-  const touch = useMemo(isTouchDevice, []);
+  /* A showcase game opens ready to play, on the whole screen. */
+  const [show, setShow] = useState(!!showcase);
+  const [intro, setIntro] = useState(!!showcase);
+  const [nudge, setNudge] = useState(false);
+  /* A laptop with a touch screen has real arrows: the ones on screen come out when a finger plays, and go when a key is used. */
+  const [touch, setTouch] = useState(() => isTouchDevice() && (!showcase || !window.matchMedia?.('(any-pointer: fine)').matches));
+  useEffect(() => {
+    if (!showcase) return;
+    const finger = (e: PointerEvent): void => { if (e.pointerType === 'touch' && (e.target as Element).closest?.('.mc-stage-slot, .sc-play')) setTouch(true); };
+    const key = (e: KeyboardEvent): void => { if (e.key.startsWith('Arrow')) setTouch(false); };
+    window.addEventListener('pointerdown', finger, true);
+    window.addEventListener('keydown', key, true);
+    return () => {
+      window.removeEventListener('pointerdown', finger, true);
+      window.removeEventListener('keydown', key, true);
+    };
+  }, [showcase]);
 
   useEffect(() => {
     session.onCreateRequest = (kind) => setDialog(kind);
@@ -54,32 +71,47 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
   /* While the studio is open, fingers move blocks and sprites, never the page (no zoom, no rubber band). */
   useEffect(() => lockPageGestures(root.current!), []);
 
+  /* After playing a little, the way in is easy to find. */
+  useEffect(() => {
+    if (!showcase || intro || !show) return;
+    const timer = setTimeout(() => setNudge(true), 15_000);
+    return () => clearTimeout(timer);
+  }, [showcase, intro, show]);
+
   /* Escape closes show mode. */
   useEffect(() => {
-    if (!show) return;
+    if (!show || intro) return;
     const key = (e: KeyboardEvent): void => { if (e.key === 'Escape') closeShow(); };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   });
 
+  /* A small laptop loses a quarter of its screen to the browser's bars: the game takes it back while it is open. */
+  const leave = (): void => {
+    if (showcase && document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    onExit();
+  };
   const openShow = (): void => {
     setShow(true);
+    session.fullScreen = !!showcase;
     session.setShown(true);
     setTimeout(() => session.flag(), 300);
   };
   const closeShow = (): void => {
     setShow(false);
+    session.fullScreen = false;
     session.stop();
   };
 
   const doc = session.doc;
   const selected = session.selectedSprite;
-  const title = game ? game.title : 'Proyecto libre';
+  const mine = !!showcase && session.tracker.completedCount > 0;
+  const title = game ? (showcase ? signedTitle(game.title, author, mine) : game.title) : 'Proyecto libre';
   const picture = session.tier === 'picture';
 
   return (
-    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${snap.running ? ' running' : ''}`} data-level={level}>
-      <header className="mc-topbar">
+    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${snap.running ? ' running' : ''}`} data-level={level}>
+      {!showcase && <header className="mc-topbar">
         <button type="button" className="mc-ibtn" aria-label="Volver al inicio" data-point="exit" onClick={onExit}>
           <Icon html={ICON.home} />
         </button>
@@ -97,9 +129,9 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
         >
           <Icon html={doc.ui.sound ? ICON.sound : ICON.mute} />
         </button>
-      </header>
+      </header>}
 
-      {game ? <Guide session={session} snap={snap} next={next} onFinish={() => { session.markDone(); setDialog('finish'); }} /> : <FreePrompt />}
+      {showcase ? <CardWall session={session} snap={snap} title={title} onExit={leave} onRecap={() => setDialog('recap')} /> : game ? <Guide session={session} snap={snap} next={next} onFinish={() => { session.markDone(); setDialog('finish'); }} /> : <FreePrompt />}
 
       <div className="mc-main">
         <div className="mc-code" data-point="workspace">
@@ -128,7 +160,13 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
               </div>
             </div>
           )}
-          <SpritePanel session={session} onAdd={() => setDialog('sprites')} snapRev={snap.rev} />
+          <SpritePanel
+            session={session}
+            onAdd={() => setDialog('sprites')}
+            onCostume={showcase ? () => setDialog('costume') : null}
+            onRemoveCast={(id) => setDialog({ remove: id })}
+            snapRev={snap.rev}
+          />
         </div>
 
         <aside className="mc-side">
@@ -151,6 +189,7 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
             snap={snap}
             session={session}
             touch={touch}
+            onInside={showcase && show ? closeShow : null}
             showBar={
               show ? (
                 <div className="mc-show-bar">
@@ -162,9 +201,18 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
                   <button type="button" className="mc-stop" aria-label="Parar todo" onClick={() => session.stop()}>
                     <Icon html={ICON.stop} />
                   </button>
-                  <button type="button" className="mc-ibtn" aria-label="Cerrar pantalla grande" onClick={closeShow}>
-                    <Icon html={ICON.close} />
-                  </button>
+                  {showcase ? (
+                    <>
+                      {mine && <button type="button" className="sc-recapbtn" onClick={() => setDialog('recap')}>📋 Cómo lo programé</button>}
+                      <button type="button" className={`sc-inside${nudge || snap.ended ? ' nudge' : ''}`} onClick={closeShow}>
+                        <Icon html={ICON.code} /> Ver por dentro
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className="mc-ibtn" aria-label="Cerrar pantalla grande" onClick={closeShow}>
+                      <Icon html={ICON.close} />
+                    </button>
+                  )}
                 </div>
               ) : null
             }
@@ -173,27 +221,38 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
             <Coords session={session} id={selected.id} name={selected.name} x={selected.x} y={selected.y} />
           )}
 
-          <div className="mc-panel mc-places" data-point="backdrops">
-            <div className="mc-panel-head"><h4>Lugar</h4></div>
-            <div className="mc-bd-strip">
-              {Object.entries(BACKDROPS).map(([id, def]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`mc-bd${doc.backdrop === id ? ' sel' : ''}`}
-                  aria-label={`Lugar: ${def.name}`}
-                  aria-pressed={doc.backdrop === id}
-                  onClick={() => session.setBackdrop(id)}
-                >
-                  <svg viewBox="0 0 480 360" aria-hidden="true" dangerouslySetInnerHTML={{ __html: def.svg(`t${id}-`) }} />
-                  <span>{def.name}</span>
-                </button>
-              ))}
+          {showcase ? (
+            <div className="sc-tools">
+              <button type="button" className="sc-tool" data-point="backdrops" onClick={() => setDialog('places')}>🖼️ Fondo</button>
+              <button type="button" className="sc-tool" data-point="repair" onClick={() => setDialog('repair')}>🛟 Arreglar mi juego</button>
             </div>
-          </div>
+          ) : (
+            <div className="mc-panel mc-places" data-point="backdrops">
+              <div className="mc-panel-head"><h4>Lugar</h4></div>
+              <PlaceStrip current={doc.backdrop} onPick={(id) => session.setBackdrop(id)} />
+            </div>
+          )}
 
         </aside>
       </div>
+
+      {showcase && !intro && <HealthBar session={session} snap={snap} />}
+
+      {intro && game && (
+        <Intro
+          game={game}
+          author={author}
+          mine={mine}
+          onPlay={() => {
+            setIntro(false);
+            session.setShown(true);
+            session.fullScreen = true;
+            if (window.innerHeight < 760) void document.documentElement.requestFullscreen?.().catch(() => undefined);
+            session.flag();
+          }}
+          onExit={leave}
+        />
+      )}
 
       {snap.notice && (
         <div className="mc-notice" role="status">
@@ -202,6 +261,24 @@ function StudioView({ game, level, initial, onSave, onExit, next }: StudioProps)
         </div>
       )}
 
+      {dialog === 'costume' && selected && (
+        <Modal title={`¿En quién se convierte ${selected.name}?`} className="mc-wide" onClose={() => setDialog(null)}>
+          <p className="mc-lead">Cambia el dibujo. Sus bloques se quedan.</p>
+          <SpritePicker session={session} all onPick={(art) => { session.changeArt(selected.id, art); setDialog(null); }} />
+          <div className="mc-modal-actions"><button type="button" className="mc-mbtn" onClick={() => setDialog(null)}>Cancelar</button></div>
+        </Modal>
+      )}
+      {dialog === 'places' && (
+        <Modal title="Elegí el fondo" className="mc-wide" onClose={() => setDialog(null)}>
+          <PlaceStrip current={doc.backdrop} onPick={(id) => { session.setBackdrop(id); setDialog(null); }} />
+          <div className="mc-modal-actions"><button type="button" className="mc-mbtn" onClick={() => setDialog(null)}>Cancelar</button></div>
+        </Modal>
+      )}
+      {dialog === 'repair' && <RepairDialog session={session} onClose={() => setDialog(null)} />}
+      {dialog === 'recap' && <RecapDialog session={session} author={author} onClose={() => setDialog(null)} />}
+      {dialog !== null && typeof dialog === 'object' && (
+        <RemoveDialog session={session} id={dialog.remove} onSwap={() => { session.selectSprite(dialog.remove); setDialog('costume'); }} onClose={() => setDialog(null)} />
+      )}
       {dialog === 'sprites' && (
         <Modal title="Elegí un personaje" className="mc-wide" onClose={() => setDialog(null)}>
           <p className="mc-lead">Después lo podés arrastrar en el escenario para ubicarlo.</p>
@@ -244,6 +321,27 @@ function Coords({ session, id, name, x, y }: { session: StudioSession; id: strin
   return <span className="mc-coords">{name} · x: {at.x} · y: {at.y}</span>;
 }
 
+/** Every place, as small pictures. */
+function PlaceStrip({ current, onPick }: { current: string; onPick: (id: string) => void }) {
+  return (
+    <div className="mc-bd-strip">
+      {Object.entries(BACKDROPS).map(([id, def]) => (
+        <button
+          key={id}
+          type="button"
+          className={`mc-bd${current === id ? ' sel' : ''}`}
+          aria-label={`Lugar: ${def.name}`}
+          aria-pressed={current === id}
+          onClick={() => onPick(id)}
+        >
+          <svg viewBox="0 0 480 360" aria-hidden="true" dangerouslySetInnerHTML={{ __html: def.svg(`t${id}-`) }} />
+          <span>{def.name}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function FreePrompt() {
   return (
     <section className="mc-guide mc-free" data-point="guide">
@@ -262,6 +360,8 @@ function StageBox(props: {
   session: StudioSession;
   touch: boolean;
   showBar: ReactNode;
+  /** Showcase games, on the whole screen: the way into the code from the end of the game. */
+  onInside: (() => void) | null;
 }) {
   const { snap, session, touch } = props;
   const [answer, setAnswer] = useState('');
@@ -276,6 +376,7 @@ function StageBox(props: {
             <h3>{snap.ended === 'win' ? '¡Ganaste!' : 'Perdiste'}</h3>
             <p>{snap.ended === 'win' ? 'Lo lograste. ¿Querés jugar otra vez?' : 'No pasa nada. Probá de nuevo.'}</p>
             <button type="button" className="mc-mbtn primary" onClick={() => session.flag()}>Jugar de nuevo</button>
+            {props.onInside && <button type="button" className="mc-mbtn" onClick={props.onInside}>Ver por dentro</button>}
           </div>
         )}
         {snap.ask && (
@@ -318,7 +419,17 @@ function TouchPad({ session }: { session: StudioSession }) {
   );
 }
 
-function SpritePanel({ session, onAdd }: { session: StudioSession; onAdd: () => void; snapRev: number }) {
+interface SpritePanelProps {
+  session: StudioSession;
+  onAdd: () => void;
+  /** Showcase games: change the drawing of the selected sprite. */
+  onCostume: (() => void) | null;
+  /** Showcase games: a sprite the game needs is about to be removed. */
+  onRemoveCast: (id: string) => void;
+  snapRev: number;
+}
+
+function SpritePanel({ session, onAdd, onCostume, onRemoveCast }: SpritePanelProps) {
   const doc = session.doc;
   const [armed, setArmed] = useState<string | null>(null);
   useEffect(() => {
@@ -331,9 +442,15 @@ function SpritePanel({ session, onAdd }: { session: StudioSession; onAdd: () => 
     <div className="mc-panel mc-tray" data-point="sprites">
       <div className="mc-panel-head">
         <h4>Personajes</h4>
+        {selected && onCostume && (
+          <button type="button" className="sc-costume" data-point="costume" onClick={onCostume}>🎭 Cambiar dibujo</button>
+        )}
+        {selected && onCostume && session.isCast(selected.id) && (
+          <button type="button" className="sc-costume" onClick={() => session.resetCode(selected.id)}>↺ Reiniciar código</button>
+        )}
         {selected && (
           <label className="mc-name-row">
-            Nombre
+            <span>Nombre</span>
             <input maxLength={16} autoComplete="off" value={selected.name} onChange={(e) => session.renameSprite(selected.id, e.target.value)} />
           </label>
         )}
@@ -358,6 +475,7 @@ function SpritePanel({ session, onAdd }: { session: StudioSession; onAdd: () => 
               aria-label={`Quitar a ${s.name}`}
               onClick={(e) => {
                 e.stopPropagation();
+                if (session.isCast(s.id)) return onRemoveCast(s.id);
                 if (armed === s.id) { setArmed(null); session.removeSprite(s.id); } else setArmed(s.id);
               }}
             >
@@ -374,10 +492,10 @@ function SpritePanel({ session, onAdd }: { session: StudioSession; onAdd: () => 
   );
 }
 
-function SpritePicker({ session, onPick }: { session: StudioSession; onPick: (art: string) => void }) {
+function SpritePicker({ session, onPick, all = false }: { session: StudioSession; onPick: (art: string) => void; all?: boolean }) {
   const ids = Object.keys(ART) as ArtId[];
   const characters = ids.filter((id) => ART[id].kind === 'character');
-  const objects = session.offersObjects ? ids.filter((id) => ART[id].kind === 'object') : [];
+  const objects = all || session.offersObjects ? ids.filter((id) => ART[id].kind === 'object') : [];
   const group = (title: string | null, list: ArtId[]) => (
     <>
       {title && <h4 className="mc-pick-title">{title}</h4>}

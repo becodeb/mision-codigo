@@ -27,6 +27,9 @@ const narrow = (): boolean => typeof window !== 'undefined' && window.innerWidth
 /** Laptop screens: smaller picture blocks so more of the toolbox shows without scrolling. */
 const short = (): boolean => typeof window !== 'undefined' && window.innerHeight < 820;
 
+/** Small laptops (12 inches): both sides are tight. */
+const small = (): boolean => typeof window !== 'undefined' && window.innerWidth < 1300 && window.innerHeight < 820;
+
 /**
  * Something is being pressed or dragged in a Blockly workspace. While a finger drags a block nothing may move the
  * workspace under it: the guide reacting to a change, or a resize, would shift the editor on screen and the block
@@ -76,7 +79,7 @@ export class BlockEditor {
       comments: false,
       collapse: false,
       disable: false,
-      zoom: ZOOM(picture ? (narrow() ? 0.85 : short() ? 0.8 : 1) : narrow() ? 0.7 : 0.8),
+      zoom: ZOOM(picture ? (narrow() ? 0.85 : short() ? (small() ? 0.75 : 0.8) : 1) : narrow() || small() ? 0.7 : 0.8),
       move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: true },
       grid: { spacing: 32, length: 3, colour: picture ? '#EFE6D3' : '#E4DDF0', snap: false },
     } as Blockly.BlocklyOptions);
@@ -321,6 +324,16 @@ export class BlockEditor {
   /** Blocks lying in the workspace that hang from no event, for the hand to put where they belong. */
   looseStacks(): Block[][] {
     return looseStacks(this.save());
+  }
+
+  /** The part of a block a child taps to change it: its number, its menu or its text. */
+  editableOf(block: Blockly.BlockSvg): Element {
+    for (const name of ['N', 'P', 'S', 'T']) {
+      const root = block.getField(name)?.getSvgRoot();
+      if (root) return root;
+    }
+    const socket = block.getChildren(true).find((c) => c.isShadow());
+    return socket?.getSvgRoot() ?? block.getSvgRoot();
   }
 
   blockById(id: string | undefined): Blockly.BlockSvg | null {

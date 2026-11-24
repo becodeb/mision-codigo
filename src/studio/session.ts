@@ -16,6 +16,7 @@ import type { GameProgress } from '../shared/api.ts';
 import type { LevelId } from '../shared/levels.ts';
 import { plain } from './rich.tsx';
 import { ActiveClock, GuideTracker, hintRungs, type FlatStep } from './guide.ts';
+import { flattenScripts, irToBlockly } from '../language/convert.ts';
 import { addSpriteDoc, newDoc, parseDoc, programOf, scriptsOf, usesKeys, type ProjectDoc, type SpriteDoc } from './doc.ts';
 import { cancelDemo, pointAt, runDemo } from './demo.ts';
 import { planDemo, type DemoPlan, type SpriteView } from './demoPlan.ts';
@@ -52,6 +53,22 @@ export interface SessionSnapshot {
    * soon as the program does what that step asks again, in any way, or when the child taps «Seguir igual».
    */
   broken: { index: number; title: string } | null;
+  /** Showcase games: the card whose tutorial is open; `null` shows the wall of cards. */
+  card: string | null;
+  /** The open card is built, and only trying it is missing. */
+  almost: boolean;
+  /**
+   * Showcase games: an event block the game runs on was left empty, so nothing happens. Said after pressing
+   * «Empezar», and only then: a child who took something out or changed the logic on purpose is told nothing.
+   */
+  health: HealthIssue[];
+  /** Something just removed or reset that can still be undone. */
+  undo: string | null;
+}
+
+export interface HealthIssue {
+  id: string;
+  text: string;
 }
 
 const realTime: TimeSource = {
@@ -114,6 +131,17 @@ export class StudioSession {
   private mounted = false;
   private lastSecondsSaved = 0;
   private onFinishedOnce = false;
+
+  /* Showcase games. */
+  private cardId: string | null = null;
+  /** The program as it is now was run after its last change. */
+  private tried = false;
+  private healthAsked = false;
+  private healthDismissed = new Set<string>();
+  /** Last state of each removed sprite, so bringing it back brings the child's blocks too. */
+  private trash = new Map<string, SpriteDoc>();
+  private undoable: { label: string; run: () => void } | null = null;
+  private undoTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly opts: SessionOptions;
 
@@ -194,6 +222,10 @@ export class StudioSession {
       needsKeys: this.machine ? usesKeys(this.program) : false,
       finished: this.tracker.finished,
       broken: this.broken,
+      card: this.cardId,
+      almost: !!this.cardStep?.card?.built(this.program) && !this.tried && !this.tracker.isDone(this.cardId!),
+      health: this.healthAsked ? this.deadIssues().filter((h) => !this.healthDismissed.has(h.id)) : [],
+      undo: this.undoable?.label ?? null,
     };
   }
 
@@ -300,6 +332,7 @@ export class StudioSession {
     this.offs = [];
     if (this.celebrateTimer) clearTimeout(this.celebrateTimer);
     if (this.noticeTimer) clearTimeout(this.noticeTimer);
+    if (this.undoTimer) clearTimeout(this.undoTimer);
     if (this.root) cancelDemo(this.root);
     this.ask?.resolve('');
     this.ask = null;
@@ -354,7 +387,8 @@ export class StudioSession {
         this.emit();
       }),
       highlight: guard((spriteId: string, blockId: string, on: boolean) => {
-        if (spriteId === this.doc.selected) this.editor?.highlight(blockId, on);
+        /* On the whole screen nobody sees the blocks: lighting them up only costs time on a slow laptop. */
+        if (spriteId === this.doc.selected && !this.fullScreen) this.editor?.highlight(blockId, on);
       }),
     };
   }
@@ -385,6 +419,8 @@ export class StudioSession {
     m.program = this.program;
     this.pendingProgram = false;
     m.greenFlag();
+    this.tried = true;
+    this.askHealth();
     this.ended = null;
     this.needsCheck = true;
     this.emit();
@@ -430,6 +466,9 @@ export class StudioSession {
     this.emit();
   }
 
+  /** The stage covers the whole screen. */
+  fullScreen = false;
+
   setShown(shown: boolean): void {
     this.machine?.setShown(shown);
     if (shown) this.needsCheck = true;
@@ -438,6 +477,9 @@ export class StudioSession {
   /** The program changed (code, sprites, backdrop, variables). A quiet machine restarts from the new start; a busy one waits for the next flag. */
   private applyProgram(): void {
     this.program = programOf(this.doc);
+    this.tried = false;
+    /* What broke is said when the child plays, not while they build. */
+    this.healthAsked = false;
     const m = this.machine;
     if (!m) return;
     if (m.threadCount === 0) {
@@ -468,6 +510,7 @@ export class StudioSession {
       return;
     }
     m.keyDown(e.key, e.repeat);
+    this.noteTried();
   }
 
   /** Touch buttons feed the same key events. */
@@ -478,7 +521,10 @@ export class StudioSession {
       this.clock.input();
       unlockAudio();
       if (ARROW_KEYS.includes(key)) this.holdKey(key);
-      else m.keyDown(key);
+      else {
+        m.keyDown(key);
+        this.noteTried();
+      }
     } else this.releaseKey(key);
   }
 
@@ -487,6 +533,7 @@ export class StudioSession {
     const m = this.machine;
     if (!m || this.repeaters.has(key)) return;
     m.keyDown(key);
+    this.noteTried();
     const entry: { delay: ReturnType<typeof setTimeout>; every: ReturnType<typeof setInterval> | null } = {
       delay: setTimeout(() => {
         entry.every = setInterval(() => this.machine?.keyDown(key, true), REPEAT_EVERY);
@@ -525,7 +572,7 @@ export class StudioSession {
     if (!m) return;
     this.editor?.flushPending();
     if (this.pendingProgram && m.threadCount === 0) this.applyProgram();
-    m.tap(id);
+    if (m.tap(id)) this.noteTried();
     this.needsCheck = true;
   }
 
@@ -631,6 +678,13 @@ export class StudioSession {
     this.editor?.flushPending();
     this.captureCode();
     this.machine?.stopAll();
+    const index = this.doc.sprites.findIndex((s) => s.id === id);
+    if (index < 0) return;
+    const gone = JSON.parse(JSON.stringify(this.doc.sprites[index])) as SpriteDoc;
+    if (this.showcase) {
+      this.trash.set(id, gone);
+      this.offerUndo(`Sacaste a ${gone.name}.`, () => this.putBack(gone, index));
+    }
     this.doc.sprites = this.doc.sprites.filter((s) => s.id !== id);
     if (this.doc.selected === id) this.doc.selected = this.doc.sprites[this.doc.sprites.length - 1]?.id ?? null;
     this.loadSelectedIntoEditor();
@@ -740,6 +794,10 @@ export class StudioSession {
 
   speakStepIfSpoken(): void {
     if (!this.spoken || this.celebrating) return;
+    if (this.showcase) {
+      if (this.cardStep) void this.say(plain(this.named(this.cardStep.text)));
+      return;
+    }
     const flat = this.viewedStep;
     if (flat) void this.say(plain(flat.step.text));
   }
@@ -764,6 +822,11 @@ export class StudioSession {
 
   /** Reads the step on screen. Available on every level. */
   listen(): void {
+    if (this.showcase) {
+      const step = this.cardStep;
+      if (step?.card) void this.say(plain(this.named([step.text, ...step.card.how].join(' '))), true);
+      return;
+    }
     const flat = this.viewedStep;
     if (flat) void this.say(plain(flat.step.text), true);
   }
@@ -823,7 +886,7 @@ export class StudioSession {
   }
 
   get stepContext(): StepContext | null {
-    return this.machine ? { stats: this.machine.stats, program: this.program, machine: this.machine, ui: { backdropChosen: this.doc.ui.backdropChosen } } : null;
+    return this.machine ? { stats: this.machine.stats, program: this.program, machine: this.machine, ui: { backdropChosen: this.doc.ui.backdropChosen, tried: this.tried } } : null;
   }
 
   private checkGuide(): void {
@@ -864,6 +927,7 @@ export class StudioSession {
 
   private stepsCompleted(fresh: FlatStep[]): void {
     this.captureCode();
+    if (this.showcase) return this.cardsCompleted(fresh);
     if (!this.tracker.broken(this.program, this.stepContext)) this.keepGood();
     const last = fresh[fresh.length - 1];
     const phaseDone = fresh.some((f) => this.tracker.phaseClosed(f.phaseIndex));
@@ -883,6 +947,324 @@ export class StudioSession {
       this.emit();
       this.speakStepIfSpoken();
     }, phaseDone ? 2400 : 1500);
+  }
+
+  /* ---------- showcase games: cards, safety net ---------- */
+
+  get showcase() {
+    return this.game?.showcase ?? null;
+  }
+
+  /** The step whose tutorial is open. */
+  get cardStep(): GameStep | null {
+    return this.cardId ? (this.tracker.steps.find((s) => s.step.id === this.cardId)?.step ?? null) : null;
+  }
+
+  /** Puts the current names of the sprites in a text: a child who turned Toby into Lumi reads «Lumi». */
+  named(text: string): string {
+    return text.replace(/\{(\w+)\}/g, (_, id: string) => (this.doc.sprites.find((s) => s.id === id) ?? this.game?.setup.sprites.find((s) => s.id === id))?.name ?? id);
+  }
+
+  openCard(id: string | null): void {
+    if (this.root) cancelDemo(this.root);
+    if (this.celebrateTimer) clearTimeout(this.celebrateTimer);
+    this.celebrating = null;
+    this.cardId = id;
+    const card = this.cardStep?.card;
+    const target = card?.newSprite ? this.newSpriteId() : card?.sprite;
+    if (target) this.selectSprite(target);
+    playSfx('pop');
+    hush();
+    this.emit();
+    this.speakStepIfSpoken();
+  }
+
+  /** A sprite the child added, the selected one first. */
+  private newSpriteId(): string | null {
+    const mine = this.doc.sprites.filter((s) => !this.game?.setup.sprites.some((b) => b.id === s.id));
+    return (mine.find((s) => s.id === this.doc.selected) ?? mine[mine.length - 1])?.id ?? null;
+  }
+
+  /** «Mostrame» of a card: the hand brings the next block, or points at the block or button to change. */
+  async demoCard(): Promise<void> {
+    const step = this.cardStep;
+    const card = step?.card;
+    if (!this.root || !step || !card) return;
+    this.editor?.flushPending();
+    const deps = this.depsForDemo();
+    if (card.sprite && !this.doc.sprites.some((s) => s.id === card.sprite)) {
+      this.notice = this.named(`Falta {${card.sprite}}. Tocá «Arreglar mi juego» para traerlo de vuelta.`);
+      this.emit();
+      return pointAt(deps, 'repair');
+    }
+    let target = card.sprite ?? null;
+    if (card.newSprite) {
+      target = this.newSpriteId();
+      if (!target) return pointAt(deps, 'add-sprite', 'Primero agregá a alguien con este botón.');
+    }
+    if (target) this.selectSprite(target);
+    if (card.block) {
+      const want = card.block;
+      const found = flattenScripts(this.editor?.scripts() ?? []).find((b) => b.type === want.type && (!want.where || want.where(b)))
+        ?? flattenScripts(this.editor?.scripts() ?? []).find((b) => b.type === want.type);
+      const block = this.editor?.blockById(found?.id);
+      if (block && this.editor) {
+        this.editor.reveal(block);
+        return pointAt(deps, this.editor.editableOf(block), want.caption);
+      }
+      this.editor?.openCategoryOf(want.type);
+      const fresh = this.editor?.flyoutBlock(want.type);
+      if (fresh && this.editor) this.editor.showInFlyout(fresh);
+      return pointAt(deps, fresh ? fresh.getSvgRoot() : 'toolbox', 'Ese bloque ya no está. Traé este y ponelo en tu programa.');
+    }
+    if (step.demoScript && target) {
+      const scripts = Array.isArray(step.demoScript) ? step.demoScript : [step.demoScript as Script];
+      try {
+        return await runDemo(deps, planDemo({ scripts, sprite: target }, this.demoSprites(), this.doc.selected));
+      } catch (e) {
+        console.warn('The hand could not plan this card', e);
+      }
+    }
+    if (step.point) return pointAt(deps, step.point);
+  }
+
+  private cardsCompleted(fresh: FlatStep[]): void {
+    const open = fresh.find((f) => f.step.id === this.cardId);
+    const shown = open ?? fresh[fresh.length - 1];
+    this.celebrating = { stepId: shown.step.id, phaseDone: this.tracker.finished };
+    playSfx('win');
+    confetti();
+    this.markChanged();
+    if (this.celebrateTimer) clearTimeout(this.celebrateTimer);
+    this.celebrateTimer = setTimeout(() => {
+      this.celebrating = null;
+      if (open && this.cardId === open.step.id) this.cardId = null;
+      this.emit();
+    }, 2200);
+  }
+
+  /** A key or a tap ran the program as it is now (a busy machine keeps the old one until the next flag). */
+  private noteTried(): void {
+    if (this.pendingProgram || this.tried || !this.machine?.threadCount) return;
+    this.tried = true;
+    this.needsCheck = true;
+  }
+
+  /** Changes a sprite's drawing and keeps its blocks, place and size. */
+  changeArt(id: string, art: string): void {
+    const sp = this.doc.sprites.find((s) => s.id === id);
+    const table = ART as Record<string, { name: string; sound: string } | undefined>;
+    if (!sp || !table[art] || sp.art === art) return;
+    this.editor?.flushPending();
+    this.captureCode();
+    this.machine?.stopAll();
+    /* A name the child wrote stays; the one that came with the drawing changes with it. */
+    const original = this.game?.setup.sprites.find((s) => s.id === id)?.name;
+    if (sp.name === table[sp.art]?.name || sp.name === original) {
+      const name = table[art]!.name;
+      sp.name = name;
+      for (let k = 2; this.doc.sprites.some((s) => s !== sp && s.name === sp.name); k++) sp.name = `${name} ${k}`;
+    }
+    sp.art = art;
+    this.loadSelectedIntoEditor();
+    this.applyProgram();
+    playSfx(table[art]!.sound);
+    this.markChanged();
+  }
+
+  /** Whether removing this sprite leaves the game without one of its own. */
+  isCast(id: string): boolean {
+    return !!this.showcase?.cast.includes(id);
+  }
+
+  /** Scripts of a sprite that stand for an original one: same event and, for a key, same key. */
+  private twins(spriteId: string, hat: Script['hat']): Script[] {
+    const sprite = this.program.sprites.find((s) => s.id === spriteId);
+    return (sprite?.scripts ?? []).filter((sc) => sc.hat.type === hat.type && (hat.type !== 'a_key' || sc.hat.fields.K === hat.fields.K));
+  }
+
+  /** Event blocks left with nothing under them, when that stops the game. Code that was changed or removed is not here. */
+  deadIssues(): HealthIssue[] {
+    const sc = this.showcase;
+    if (!sc) return [];
+    if (!this.program.sprites.some((s) => s.scripts.some((x) => x.body.length > 0))) {
+      return [{ id: 'nothing', text: 'Ningún bloque está conectado, así que no pasa nada' }];
+    }
+    const out: HealthIssue[] = [];
+    for (const p of sc.pillars) {
+      if (p.ok(this.program)) continue;
+      const same = this.twins(p.restore.sprite, p.restore.script.hat);
+      if (!same.length || same.some((x) => x.body.length > 0)) continue;
+      const what = /_flag$/.test(p.restore.script.hat.type) ? 'El bloque de empezar' : 'Un bloque de evento';
+      out.push({ id: `empty:${p.id}`, text: this.named(`${what} de {${p.restore.sprite}} quedó vacío`) });
+    }
+    for (const id of [...this.healthDismissed]) if (!out.some((h) => h.id === id)) this.healthDismissed.delete(id);
+    return out;
+  }
+
+  /** Puts the original blocks back under the event blocks that were left empty. Nothing else changes. */
+  refillEmpty(): void {
+    const sc = this.showcase;
+    if (!sc) return;
+    const issues = this.deadIssues();
+    if (issues.some((h) => h.id === 'nothing')) {
+      for (const id of sc.cast) this.resetCode(id, true);
+      return;
+    }
+    this.editor?.flushPending();
+    this.captureCode();
+    this.machine?.stopAll();
+    for (const p of sc.pillars) {
+      if (!issues.some((h) => h.id === `empty:${p.id}`)) continue;
+      const sp = this.doc.sprites.find((s) => s.id === p.restore.sprite);
+      const hat = p.restore.script.hat;
+      const top = sp?.code?.blocks?.blocks?.find((b) => b.type === hat.type && !b.next && (hat.type !== 'a_key' || b.fields?.K === hat.fields.K));
+      const chain = irToBlockly([p.restore.script]).blocks?.blocks?.[0]?.next;
+      if (!sp?.code || !top || !chain) continue;
+      sp.code = JSON.parse(JSON.stringify(sp.code)) as typeof sp.code;
+      const mine = sp.code.blocks!.blocks!.find((b) => b.id === top.id && b.type === top.type)!;
+      mine.next = chain;
+      this.doc.selected = sp.id;
+    }
+    this.loadSelectedIntoEditor();
+    this.applyProgram();
+    playSfx('magia');
+    this.markChanged();
+  }
+
+  /** «Reiniciar código» of one sprite: its blocks as the game came. It can be undone. */
+  resetCode(id: string, quiet = false): void {
+    const sp = this.doc.sprites.find((s) => s.id === id);
+    const original = newDoc(this.game).sprites.find((s) => s.id === id);
+    if (!sp || !original) return;
+    this.editor?.flushPending();
+    this.captureCode();
+    this.machine?.stopAll();
+    const before = JSON.parse(JSON.stringify(sp.code)) as SpriteDoc['code'];
+    for (const v of this.game?.setup.variables ?? []) if (!this.doc.variables.includes(v)) this.doc.variables.push(v);
+    sp.code = original.code;
+    if (!quiet) this.doc.selected = id;
+    this.loadSelectedIntoEditor();
+    this.applyProgram();
+    this.markChanged();
+    if (quiet) return;
+    playSfx('pop');
+    this.offerUndo(`Reiniciaste el código de ${sp.name}.`, () => {
+      const now = this.doc.sprites.find((s) => s.id === id);
+      if (!now) return;
+      this.machine?.stopAll();
+      now.code = before;
+      this.doc.selected = id;
+      this.loadSelectedIntoEditor();
+      this.applyProgram();
+      this.markChanged();
+    });
+  }
+
+  /** Everything the game came with and is not working now, for whoever asks with «Arreglar mi juego». */
+  healthIssues(): HealthIssue[] {
+    const sc = this.showcase;
+    if (!sc) return [];
+    const missing = sc.cast.filter((id) => !this.doc.sprites.some((s) => s.id === id)).map((id) => ({ id: `cast:${id}`, text: this.named(`Falta {${id}}`) }));
+    const broken = sc.pillars
+      .filter((p) => !p.ok(this.program) && !missing.some((m) => m.id === `cast:${p.restore.sprite}`))
+      .map((p) => ({ id: p.id, text: this.named(p.broken) }));
+    return [...missing, ...broken];
+  }
+
+  private askHealth(): void {
+    if (this.showcase) this.healthAsked = true;
+  }
+
+  dismissHealth(): void {
+    for (const h of this.deadIssues()) this.healthDismissed.add(h.id);
+    this.emit();
+  }
+
+  /** Puts back what is missing. It only adds: the child's own blocks and sprites stay as they are. */
+  repair(): void {
+    const sc = this.showcase;
+    if (!sc) return;
+    this.editor?.flushPending();
+    this.captureCode();
+    this.machine?.stopAll();
+    const fresh = newDoc(this.game);
+    let last: string | null = null;
+    for (const id of sc.cast) {
+      if (this.doc.sprites.some((s) => s.id === id)) continue;
+      const back = this.trash.get(id) ?? fresh.sprites.find((s) => s.id === id);
+      if (back) this.doc.sprites.push(JSON.parse(JSON.stringify(back)) as SpriteDoc);
+      last = id;
+    }
+    for (const p of sc.pillars) {
+      if (p.ok(programOf(this.doc))) continue;
+      const sp = this.doc.sprites.find((s) => s.id === p.restore.sprite);
+      if (!sp) continue;
+      for (const v of this.game?.setup.variables ?? []) if (!this.doc.variables.includes(v)) this.doc.variables.push(v);
+      const tops = sp.code?.blocks?.blocks ?? [];
+      const y = tops.length ? Math.max(...tops.map((b) => b.y ?? 0)) + 220 : 36;
+      const added = irToBlockly([p.restore.script], { x: 30, y }).blocks?.blocks ?? [];
+      sp.code = { ...sp.code, blocks: { languageVersion: 0, blocks: [...tops, ...added] } };
+      last = sp.id;
+    }
+    this.healthDismissed.clear();
+    this.undoable = null;
+    if (last) this.doc.selected = last;
+    this.loadSelectedIntoEditor();
+    this.applyProgram();
+    playSfx('magia');
+    this.notice = '¡Listo! Tu juego volvió a funcionar, con tus cambios.';
+    if (this.noticeTimer) clearTimeout(this.noticeTimer);
+    this.noticeTimer = setTimeout(() => { this.notice = null; this.emit(); }, 5000);
+    this.markChanged();
+  }
+
+  /** Back to the game as it came. The cards stay done, and it can be undone. */
+  resetGame(): void {
+    this.editor?.flushPending();
+    this.captureCode();
+    const before = JSON.parse(JSON.stringify(this.doc)) as ProjectDoc;
+    this.useDoc(newDoc(this.game));
+    this.offerUndo('Volviste al juego original.', () => this.useDoc(before));
+  }
+
+  private useDoc(doc: ProjectDoc): void {
+    this.machine?.stopAll();
+    this.doc = { ...doc, ui: { ...this.doc.ui } };
+    this.healthDismissed.clear();
+    this.loadSelectedIntoEditor();
+    this.applyProgram();
+    this.refreshToolbox();
+    this.renderer?.setBackdrop(this.doc.backdrop);
+    this.markChanged();
+  }
+
+  private putBack(sprite: SpriteDoc, index: number): void {
+    if (this.doc.sprites.some((s) => s.id === sprite.id)) return;
+    this.editor?.flushPending();
+    this.captureCode();
+    this.machine?.stopAll();
+    this.doc.sprites.splice(index, 0, sprite);
+    this.doc.selected = sprite.id;
+    this.loadSelectedIntoEditor();
+    this.applyProgram();
+    this.markChanged();
+  }
+
+  private offerUndo(label: string, run: () => void): void {
+    if (this.undoTimer) clearTimeout(this.undoTimer);
+    this.undoable = { label, run };
+    this.undoTimer = setTimeout(() => { this.undoable = null; this.emit(); }, 9_000);
+    this.emit();
+  }
+
+  runUndo(): void {
+    const u = this.undoable;
+    if (!u) return;
+    if (this.undoTimer) clearTimeout(this.undoTimer);
+    this.undoable = null;
+    u.run();
+    this.emit();
   }
 
   private afterProgressChange(): void {

@@ -17,6 +17,8 @@ interface Props {
   studentId: number;
   level: LevelId;
   gameId: string;
+  /** The child's name, for the showcase games. */
+  author?: string;
   registry: AutosaveRegistry;
   storage: Storage | null;
   /** Back to the chooser. */
@@ -31,7 +33,7 @@ type Load =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; initial: StudioProps['initial'] };
 
-export function StudioHost({ studentId, level, gameId, registry, storage, onExit, onOpenGame, onSignedOut }: Props) {
+export function StudioHost({ studentId, level, gameId, author, registry, storage, onExit, onOpenGame, onSignedOut }: Props) {
   const game = useMemo(() => (gameId === FREE_GAME_ID ? null : (gameById(gameId) ?? null)), [gameId]);
   const autosave = registry.get(gameId);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
@@ -119,6 +121,7 @@ export function StudioHost({ studentId, level, gameId, registry, storage, onExit
           onSave={onSave}
           onExit={exit}
           next={next}
+          author={author}
         />
       </Suspense>
       <SaveNotice status={status} />

@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildChooser } from './chooser.ts';
 import type { Chooser as ChooserModel } from './chooser.ts';
 import { ApiError } from '../net/http.ts';
+import { showcaseFor } from '../games/showcase/index.ts';
+import { SHOWCASE_ON } from '../shared/showcase.ts';
 import type { SessionResponse, StudentListItem } from '../shared/api.ts';
 import { endSession, getSession, listProjects, listStudents, saveProject, saveProjectKeepalive, startSession } from './api.ts';
 import { createAutosave, createAutosaveRegistry, localKey } from './autosave.ts';
@@ -110,7 +112,8 @@ function SignedIn({ session: initial, onSignedOut }: SignedInProps) {
       ),
     [student.id, storage],
   );
-  const [gameId, setGameId] = useState<string | null>(null);
+  /* In the open class the child goes straight to the game of their level, and leaves it for the names. */
+  const [gameId, setGameId] = useState<string | null>(SHOWCASE_ON ? showcaseFor(student.level).id : null);
 
   useEffect(() => {
     const hide = () => registry.flushAllOnHide();
@@ -136,7 +139,10 @@ function SignedIn({ session: initial, onSignedOut }: SignedInProps) {
     onSignedOut();
   }, [registry, onSignedOut]);
 
-  const backToChooser = useCallback(() => setGameId(null), []);
+  const backToChooser = useCallback(() => {
+    if (SHOWCASE_ON) void signOut();
+    else setGameId(null);
+  }, [signOut]);
 
   if (gameId !== null) {
     return (
@@ -145,6 +151,7 @@ function SignedIn({ session: initial, onSignedOut }: SignedInProps) {
           studentId={student.id}
           level={student.level}
           gameId={gameId}
+          author={SHOWCASE_ON ? student.name : undefined}
           registry={registry}
           storage={storage}
           onExit={backToChooser}

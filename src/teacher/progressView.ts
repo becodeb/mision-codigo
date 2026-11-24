@@ -1,5 +1,5 @@
 // Pure view model of the progress tab: names from the catalog, minutes, ordering.
-import { GAMES } from '../games/catalog.ts';
+import { ALL_GAMES } from '../games/catalog.ts';
 import type { GameDefinition } from '../games/types.ts';
 import type { AdminStudent, GameAggregate, ProgressEntry } from '../shared/api.ts';
 
@@ -9,7 +9,7 @@ export interface CatalogLookup {
   gameById: (id: string) => GameDefinition | undefined;
 }
 
-const defaultLookup: CatalogLookup = { gameById: (id) => GAMES.find((g) => g.id === id) };
+const defaultLookup: CatalogLookup = { gameById: (id) => ALL_GAMES.find((g) => g.id === id) };
 
 export function gameTitle(gameId: string, lookup: CatalogLookup = defaultLookup): string {
   if (gameId === FREE_GAME_ID) return 'Proyecto libre';

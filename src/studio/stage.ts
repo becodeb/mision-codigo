@@ -58,6 +58,9 @@ export class StageRenderer {
   private readonly monitorLayer: SVGGElement;
   private readonly nodes = new Map<string, Node>();
   private backdropId = '';
+  /* What each layer shows: writing the same markup again on every frame is slow on a small laptop. */
+  private bubbleHtml = '';
+  private monitorHtml = '';
   private drag: { id: string; startX: number; startY: number; ox: number; oy: number; moved: boolean; pointerId: number } | null = null;
   private readonly offs: (() => void)[] = [];
 
@@ -161,6 +164,11 @@ export class StageRenderer {
       const def = (ART as Record<string, (typeof ART)[ArtId] | undefined>)[inst.artId];
       if (!def) continue;
       let node = this.nodes.get(inst.id);
+      if (node && node.art !== inst.artId) {
+        node.g.remove();
+        this.nodes.delete(inst.id);
+        node = undefined;
+      }
       if (!node) {
         const g = document.createElementNS(NS, 'g') as SVGGElement;
         g.setAttribute('class', 'spr');
@@ -231,7 +239,7 @@ export class StageRenderer {
         lines.map((l, i) => `<text x="${bx + w / 2}" y="${by + 22 + i * lh}" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="700" font-size="16" fill="#241A4D">${esc(l)}</text>`).join('') +
         '</g>';
     }
-    this.bubbleLayer.innerHTML = html;
+    if (html !== this.bubbleHtml) this.bubbleLayer.innerHTML = this.bubbleHtml = html;
   }
 
   /** Points, variables and lists, stacked at the top left like Scratch's monitors. */
@@ -256,6 +264,6 @@ export class StageRenderer {
         (items.length > 4 ? `<text x="14" y="${42 + 4 * 20}" font-family="Chakra Petch, monospace" font-size="13" fill="#8A8499">…</text>` : '') + '</g>';
       y += h + 6;
     }
-    this.monitorLayer.innerHTML = html;
+    if (html !== this.monitorHtml) this.monitorLayer.innerHTML = this.monitorHtml = html;
   }
 }

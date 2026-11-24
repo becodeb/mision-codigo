@@ -13,4 +13,6 @@ export interface StudioProps {
   onExit: () => void;
   /** The next game of the level, offered when this one is finished. */
   next: { title: string; open: () => void } | null;
+  /** The child's name, shown as the author of a showcase game. */
+  author?: string;
 }
