@@ -9,6 +9,15 @@ import type { SpriteInstance } from '../runtime/instance.ts';
 import { toStr } from '../runtime/values.ts';
 
 const NS = 'http://www.w3.org/2000/svg';
+const HAND_PATH = 'M22 6c3.3 0 6 2.7 6 6v20.5l2.6-1.3c3-1.4 6.4-.2 7.6 2.6l.6 1.4 1.8-.8c3-1.3 6.3.1 7.4 3l.5 1.2c3-1 6.3.9 6.8 4l.7 4.4c1.4 9-2.6 17.2-10.5 21.4l-1.7.9c-2.9 1.5-6.1 2.3-9.4 2.3h-3.8c-6.5 0-12.5-3.4-15.8-9l-8-13.4c-1.6-2.7-.8-6.2 1.9-7.8 2.4-1.5 5.6-.9 7.3 1.4l2.9 4V12c0-3.3 2.7-6 6-6z';
+/** Where each arrow sits in the inverted T (column, row) and what is drawn on it. */
+const ARROW_CAP: Record<string, { col: number; row: number; glyph: string }> = {
+  ArrowUp: { col: 1, row: 0, glyph: '▲' },
+  ArrowLeft: { col: 0, row: 1, glyph: '◀' },
+  ArrowDown: { col: 1, row: 1, glyph: '▼' },
+  ArrowRight: { col: 2, row: 1, glyph: '▶' },
+};
+const CAP = 30;
 const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
@@ -21,14 +30,27 @@ export interface StageCallbacks {
   onPress(instanceId: string): void;
   onDrag(instanceId: string, x: number, y: number): void;
   onDragEnd(instanceId: string): void;
+  /** A press that did nothing: a drag that is not allowed (id), or the empty stage (null). */
+  onMiss(instanceId: string | null): void;
   /** Any pointer activity, for unlocking sound and counting the child as active. */
   onActivity(): void;
+}
+
+/** What the coach draws on the stage: where to press and what to click. Sprite ids, so clones and moves are followed. */
+export interface CoachDraw {
+  /** The arrow keys the program uses, and the space bar. */
+  keys: { arrows: readonly string[]; space: boolean; ids: string[]; /** Draw the keycaps (not on a touch screen, which has its own). */ caps: boolean } | null;
+  /** Sprites to click, with the hand on them. */
+  taps: string[];
 }
 
 export interface RenderExtras {
   selectedId: string | null;
   /** True while nothing runs, so the selected sprite gets its stronger shadow. */
   idle: boolean;
+  /** Sprites with a click script: the pointer cursor is only for them while a game plays. */
+  clickable?: ReadonlySet<string>;
+  coach?: CoachDraw | null;
 }
 
 interface Node {
@@ -51,16 +73,31 @@ function wrapText(text: string, max = 17): string[] {
   return lines.length ? lines.slice(0, 5) : [''];
 }
 
+interface CoachNode {
+  kind: 'ring' | 'keys' | 'tap';
+  /** The sprite it follows. */
+  id: string;
+  g: SVGGElement | null;
+  w: number;
+  h: number;
+  at: string;
+  r: number;
+}
+
 export class StageRenderer {
   private readonly backdropLayer: SVGGElement;
   private readonly spriteLayer: SVGGElement;
   private readonly bubbleLayer: SVGGElement;
   private readonly monitorLayer: SVGGElement;
+  private readonly coachLayer: SVGGElement;
   private readonly nodes = new Map<string, Node>();
   private backdropId = '';
   /* What each layer shows: writing the same markup again on every frame is slow on a small laptop. */
   private bubbleHtml = '';
   private monitorHtml = '';
+  /* The coach is built when it changes; each frame only moves what it built. */
+  private coachKey = '';
+  private coachNodes: CoachNode[] = [];
   private drag: { id: string; startX: number; startY: number; ox: number; oy: number; moved: boolean; pointerId: number } | null = null;
   private readonly offs: (() => void)[] = [];
 
@@ -70,12 +107,13 @@ export class StageRenderer {
   constructor(svg: SVGSVGElement, cb: StageCallbacks) {
     this.svg = svg;
     this.cb = cb;
-    svg.innerHTML = '<g class="bd"></g><g class="sprites"></g><g class="bubbles"></g><g class="monitors"></g>';
+    svg.innerHTML = '<g class="bd"></g><g class="sprites"></g><g class="bubbles"></g><g class="monitors"></g><g class="coach" pointer-events="none"></g>';
     const layer = (cls: string) => svg.querySelector(`.${cls}`) as SVGGElement;
     this.backdropLayer = layer('bd');
     this.spriteLayer = layer('sprites');
     this.bubbleLayer = layer('bubbles');
     this.monitorLayer = layer('monitors');
+    this.coachLayer = layer('coach');
     this.listen('pointerdown', (e) => this.down(e as PointerEvent));
     this.listen('pointermove', (e) => this.move(e as PointerEvent));
     this.listen('pointerup', (e) => this.up(e as PointerEvent));
@@ -93,6 +131,7 @@ export class StageRenderer {
     this.offs.forEach((off) => off());
     this.offs.length = 0;
     this.nodes.clear();
+    this.coachNodes = [];
     this.svg.innerHTML = '';
   }
 
@@ -112,7 +151,10 @@ export class StageRenderer {
     }
     this.cb.onActivity();
     const g = (e.target as Element).closest('.spr') as SVGGElement | null;
-    if (!g) return;
+    if (!g) {
+      this.cb.onMiss(null);
+      return;
+    }
     const id = g.dataset.id!;
     this.cb.onPress(id);
     const p = this.point(e);
@@ -142,6 +184,7 @@ export class StageRenderer {
     try { this.svg.releasePointerCapture(e.pointerId); } catch { /* already released */ }
     if (d.moved && this.cb.canDrag(d.id)) this.cb.onDragEnd(d.id);
     else if (!d.moved && !cancelled) this.cb.onTap(d.id);
+    else if (d.moved && !cancelled) this.cb.onMiss(d.id);
   }
 
   setBackdrop(id: string): void {
@@ -190,6 +233,7 @@ export class StageRenderer {
         `translate(${px.toFixed(1)} ${py.toFixed(1)}) rotate(${inst.rot.toFixed(1)} 0 ${((-def.h * sc) / 2).toFixed(1)}) scale(${(inst.flip * sc).toFixed(3)} ${sc.toFixed(3)})`,
       );
       node.g.style.display = inst.visible ? '' : 'none';
+      node.g.classList.toggle('clk', extras.clickable?.has(inst.spriteId) === true);
       if (def.hasFace && node.face !== String(inst.face)) {
         const fg = node.g.querySelector('.face');
         const chars = CHARACTERS as Record<string, { face: Parameters<typeof faceSVG>[1] }>;
@@ -216,6 +260,77 @@ export class StageRenderer {
     }
     this.renderBubbles(bubbles);
     this.renderMonitors(view);
+    this.renderCoach(extras.coach ?? null);
+  }
+
+  /** Rings, keycaps and the hand over the sprites they are about. Rebuilt only when the coach changes. */
+  private renderCoach(draw: CoachDraw | null): void {
+    const key = draw ? JSON.stringify(draw) : '';
+    if (key !== this.coachKey) {
+      this.coachKey = key;
+      this.coachNodes = [];
+      let html = '';
+      const add = (kind: CoachNode['kind'], id: string, inner: string, size = { w: 0, h: 0 }): void => {
+        html += `<g class="co-at" data-n="${this.coachNodes.length}">${inner}</g>`;
+        this.coachNodes.push({ kind, id, g: null, w: size.w, h: size.h, at: '', r: 0 });
+      };
+      const ring = '<circle class="co-ring" r="40" fill="none" stroke="#FFC93C" stroke-width="5"/>';
+      if (draw?.keys) {
+        for (const id of draw.keys.ids) add('ring', id, ring);
+        if (draw.keys.caps && draw.keys.ids[0]) {
+          const arrows = draw.keys.arrows.filter((k) => ARROW_CAP[k]);
+          const top = arrows.includes('ArrowUp');
+          const rows = arrows.length ? (top ? 2 : 1) : 0;
+          const cap = (x: number, y: number, w: number, text: string, size: number): string =>
+            `<g transform="translate(${x} ${y})"><g class="co-cap"><rect y="3" width="${w}" height="${CAP}" rx="8" fill="#241A4D" opacity=".4"/><rect width="${w}" height="${CAP}" rx="8" fill="#fff" stroke="#241A4D" stroke-width="3"/>` +
+            `<text x="${w / 2}" y="${CAP * 0.68}" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="${size}" fill="#241A4D">${text}</text></g></g>`;
+          let caps = arrows.map((k) => cap(ARROW_CAP[k].col * 34, ARROW_CAP[k].row === 0 || !top ? 0 : 34, CAP, ARROW_CAP[k].glyph, 15)).join('');
+          const gridH = rows * 34 - 4;
+          const spaceY = rows ? gridH + 6 : 0;
+          if (draw.keys.space) caps += cap(0, spaceY, 98, 'espacio', 15);
+          add('keys', draw.keys.ids[0], caps, { w: 98, h: draw.keys.space ? spaceY + CAP : gridH });
+        }
+      }
+      for (const id of draw?.taps ?? []) {
+        add('tap', id, `${ring}<g class="co-bob"><g transform="translate(${-22 * 0.8} ${12 - 6 * 0.8}) scale(.8)"><path d="${HAND_PATH}" fill="#fff" stroke="#241A4D" stroke-width="3.5" stroke-linejoin="round"/></g></g>`);
+      }
+      this.coachLayer.innerHTML = html;
+      for (const el of Array.from(this.coachLayer.children) as SVGGElement[]) this.coachNodes[Number(el.dataset.n)].g = el;
+    }
+    for (const n of this.coachNodes) this.placeCoach(n);
+  }
+
+  /** Puts one coach element where its sprite is now. Only the transform changes. */
+  private placeCoach(n: CoachNode): void {
+    const g = n.g;
+    const inst = this.last.get(n.id);
+    const def = inst ? (ART as Record<string, (typeof ART)[ArtId] | undefined>)[inst.artId] : undefined;
+    if (!g || !inst || !def) return;
+    const show = inst.visible;
+    if (g.style.display !== (show ? '' : 'none')) g.style.display = show ? '' : 'none';
+    if (!show) return;
+    const sc = inst.size / 100;
+    const px = HW + inst.x;
+    const cy = HH - inst.y - inst.jy - inst.bob - (def.h * sc) / 2;
+    const radius = Math.round(Math.max(def.r, def.h * 0.42) * sc + 10);
+    let at: string;
+    if (n.kind === 'keys') {
+      /* Beside the sprite, on the side with more room, and inside the stage. */
+      const left = px < HW ? px + radius + 10 : px - radius - 10 - n.w;
+      const x = clamp(left, 6, 480 - n.w - 6);
+      const y = clamp(cy - n.h / 2, 6, 360 - n.h - 6);
+      at = `translate(${x.toFixed(1)} ${y.toFixed(1)})`;
+    } else {
+      at = `translate(${px.toFixed(1)} ${cy.toFixed(1)})`;
+      if (n.r !== radius) {
+        n.r = radius;
+        g.querySelector('.co-ring')?.setAttribute('r', String(radius));
+      }
+    }
+    if (at !== n.at) {
+      n.at = at;
+      g.setAttribute('transform', at);
+    }
   }
 
   private renderBubbles(list: { inst: SpriteInstance; px: number; top: number }[]): void {

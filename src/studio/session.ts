@@ -21,7 +21,9 @@ import { addSpriteDoc, newDoc, parseDoc, programOf, scriptsOf, usesKeys, type Pr
 import { sayHow } from './chips.ts';
 import { cancelDemo, pointAt, runDemo, type DemoDeps } from './demo.ts';
 import { planDemo, type DemoPlan, type SpriteView } from './demoPlan.ts';
-import { StageRenderer } from './stage.ts';
+import { Coach, type BubbleKind, type CoachView } from './coach.ts';
+import { controlsOf, type Controls } from './controls.ts';
+import { StageRenderer, type CoachDraw } from './stage.ts';
 import { BlockEditor } from './workspace.ts';
 import { confetti } from './confetti.ts';
 
@@ -67,6 +69,8 @@ export interface SessionSnapshot {
   health: HealthIssue[];
   /** Something just removed or reset that can still be undone. */
   undo: string | null;
+  /** What the stage tells the child to press or click, and the answer to a wrong attempt. */
+  coach: CoachView;
 }
 
 export interface HealthIssue {
@@ -146,6 +150,21 @@ export class StudioSession {
   private undoable: { label: string; run: () => void } | null = null;
   private undoTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** What the stage tells a child to press or click. Its state lives here so it can be tested without a screen. */
+  readonly coach = new Coach({
+    controls: () => this.controls,
+    hidden: () => this.coachHidden(),
+    changed: () => {
+      if (!this.mounted) return;
+      if (this.machine) this.machine.dirty = true;
+      this.emit();
+    },
+    say: (kind, why) => this.coachSay(kind, why),
+  });
+  private modal = false;
+  private touch = false;
+  private controlsFor: { program: ProjectProgram; controls: Controls } | null = null;
+
   private readonly opts: SessionOptions;
 
   constructor(opts: SessionOptions) {
@@ -201,6 +220,60 @@ export class StudioSession {
     return this.lastGood !== null;
   }
 
+  /** What a child can press or click in the program as it is now. */
+  get controls(): Controls {
+    if (this.controlsFor?.program !== this.program) this.controlsFor = { program: this.program, controls: controlsOf(this.program) };
+    return this.controlsFor.controls;
+  }
+
+  /** A modal or the entry screen is open: the coach keeps quiet (React tells us). */
+  setModal(open: boolean): void {
+    if (this.modal === open) return;
+    this.modal = open;
+    this.coach.refresh();
+  }
+
+  /** The child plays with a finger: the on-screen arrows stand for the keys. */
+  setTouch(touch: boolean): void {
+    if (this.touch === touch) return;
+    this.touch = touch;
+    this.coach.refresh();
+  }
+
+  /** The stage is covered, or a card's tutorial owns the hand: the coach only shows while the program really runs. */
+  private coachHidden(): boolean {
+    if (this.modal || this.ask) return true;
+    return !!this.cardId && !this.fullScreen && !(this.tried && (this.machine?.threadCount ?? 0) > 0);
+  }
+
+  /** The younger levels hear the answer too. */
+  private coachSay(kind: BubbleKind, why: 'miss' | 'idle'): void {
+    if (!this.spoken) return;
+    const c = this.controls;
+    const mover = this.named(`{${c.movers[0] ?? c.spacers[0]}}`);
+    const target = this.named(`{${c.taps.find((t) => t.main)?.id}}`);
+    const text = kind === 'flag' ? 'Primero tocá Empezar'
+      : kind === 'keys' ? `${mover} se mueve con ${this.touch ? 'las flechas de la pantalla' : 'las flechas'}`
+      : why === 'idle' ? (this.touch ? `Tocá a ${target}` : `Hacé clic en ${target}`) : `Acá se juega ${this.touch ? 'tocando a' : 'haciendo clic en'} ${target}`;
+    void this.say(text);
+  }
+
+  /** What the stage draws for the coach this frame. */
+  private coachDraw(): CoachDraw | null {
+    const v = this.coach.view();
+    if (!v.keys && !v.tap) return null;
+    const c = this.controls;
+    const hit = this.drawn;
+    if (hit && hit.c === c && hit.keys === v.keys && hit.tap === v.tap && hit.touch === this.touch) return hit.draw;
+    const draw: CoachDraw = {
+      keys: v.keys ? { arrows: c.arrows, space: c.space, ids: [...new Set([...c.movers, ...c.spacers])].slice(0, 2), caps: !this.touch } : null,
+      taps: v.tap ? c.taps.filter((t) => t.main).map((t) => t.id).slice(0, 3) : [],
+    };
+    this.drawn = { c, keys: v.keys, tap: v.tap, touch: this.touch, draw };
+    return draw;
+  }
+  private drawn: { c: Controls; keys: boolean; tap: boolean; touch: boolean; draw: CoachDraw } | null = null;
+
   /* ---------- subscription ---------- */
 
   subscribe = (fn: () => void): (() => void) => {
@@ -230,6 +303,7 @@ export class StudioSession {
       on: this.cardOn,
       health: this.healthAsked ? this.deadIssues().filter((h) => !this.healthDismissed.has(h.id)) : [],
       undo: this.undoable?.label ?? null,
+      coach: this.coach.view(),
     };
   }
 
@@ -273,6 +347,7 @@ export class StudioSession {
       onActivity: () => { this.clock.input(); unlockAudio(); },
       onPress: (id) => this.pressInstance(id),
       onTap: (id) => this.tapInstance(id),
+      onMiss: (id) => this.coach.miss(id),
       canDrag: (id) => this.canDrag(id),
       onDrag: (id, x, y) => this.dragInstance(id, x, y),
       onDragEnd: (id) => this.dragEnd(id),
@@ -334,6 +409,7 @@ export class StudioSession {
     this.flushSave();
     this.intervals.forEach(clearInterval);
     this.intervals = [];
+    this.coach.dispose();
     this.releaseAllKeys();
     this.offs.forEach((off) => off());
     this.offs = [];
@@ -378,7 +454,7 @@ export class StudioSession {
         this.emit();
       }),
       render: guard((view: StageView) => {
-        this.renderer?.render(view, { selectedId: this.doc.selected, idle: !view.running });
+        this.renderer?.render(view, { selectedId: this.doc.selected, idle: !view.running, clickable: this.clickable(), coach: this.coachDraw() });
         if (view.running !== this.running || view.ended !== this.ended) {
           /* Scripts cut short (the game ended, «Parar») never turn their block off: clear what is left lit. */
           if (!view.running || view.ended) this.editor?.clearHighlights();
@@ -389,6 +465,7 @@ export class StudioSession {
       }),
       ended: guard((result: 'win' | 'lose') => {
         this.ended = result;
+        this.coach.end();
         playSfx(result === 'win' ? 'win' : 'bip');
         if (result === 'win') confetti();
         this.needsCheck = true;
@@ -428,6 +505,7 @@ export class StudioSession {
     this.pendingProgram = false;
     m.greenFlag();
     this.tried = true;
+    this.coach.start();
     this.askHealth();
     this.ended = null;
     this.needsCheck = true;
@@ -445,6 +523,7 @@ export class StudioSession {
     this.ended = null;
     this.running = false;
     this.needsCheck = true;
+    this.coach.stop();
     this.emit();
   }
 
@@ -495,6 +574,7 @@ export class StudioSession {
       m.load(this.program);
       this.pendingProgram = false;
       this.ended = null;
+      this.coach.stop();
     } else {
       m.program = this.program;
       this.pendingProgram = true;
@@ -513,6 +593,7 @@ export class StudioSession {
     if (this.ask) return;
     e.preventDefault();
     this.editor?.flushPending();
+    if (!e.repeat) this.coach.key(e.key);
     if (ARROW_KEYS.includes(e.key)) {
       /* The browser's own repeats are ignored: the held key repeats on our clock. */
       if (!e.repeat) this.holdKey(e.key);
@@ -529,6 +610,7 @@ export class StudioSession {
     if (down) {
       this.clock.input();
       unlockAudio();
+      this.coach.key(key);
       if (ARROW_KEYS.includes(key)) this.holdKey(key);
       else {
         m.keyDown(key);
@@ -566,6 +648,14 @@ export class StudioSession {
     for (const key of [...this.repeaters.keys()]) this.releaseKey(key);
   }
 
+  /** Sprites that answer to a click: the only ones that get the pointer cursor while a game plays. */
+  private clickable(): ReadonlySet<string> {
+    const c = this.controls;
+    if (this.clickableFor?.c !== c) this.clickableFor = { c, ids: new Set(c.taps.map((t) => t.id)) };
+    return this.clickableFor.ids;
+  }
+  private clickableFor: { c: Controls; ids: ReadonlySet<string> } | null = null;
+
   private canDrag(id: string): boolean {
     const m = this.machine;
     return !!m && m.threadCount === 0 && !this.ask && this.doc.sprites.some((s) => s.id === id);
@@ -582,6 +672,8 @@ export class StudioSession {
     this.editor?.flushPending();
     if (this.pendingProgram && m.threadCount === 0) this.applyProgram();
     if (m.tap(id)) this.noteTried();
+    /* A click on a character with a click script is never wrong; any other one is. */
+    if (!this.coach.click(id)) this.coach.miss(id);
     this.needsCheck = true;
   }
 

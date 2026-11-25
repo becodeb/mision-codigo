@@ -6,7 +6,7 @@ import type { StudioProps } from './contract.ts';
 import { StudioErrorBoundary } from './ErrorBoundary.tsx';
 import { Guide } from './Guide.tsx';
 import { Modal } from './Modal.tsx';
-import { ControlsStrip, hasStrip } from './Controls.tsx';
+import { CoachBubble, ControlsStrip, hasStrip } from './Controls.tsx';
 import { CardWall, RecapDialog, HealthBar, Intro, RemoveDialog, RepairDialog, signedTitle } from './Showcase.tsx';
 import { StudioSession } from './session.ts';
 import { lockPageGestures } from './touch.ts';
@@ -69,6 +69,10 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
     return () => session.unmount();
   }, [session]);
 
+  /* The coach keeps quiet under a modal or the entry screen, and knows whether a finger plays. */
+  useEffect(() => session.setModal(dialog !== null || intro), [session, dialog, intro]);
+  useEffect(() => session.setTouch(touch), [session, touch]);
+
   /* While the studio is open, fingers move blocks and sprites, never the page (no zoom, no rubber band). */
   useEffect(() => lockPageGestures(root.current!), []);
 
@@ -114,7 +118,7 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
   const strip = stripOn ? <ControlsStrip session={session} touch={touch} goal={!!showcase} dark={show} /> : null;
 
   return (
-    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${stripOn ? (show ? ' ct-on' : ' ct-on ct-edit') : ''}${snap.almost ? ' try-now' : ''}${snap.running ? ' running' : ''}`} data-level={level}>
+    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${stripOn ? (show ? ' ct-on' : ' ct-on ct-edit') : ''}${snap.almost ? ' try-now' : ''}${snap.running ? ' running' : ''}${snap.coach.playing ? ' playing' : ''}${snap.coach.flag ? ' flag-pulse' : ''}${snap.coach.keys && touch ? ' coach-keys' : ''}`} data-level={level}>
       {!showcase && <header className="mc-topbar">
         <button type="button" className="mc-ibtn" aria-label="Volver al inicio" data-point="exit" onClick={onExit}>
           <Icon html={ICON.home} />
@@ -402,6 +406,7 @@ function StageBox(props: {
           </form>
         )}
         {touch && snap.needsKeys && !snap.ask && <TouchPad session={session} />}
+        {snap.coach.bubble && <CoachBubble key={snap.coach.bubble.n} session={session} kind={snap.coach.bubble.kind} touch={touch} />}
       </div>
     </div>
   );

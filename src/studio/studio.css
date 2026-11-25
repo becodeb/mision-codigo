@@ -111,7 +111,8 @@
 .mc-stage-box { position: relative; width: 100%; aspect-ratio: 4 / 3; border: 4px solid var(--ink); border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 6px 6px 0 var(--ink); }
 .mc-stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; user-select: none; }
 .mc-stage .spr { cursor: grab; }
-.running .mc-stage .spr { cursor: pointer; }
+.running .mc-stage .spr, .playing .mc-stage .spr { cursor: default; }
+.running .mc-stage .spr.clk, .playing .mc-stage .spr.clk { cursor: pointer; }
 .mc-coords { font: 600 13px/1 var(--font-hud); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .mc-panel { background: var(--card); border: 3px solid var(--line); border-radius: 18px; padding: 8px 12px 10px; display: grid; gap: 6px; }
 .mc-panel-head { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
@@ -355,7 +356,7 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 .how-spr { display: inline-flex; align-items: center; gap: 4px; }
 .how-spr svg { width: 34px; height: 40px; }
 .mc-studio .sc-yes { flex: 1; font: 800 28px/1.1 var(--font-display); color: var(--go-deep); }
-.mc-studio.try-now .mc-flag { animation: sc-nudge .9s ease-in-out infinite; }
+.mc-studio.try-now .mc-flag, .mc-studio.flag-pulse .mc-flag { animation: sc-nudge .9s ease-in-out infinite; }
 
 .sc-tools { display: flex; gap: 8px; flex-wrap: wrap; }
 .mc-studio .sc-tool { border: 0; border-radius: 14px; background: #F3ECDD; min-height: 46px; padding: 0 10px; font: 800 17px/1 var(--font-display); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
@@ -487,3 +488,19 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 @media (min-width: 861px) {
   .mc-studio.showcase.ct-edit .mc-side { grid-template-rows: auto auto minmax(120px, 1fr) auto; }
 }
+
+/* ---------- el entrenador: anillos, teclas y la manito sobre el escenario ---------- */
+.co-ring { transform-box: fill-box; transform-origin: center; animation: co-ring 1.2s ease-out infinite; }
+@keyframes co-ring { from { transform: scale(.82); opacity: 1; } to { transform: scale(1.12); opacity: .15; } }
+.co-cap { transform-box: fill-box; transform-origin: center; animation: co-cap 1s ease-in-out infinite alternate; }
+@keyframes co-cap { to { transform: scale(1.1); } }
+.co-bob { animation: co-bob .7s ease-in-out infinite alternate; }
+@keyframes co-bob { to { transform: translateY(-10px); } }
+.co-bubble { position: absolute; left: 50%; bottom: 12px; z-index: 7; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 10px; width: max-content; max-width: calc(100% - 16px); padding: 8px 14px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; color: var(--ink); font: 800 clamp(15px, 2.6cqw, 20px)/1.15 var(--font-display); box-shadow: 0 5px 0 rgba(0, 0, 0, .25); pointer-events: none; animation: co-pop .3s cubic-bezier(.2, 1.4, .4, 1); --cap: 26px; }
+.co-bubble.up { bottom: 78px; }
+.co-flag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px 3px 8px; border-radius: 12px; background: var(--go); color: #fff; }
+.co-flag .mc-icon svg { width: 22px; height: 22px; }
+@keyframes co-pop { from { transform: translateX(-50%) scale(.85); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+.mc-studio.coach-keys .mc-key { animation: co-key 1s ease-in-out infinite alternate; }
+@keyframes co-key { to { background: var(--gold); transform: scale(1.08); } }
+.ct-pad .ct-key { padding: 0; min-width: 0; border-radius: 6px; border-bottom-width: 4px; font-size: max(9px, calc(var(--cap) * .45)); }
