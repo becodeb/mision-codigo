@@ -41,6 +41,20 @@ describe('controls of the showcase games', () => {
     expect(c.taps).toEqual([]);
   });
 
+  const of = (id: string) => controlsOf(SHOWCASE.find((g) => g.id === id)!.setup);
+
+  it('the race: no keys, each racer and the treasure are the point', () => {
+    const c = of('muestra-carrera');
+    expect(c.arrows).toEqual([]);
+    expect(c.taps).toEqual([{ id: 'tesoro', main: true }, { id: 'tomi', main: true }, { id: 'coni', main: true }]);
+  });
+
+  it('the concert: the four musicians are the point, the lights are play', () => {
+    expect(of('muestra-concierto').taps).toEqual([
+      { id: 'robi', main: true }, { id: 'michi', main: true }, { id: 'toby', main: true }, { id: 'pulpi', main: true }, { id: 'luces', main: false },
+    ]);
+  });
+
   it('every showcase game has something to do', () => {
     for (const g of SHOWCASE) expect(hasControls(controlsOf(g.setup)), g.id).toBe(true);
   });
@@ -124,6 +138,12 @@ describe('goal line', () => {
     expect(goal(3)).toBe('Juntá **10** {estrella} y esquivá {meteorito}');
     expect(goal(4)).toBe('Atajá **10** {manzana} y esquivá {bomba}');
     expect(goal(5)).toBe('Juntá **10** {moneda} y esquivá {rayo}');
+  });
+
+  it('names the goal of the games of level 1 that come after the first', () => {
+    const goalOf = (id: string): string => SHOWCASE.find((g) => g.id === id)!.showcase!.goal(SHOWCASE.find((g) => g.id === id)!.setup);
+    expect(goalOf('muestra-carrera')).toBe('Llevá a {tomi} o a {coni} hasta {tesoro}');
+    expect(goalOf('muestra-concierto')).toBe('Tocá una canción con {robi}, {michi}, {toby} y {pulpi}');
   });
 
   it('takes the number from the program: changed, or left out when nothing wins', () => {

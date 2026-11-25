@@ -20,6 +20,9 @@ export const scriptsWith = (p: P, hat: BlockType, where: (hat: Block) => boolean
 
 export const inside = (sc: Script): Block[] => blocksInList(sc.body);
 
+/** The «al hacer clic» scripts of the sprites with those ids. */
+export const clicksOf = (p: P, ...ids: string[]): Script[] => p.sprites.filter((s) => ids.includes(s.id)).flatMap((s) => scriptsOfHat(s, 'f_click'));
+
 export const count = (list: readonly Block[], ...types: BlockType[]): number => list.filter((b) => types.includes(b.type)).length;
 
 /** Algún valor aparece más veces que en el original: se cambió uno o se agregó otro. */

@@ -50,11 +50,12 @@ describe('showcase games', () => {
   it('lists the games of a level by order, then in the order of the catalog', () => {
     const level = SHOWCASE[0].level;
     const entry = SHOWCASE.find((g) => g.level === level)!;
-    const second = { ...entry, id: 'fake-second', order: 2 };
+    const real = showcasesFor(level).map((g) => g.id);
+    const second = { ...entry, id: 'fake-second', order: 99 };
     const zero = { ...entry, id: 'fake-first', order: 0 };
     SHOWCASE.push(second, zero);
     try {
-      expect(showcasesFor(level).map((g) => g.id)).toEqual(['fake-first', ...SHOWCASE.filter((g) => g.level === level && g.order === 1).map((g) => g.id), 'fake-second']);
+      expect(showcasesFor(level).map((g) => g.id)).toEqual(['fake-first', ...real, 'fake-second']);
       expect(showcaseFor(level).id).toBe('fake-first');
     } finally {
       SHOWCASE.splice(SHOWCASE.indexOf(second), 1);
@@ -241,7 +242,7 @@ describe('a child who reacts slowly can win', () => {
   });
 
   it('La noche de Boo: shows up nine times and each catch counts once', () => {
-    const g = new Game(SHOWCASE[1].setup, { seed: 4 });
+    const g = new Game(SHOWCASE.find((x) => x.id === 'muestra-boo')!.setup, { seed: 4 });
     g.flag();
     let shown = 0;
     let before = true;
