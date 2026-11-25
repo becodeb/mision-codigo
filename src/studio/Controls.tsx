@@ -21,13 +21,13 @@ export function ControlsLegend({ session, controls, touch, big = false }: { sess
 }
 
 /** Controls (left) and goal (right) in one row. Renders nothing when there is nothing to show. */
-export function ControlsStrip({ session, touch, goal, dark }: { session: StudioSession; touch: boolean; goal: boolean; dark: boolean }) {
+export function ControlsStrip({ session, touch, goal }: { session: StudioSession; touch: boolean; goal: boolean }) {
   const controls = session.controls;
   const text = goal ? session.showcase?.goal(session.program) : null;
   const some = hasControls(controls);
   if (!some && !text) return null;
   return (
-    <div className={`ct-strip${dark ? ' dark' : ''}`} data-point="controls">
+    <div className="ct-strip dark" data-point="controls">
       {some && <ControlsLegend session={session} controls={controls} touch={touch} />}
       {text && <div className="ct-goal"><How session={session} text={text} /></div>}
     </div>

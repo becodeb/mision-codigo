@@ -7,7 +7,7 @@ const CAUGHT = (sound: string) => fClick(fStar(), fHide(), fSound(sound), fWait(
 const BOOM = () => fClick(fSound('explosion'), fSpin());
 const CLOSE = () => fFlag(fSay('JUGAR'), fRepeat(9, fWait(3)), fSay('CHAU'));
 
-const base = project('parque', [
+const base = project('granja', [
   sprite('moneda', 'coin', [fFlag(fRepeat(8, fRight(), fWait(2)), fShow()), CAUGHT('campana')], { x: -210, y: 70, size: 140, name: 'Moneda' }),
   sprite('manzana', 'apple', [fFlag(fRepeat(6, fUp(), fWait(2), fDown(), fWait(1)), fShow()), CAUGHT('magia')], { x: -20, y: -40, size: 140, name: 'Manzana' }),
   sprite('pelota', 'ball', [fFlag(fRepeat(8, fUp(), fWait(1), fDown(), fWait(1)), fShow()), CAUGHT('aplauso')], { x: -170, y: -115, size: 140, name: 'Pelota' }),

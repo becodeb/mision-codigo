@@ -6,14 +6,14 @@ const RACERS = ['tomi', 'coni'];
 const STEP = (sound: string) => fClick(fStar(), fRight(), fSound(sound));
 const FINISH = () => fClick(fStar(), fJump(), fSound('fanfarria'));
 
-const base = project('parque', [
-  sprite('tesoro', 'treasure', [FINISH()], { x: 190, y: -96, size: 160, name: 'Tesoro' }),
-  sprite('tomi', 'tomi', [fFlag(fSay('JUGAR')), STEP('silbato')], { x: -205, y: -55, size: 65, name: 'Tomi' }),
-  sprite('coni', 'coni', [STEP('boing')], { x: -205, y: -140, size: 65, name: 'Coni' }),
+const base = project('ciudad', [
+  sprite('tesoro', 'treasure', [FINISH()], { x: 190, y: -130, size: 160, name: 'Tesoro' }),
+  sprite('tomi', 'tomi', [fFlag(fSay('JUGAR')), STEP('silbato')], { x: -205, y: -78, size: 65, name: 'Tomi' }),
+  sprite('coni', 'coni', [STEP('boing')], { x: -205, y: -160, size: 65, name: 'Coni' }),
 ]);
 
 export const LA_GRAN_CARRERA = showcaseGame({
-  id: 'muestra-carrera', level: 1, order: 2, title: 'La gran carrera', cover: 'tomi',
+  id: 'muestra-carrera', level: 1, order: 2, title: 'La gran carrera', cover: 'tomi', hands: RACERS,
   pitch: 'Cada clic hace avanzar a tu corredor. ¡Llegá primero al tesoro!',
   setup: base,
   toolbox: ['f_flag', 'f_click', 'f_say', 'f_text', 'f_right', 'f_left', 'f_up', 'f_down', 'f_jump', 'f_spin', 'f_face', 'f_grow', 'f_shrink', 'f_sound', 'f_backdrop', 'f_star'],

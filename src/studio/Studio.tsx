@@ -124,12 +124,12 @@ function StudioView({ game, level, initial, onSave, onExit, onChoose, next, auth
   const mine = !!showcase && session.tracker.completedCount > 0;
   const title = game ? (showcase ? signedTitle(game.title, author, mine) : game.title) : 'Proyecto libre';
   const picture = session.tier === 'picture';
-  /* What to press or click, always in sight: under the bar on the whole screen, and in the editor of the showcase games. */
-  const stripOn = (show || !!showcase) && hasStrip(session, !!showcase);
-  const strip = stripOn ? <ControlsStrip session={session} touch={touch} goal={!!showcase} dark={show} /> : null;
+  /* What to press or click, under the bar on the whole screen. Not in the editor: there the room is for the stage. */
+  const stripOn = show && hasStrip(session, !!showcase);
+  const strip = stripOn ? <ControlsStrip session={session} touch={touch} goal={!!showcase} /> : null;
 
   return (
-    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${stripOn ? (show ? ' ct-on' : ' ct-on ct-edit') : ''}${snap.almost ? ' try-now' : ''}${snap.running ? ' running' : ''}${snap.coach.playing ? ' playing' : ''}${snap.coach.flag ? ' flag-pulse' : ''}${snap.coach.keys && touch ? ' coach-keys' : ''}`} data-level={level}>
+    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${stripOn ? ' ct-on' : ''}${snap.almost ? ' try-now' : ''}${snap.running ? ' running' : ''}${snap.coach.playing ? ' playing' : ''}${snap.coach.flag ? ' flag-pulse' : ''}${snap.coach.keys && touch ? ' coach-keys' : ''}`} data-level={level}>
       {!showcase && <header className="mc-topbar">
         <button type="button" className="mc-ibtn" aria-label="Volver al inicio" data-point="exit" onClick={onExit}>
           <Icon html={ICON.home} />
@@ -204,15 +204,13 @@ function StudioView({ game, level, initial, onSave, onExit, onChoose, next, auth
             </button>
           </div>
 
-          {!show && strip}
-
           <StageBox
             stageRef={stageSvg}
             snap={snap}
             session={session}
             touch={touch}
             onInside={showcase && show ? closeShow : null}
-            strip={show ? strip : null}
+            strip={strip}
             showBar={
               show ? (
                 <div className="mc-show-bar">

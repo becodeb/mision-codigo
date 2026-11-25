@@ -336,7 +336,7 @@ describe('El concurso de Robi', () => {
   });
 
   it('every character to click is a point of the game, the pictures show the right faces and nothing overlaps at the start', () => {
-    const c = controlsOf(setup, true);
+    const c = controlsOf(setup, { tapAll: true });
     expect(c.taps.map((t) => t.id)).toEqual(['a1', 'b1', 'a2', 'b2', 'a3', 'b3']);
     expect(c.taps).toHaveLength(6);
     expect(c.taps.every((t) => t.main)).toBe(true);

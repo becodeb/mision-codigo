@@ -9,7 +9,7 @@ import { DrawnControls } from './drawn.tsx';
 function handOf(id: string): string {
   const game = SHOWCASE.find((g) => g.id === id)!;
   const who = (sid: string) => ({ art: game.setup.sprites.find((s) => s.id === sid)?.art, name: sid });
-  const html = renderToStaticMarkup(createElement(DrawnControls, { controls: controlsOf(game.setup, game.showcase!.tapAll), who, touch: false }));
+  const html = renderToStaticMarkup(createElement(DrawnControls, { controls: controlsOf(game.setup, game.showcase), who, touch: false }));
   return html.slice(html.indexOf('ct-hand'));
 }
 const facesOnHand = (id: string): number => (handOf(id).match(/class="ct-who"/g) ?? []).length;

@@ -231,7 +231,7 @@ export class StudioSession {
 
   /** What a child can press or click in the program as it is now. */
   get controls(): Controls {
-    if (this.controlsFor?.program !== this.program) this.controlsFor = { program: this.program, controls: controlsOf(this.program, this.showcase?.tapAll === true) };
+    if (this.controlsFor?.program !== this.program) this.controlsFor = { program: this.program, controls: controlsOf(this.program, this.showcase ?? undefined) };
     return this.controlsFor.controls;
   }
 
@@ -285,7 +285,7 @@ export class StudioSession {
     if (hit && hit.c === c && hit.keys === v.keys && hit.tap === v.tap && hit.touch === this.touch) return hit.draw;
     const draw: CoachDraw = {
       keys: v.keys ? { arrows: c.arrows, space: c.space, ids: [...new Set([...c.movers, ...c.spacers])].slice(0, 2), caps: !this.touch } : null,
-      taps: v.tap ? c.taps.filter((t) => t.main).map((t) => t.id).slice(0, 3) : [],
+      taps: v.tap ? c.taps.filter((t) => t.main).map((t) => t.id).slice(0, c.answers ? undefined : 4) : [],
     };
     this.drawn = { c, keys: v.keys, tap: v.tap, touch: this.touch, draw };
     return draw;
@@ -618,7 +618,9 @@ export class StudioSession {
       if (!e.repeat) this.holdKey(e.key);
       return;
     }
-    m.keyDown(e.key, e.repeat);
+    /* Holding the space bar is one press, as on the touch screen: the keyboard's repeats would restart the jump in the air. */
+    if (e.repeat) return;
+    m.keyDown(e.key);
     this.noteTried();
   }
 

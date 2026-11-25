@@ -36,6 +36,8 @@ export const Who = ({ who, id, name = true }: { who: WhoOf; id: string; name?: b
   <span className="ct-who"><ArtFace art={who(id).art} />{name && <b>{who(id).name}</b>}</span>
 );
 
+const SPACE = { jump: 'hace saltar a', shoot: 'hace disparar a', other: 'activa a' };
+
 /** The controls as chips. `touch`: the keys are the arrows on the screen, the clicks are taps. */
 export function DrawnControls({ controls, who, touch, big = false }: { controls: Controls; who: WhoOf; touch: boolean; big?: boolean }) {
   const { arrows, space, movers, spacers, taps } = controls;
@@ -56,15 +58,15 @@ export function DrawnControls({ controls, who, touch, big = false }: { controls:
       {space && (
         <span className="ct-group">
           <kbd className="ct-key wide">espacio</kbd>
-          {spacers.length > 0 && <span className="ct-to">activa a</span>}
+          {spacers.length > 0 && <span className="ct-to">{SPACE[controls.spaceDoes ?? 'other']}</span>}
           {spacers.slice(0, 2).map((id) => <Who key={id} who={who} id={id} />)}
         </span>
       )}
       {shown.length > 0 && (
         <span className="ct-group">
           <span className="ct-hand" aria-hidden="true" dangerouslySetInnerHTML={{ __html: HAND }} />
-          <span className="ct-to">{touch ? 'Tocá a' : 'Hacé clic en'}</span>
-          {shown.map((t) => <span key={t.id} className={t.main ? undefined : 'ct-side'}><Who who={who} id={t.id} name={t.main && shown.length < 4} /></span>)}
+          <span className="ct-to">{controls.answers ? (touch ? 'Tocá la respuesta' : 'Hacé clic en la respuesta') : touch ? 'Tocá a' : 'Hacé clic en'}</span>
+          {!controls.answers && shown.map((t) => <span key={t.id} className={t.main ? undefined : 'ct-side'}><Who who={who} id={t.id} name={t.main && shown.length < 4} /></span>)}
         </span>
       )}
     </div>

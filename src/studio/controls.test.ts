@@ -113,9 +113,9 @@ describe('controls follow the edits', () => {
   it('tapAll makes every clickable sprite the point, so a quiz points at no answer', () => {
     const quiz = project('aula', [sprite('a', 'toby', [onClick(addScore(1))]), sprite('b', 'michi', [onClick(setSize(50))]), sprite('c', 'michi', [onClick(setSize(60))])]);
     expect(controlsOf(quiz).taps.map((t) => t.main)).toEqual([true, false, false]);
-    expect(controlsOf(quiz, true).taps.map((t) => t.main)).toEqual([true, true, true]);
+    expect(controlsOf(quiz, { tapAll: true }).taps.map((t) => t.main)).toEqual([true, true, true]);
     const keys = project('aula', [sprite('a', 'toby', [onKey('ArrowLeft', setSize(50)), onClick(setSize(50))])]);
-    expect(controlsOf(keys, true).taps).toEqual([{ id: 'a', main: true }]);
+    expect(controlsOf(keys, { tapAll: true }).taps).toEqual([{ id: 'a', main: true }]);
   });
 
   it('removing the scripts removes the controls; empty hats do not count', () => {
@@ -166,5 +166,19 @@ describe('goal line', () => {
     expect(goal(4, p)).toBe('Atajá **5** {manzana} y esquivá {bomba}');
     p.sprites.find((s) => s.id === 'coni')!.scripts = p.sprites.find((s) => s.id === 'coni')!.scripts.filter((s) => s.hat.type !== 'a_points');
     expect(goal(4, p)).toBe('Atajá {manzana} y esquivá {bomba}');
+  });
+});
+
+describe('what a game says about its clicks', () => {
+  const of = (id: string) => { const g = SHOWCASE.find((x) => x.id === id)!; return controlsOf(g.setup, g.showcase); };
+  it('points at the racers and not at the finish', () => {
+    expect(of('muestra-carrera').taps.filter((t) => t.main).map((t) => t.id).sort()).toEqual(['coni', 'tomi']);
+    expect(of('muestra-carrera').taps.some((t) => t.id === 'tesoro')).toBe(true);
+  });
+  it('names no answer of a quiz, and says what the space bar does', () => {
+    expect(of('muestra-concurso').answers).toBe(true);
+    expect(of('muestra-carrera').answers).toBe(false);
+    expect(of('muestra-salto').spaceDoes).toBe('jump');
+    expect(of('muestra-meteoritos').spaceDoes).toBe('shoot');
   });
 });

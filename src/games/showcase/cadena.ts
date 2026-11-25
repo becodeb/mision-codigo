@@ -6,7 +6,7 @@ import { addSprite, blocksOf, card, count, inside, lookCards, newSprites, script
 const DANCE: BlockType[] = ['f_jump', 'f_spin', 'f_left', 'f_right', 'f_up', 'f_down', 'f_grow', 'f_shrink'];
 const START = () => fClick(fSpin(), fSend('red'), fSound('tambor'));
 
-const base = project('parque', [
+const base = project('aula', [
   sprite('pelota', 'ball', [START()], { x: -180, y: -125, size: 150, name: 'Pelota' }),
   sprite('toby', 'toby', [fFlag(fSay('JUGAR')), fRecv('red', fJump(), fSend('blue'), fSound('guau'))], { x: -65, y: -125, name: 'Toby' }),
   sprite('pulpi', 'pulpi', [fRecv('blue', fSpin(), fSend('yellow'), fSound('magia'))], { x: 50, y: -125, name: 'Pulpi' }),

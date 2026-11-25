@@ -24,6 +24,10 @@ export interface Controls {
   /** Sprites that react to the space bar. */
   spacers: string[];
   taps: Tap[];
+  /** The clicks are answers to choose from: none is pointed at by name. */
+  answers: boolean;
+  /** What the space bar does, when the program says it plainly. */
+  spaceDoes: 'jump' | 'shoot' | null;
   /** Keys (`event.key`) that only work once the game runs: «mover con flechas» and «¿tecla…?» sit inside the flag's scripts. */
   late: string[];
 }
@@ -48,13 +52,19 @@ const blocksOfScript = (sc: Script): Block[] => {
 
 export const spriteIdOf = (instanceId: string): string => instanceId.split('#')[0];
 
-/** `tapAll`: every clickable sprite is the point (a quiz, where pointing at one answer would give it away). */
-export function controlsOf(program: ProjectProgram, tapAll = false): Controls {
+/** What a game says about its clicks: see `Showcase`. */
+export interface ControlHints {
+  tapAll?: true;
+  hands?: readonly string[];
+}
+
+export function controlsOf(program: ProjectProgram, { tapAll, hands }: ControlHints = {}): Controls {
   const hatKeys = new Set<string>();
   const used = new Set<string>();
   const movers = new Set<string>();
   const spacers = new Set<string>();
   const clicks = new Map<string, boolean>();
+  let spaceDoes: Controls['spaceDoes'] = null;
   for (const sp of program.sprites) {
     for (const sc of sp.scripts) {
       if (sc.body.length === 0) continue;
@@ -72,6 +82,8 @@ export function controlsOf(program: ProjectProgram, tapAll = false): Controls {
           } else if (key === ' ') {
             used.add(key);
             spacers.add(sp.id);
+            if (blocks.some((x) => x.type === 'a_jump')) spaceDoes = 'jump';
+            else if (blocks.some((x) => x.type === 'a_clone')) spaceDoes = 'shoot';
           }
         }
       }
@@ -85,7 +97,9 @@ export function controlsOf(program: ProjectProgram, tapAll = false): Controls {
     space: used.has(' '),
     movers: [...movers],
     spacers: [...spacers],
-    taps: [...clicks].map(([id, main]) => ({ id, main: tapAll || (keys ? main : anyMain ? main : true) })),
+    taps: [...clicks].map(([id, main]) => ({ id, main: hands ? hands.includes(id) : tapAll === true || (keys ? main : anyMain ? main : true) })),
+    answers: tapAll === true,
+    spaceDoes,
     late: [...used].filter((k) => !hatKeys.has(k)),
   };
 }

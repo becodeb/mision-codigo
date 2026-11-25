@@ -164,6 +164,7 @@ interface ShowcaseSpec {
   /** Position among the games of its level; the first one is the entry game. */
   order?: number;
   tapAll?: true;
+  hands?: string[];
   play: NonNullable<GameDefinition['showcase']>['play'];
   goal: NonNullable<GameDefinition['showcase']>['goal'];
   pillars: Pillar[];
@@ -177,6 +178,6 @@ export function showcaseGame(s: ShowcaseSpec): GameDefinition {
     phases: [{ title: s.title, goal: s.pitch, steps: s.cards }],
     challenges: [],
     solution: { program: s.setup, play: () => undefined },
-    showcase: { play: s.play, goal: s.goal, tapAll: s.tapAll, cast: s.setup.sprites.map((x) => x.id), pillars: s.pillars },
+    showcase: { play: s.play, goal: s.goal, tapAll: s.tapAll, hands: s.hands, cast: s.setup.sprites.map((x) => x.id), pillars: s.pillars },
   };
 }

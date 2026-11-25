@@ -117,6 +117,8 @@ export interface Showcase {
   goal: (program: ProjectProgram) => string;
   /** Every clickable sprite is the point of the game (a quiz must never single out the right answer). */
   tapAll?: true;
+  /** The sprites the hand points at, when the program alone would point at more (the finish of a race, before racing). */
+  hands?: string[];
   /** Sprites the game is made of: removing one asks first. */
   cast: string[];
   pillars: Pillar[];

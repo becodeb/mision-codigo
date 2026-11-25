@@ -139,6 +139,7 @@
 .mc-ended { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 16px; background: rgba(36, 26, 77, .88); color: #fff; z-index: 5; }
 .mc-ended h3 { font-size: clamp(30px, 6vw, 46px); font-weight: 800; }
 .mc-ended.win h3 { color: var(--gold); }
+.mc-studio .mc-ended .mc-mbtn:not(.primary) { color: var(--ink); }
 .mc-ask { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 6; display: grid; gap: 8px; background: #fff; border: 3px solid var(--ink); border-radius: 16px; padding: 12px; box-shadow: 0 6px 0 rgba(0, 0, 0, .2); }
 .mc-ask label { font: 800 18px/1.2 var(--font-display); }
 .mc-ask input { height: 46px; border-radius: 12px; border: 3px solid var(--line-2); padding: 0 12px; font-size: 18px; font-weight: 700; }
@@ -496,10 +497,6 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 @media (max-width: 860px) {
   .mc-studio.show .ct-strip { height: auto; min-height: 60px; flex-wrap: wrap; padding: 4px 10px; }
   .mc-studio.show .ct-strip .ct-legend { flex-wrap: wrap; }
-}
-/* In the editor of a showcase game the strip is its own row between the buttons and the stage. */
-@media (min-width: 861px) {
-  .mc-studio.showcase.ct-edit .mc-side { grid-template-rows: auto auto minmax(120px, 1fr) auto; }
 }
 
 /* ---------- el entrenador: anillos, teclas y la manito sobre el escenario ---------- */

@@ -52,7 +52,7 @@ export function buildPicker(level: LevelId, projects: readonly ProjectSummary[],
   return {
     cards: progress.map((c) => {
       const { game } = c;
-      return { ...c, last: last?.id === game.id, controls: controlsOf(game.setup, game.showcase?.tapAll === true) };
+      return { ...c, last: last?.id === game.id, controls: controlsOf(game.setup, game.showcase) };
     }),
   };
 }
