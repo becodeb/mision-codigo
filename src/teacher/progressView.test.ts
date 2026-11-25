@@ -103,7 +103,7 @@ describe('gameRows', () => {
 });
 
 describe('class lists', () => {
-  const student = (id: number, name: string, group: string): AdminStudent => ({ id, name, group, level: 1, createdAt: '' });
+  const student = (id: number, name: string, group: string): AdminStudent => ({ id, name, group, level: 1, createdAt: '', savedGames: 0 });
 
   it('lists who has not started, sorted', () => {
     const list = notStarted([student(1, 'Zoe', 'A'), student(2, 'Ana', 'A'), student(3, 'Bruno', 'B')], [entry({ studentId: 3 })]);

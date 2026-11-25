@@ -126,7 +126,7 @@ describe('admin students', () => {
     expect((await admin.get('/api/admin/progress')).body.entries).toEqual([]);
   });
 
-  it('deletes one project of one student', async () => {
+  it('resets one game of one student, saved or not', async () => {
     const id = await addStudent(admin, 'Luna');
     const child = server.client();
     await child.post('/api/session', { studentId: id });
@@ -134,8 +134,10 @@ describe('admin students', () => {
     await child.put('/api/projects/caza-pulpi', { project: {}, progress: PROGRESS });
 
     expect((await admin.del(`/api/admin/students/${id}/projects/libre`)).status).toBe(200);
-    expect((await admin.del(`/api/admin/students/${id}/projects/libre`)).status).toBe(404);
+    // Nothing left to delete is still a reset: an unsent copy of that game must not come back either.
+    expect((await admin.del(`/api/admin/students/${id}/projects/libre`)).status).toBe(200);
     expect((await admin.del(`/api/admin/students/${id}/projects/Bad_Id`)).status).toBe(400);
+    expect((await admin.del('/api/admin/students/99999/projects/libre')).status).toBe(404);
     expect((await child.get('/api/projects')).body.projects.map((p: { gameId: string }) => p.gameId)).toEqual([
       'caza-pulpi',
     ]);

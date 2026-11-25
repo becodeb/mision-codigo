@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GameProgress, ProjectResponse, SaveProjectRequest } from '../shared/api.ts';
+import type { GameProgress, SaveProjectRequest } from '../shared/api.ts';
 import {
   KEEPALIVE_LIMIT_BYTES,
   createAutosave,
@@ -8,7 +8,7 @@ import {
   localKey,
   readLocal,
 } from './autosave.ts';
-import type { KeyValueStore, SaveFn } from './autosave.ts';
+import type { KeyValueStore, SaveFn, ServerProject } from './autosave.ts';
 
 const progress = (activeSeconds = 0, finished = false): GameProgress => ({
   currentStep: null,
@@ -24,6 +24,9 @@ class MemoryStore implements KeyValueStore {
   }
   setItem(key: string, value: string) {
     this.data.set(key, value);
+  }
+  removeItem(key: string) {
+    this.data.delete(key);
   }
 }
 
@@ -231,7 +234,7 @@ describe('autosave', () => {
     autosave.flushOnHide();
     expect(sent).toHaveLength(1);
     expect(sent[0].gameId).toBe('tesoro');
-    expect(JSON.parse(sent[0].body)).toEqual({ project: { v: 1 }, progress: progress(3) });
+    expect(JSON.parse(sent[0].body)).toEqual({ project: { v: 1 }, progress: progress(3), epoch: 0 });
   });
 
   it('skips keepalive when the body is too large, and when nothing is pending', async () => {
@@ -256,6 +259,9 @@ describe('autosave', () => {
       },
       setItem: () => {
         throw new Error('quota');
+      },
+      removeItem: () => {
+        throw new Error('blocked');
       },
     };
     const autosave = createAutosave({
@@ -286,20 +292,19 @@ describe('autosave', () => {
 
 describe('loadProject', () => {
   const key = localKey(1, 'tesoro');
-  const server = (updatedAt: string, value = 'server'): ProjectResponse => ({
-    gameId: 'tesoro',
-    project: { value },
-    progress: progress(10),
-    updatedAt,
+  const server = (updatedAt: string, value = 'server', epoch = 0): ServerProject => ({
+    saved: { gameId: 'tesoro', project: { value }, progress: progress(10), updatedAt, epoch },
+    epoch,
   });
-  const writeCopy = (storage: MemoryStore, savedAt: string, synced: boolean) => {
-    storage.setItem(key, JSON.stringify({ project: { value: 'local' }, progress: progress(20), savedAt }));
+  const none = (epoch = 0): ServerProject => ({ saved: null, epoch });
+  const writeCopy = (storage: MemoryStore, savedAt: string, synced: boolean, epoch?: number) => {
+    storage.setItem(key, JSON.stringify({ project: { value: 'local' }, progress: progress(20), savedAt, ...(epoch === undefined ? {} : { epoch }) }));
     if (synced) storage.setItem(`${key}:synced`, savedAt);
   };
 
-  it('returns null for a new project', async () => {
-    const result = await loadProject({ fetchServer: async () => null, storage: new MemoryStore(), key });
-    expect(result).toBeNull();
+  it('returns no project for a new one, with the server counter', async () => {
+    expect(await loadProject({ fetchServer: async () => none(), storage: new MemoryStore(), key })).toEqual({ project: null, epoch: 0 });
+    expect((await loadProject({ fetchServer: async () => none(3), storage: new MemoryStore(), key })).epoch).toBe(3);
   });
 
   it('uses the server when there is no local copy', async () => {
@@ -308,40 +313,64 @@ describe('loadProject', () => {
       storage: new MemoryStore(),
       key,
     });
-    expect(result).toMatchObject({ source: 'server', needsUpload: false, project: { value: 'server' } });
+    expect(result.project).toMatchObject({ source: 'server', needsUpload: false, project: { value: 'server' } });
   });
 
   it('prefers a newer unsent local copy and asks to upload it', async () => {
     const storage = new MemoryStore();
     writeCopy(storage, '2026-11-04T19:05:00.000Z', false);
     const result = await loadProject({ fetchServer: async () => server('2026-11-04T19:00:00.000Z'), storage, key });
-    expect(result).toMatchObject({ source: 'local', needsUpload: true, project: { value: 'local' } });
+    expect(result.project).toMatchObject({ source: 'local', needsUpload: true, project: { value: 'local' } });
   });
 
   it('prefers the server when it is newer than the unsent local copy', async () => {
     const storage = new MemoryStore();
     writeCopy(storage, '2026-11-04T19:00:00.000Z', false);
     const result = await loadProject({ fetchServer: async () => server('2026-11-04T19:30:00.000Z'), storage, key });
-    expect(result).toMatchObject({ source: 'server', project: { value: 'server' } });
+    expect(result.project).toMatchObject({ source: 'server', project: { value: 'server' } });
   });
 
   it('never prefers a local copy the server already holds', async () => {
     const storage = new MemoryStore();
     writeCopy(storage, '2026-11-04T19:59:00.000Z', true);
     const result = await loadProject({ fetchServer: async () => server('2026-11-04T19:00:00.000Z'), storage, key });
-    expect(result).toMatchObject({ source: 'server' });
+    expect(result.project).toMatchObject({ source: 'server' });
   });
 
   it('uses an unsent local copy when the server has no project yet', async () => {
     const storage = new MemoryStore();
     writeCopy(storage, '2026-11-04T19:00:00.000Z', false);
-    const result = await loadProject({ fetchServer: async () => null, storage, key });
-    expect(result).toMatchObject({ source: 'local', needsUpload: true });
+    const result = await loadProject({ fetchServer: async () => none(), storage, key });
+    expect(result.project).toMatchObject({ source: 'local', needsUpload: true });
   });
 
-  it('falls back to the local copy when the server is unreachable', async () => {
+  it('discards a local copy from before a reset, even a newer unsent one, and its synced marker', async () => {
+    for (const [saved, copyEpoch] of [
+      [server('2026-11-04T19:00:00.000Z', 'fresh', 2), undefined], // old copy without a counter
+      [server('2026-11-04T19:00:00.000Z', 'fresh', 2), 1],
+      [none(1), 0],
+    ] as const) {
+      for (const synced of [false, true]) {
+        const storage = new MemoryStore();
+        writeCopy(storage, '2026-11-04T19:59:00.000Z', synced, copyEpoch);
+        const result = await loadProject({ fetchServer: async () => saved, storage, key });
+        expect(result.epoch).toBe(saved.epoch);
+        expect(result.project?.source ?? 'none').not.toBe('local');
+        expect(storage.data.size).toBe(0);
+      }
+    }
+  });
+
+  it('keeps a local copy made under the same counter as the server', async () => {
     const storage = new MemoryStore();
-    writeCopy(storage, '2026-11-04T19:00:00.000Z', true);
+    writeCopy(storage, '2026-11-04T19:05:00.000Z', false, 2);
+    const result = await loadProject({ fetchServer: async () => server('2026-11-04T19:00:00.000Z', 'server', 2), storage, key });
+    expect(result).toMatchObject({ epoch: 2, project: { source: 'local', needsUpload: true } });
+  });
+
+  it('falls back to the local copy when the server is unreachable, keeping its counter', async () => {
+    const storage = new MemoryStore();
+    writeCopy(storage, '2026-11-04T19:00:00.000Z', true, 4);
     const result = await loadProject({
       fetchServer: async () => {
         throw httpError(0);
@@ -349,7 +378,7 @@ describe('loadProject', () => {
       storage,
       key,
     });
-    expect(result).toMatchObject({ source: 'local', needsUpload: false, project: { value: 'local' } });
+    expect(result).toMatchObject({ epoch: 4, project: { source: 'local', needsUpload: false, project: { value: 'local' } } });
   });
 
   it('refuses to start empty when the server is unreachable and nothing is stored', async () => {
@@ -381,8 +410,106 @@ describe('loadProject', () => {
   it('ignores a corrupted local copy', async () => {
     const storage = new MemoryStore();
     storage.setItem(key, '{not json');
-    const result = await loadProject({ fetchServer: async () => null, storage, key });
-    expect(result).toBeNull();
+    const result = await loadProject({ fetchServer: async () => none(), storage, key });
+    expect(result.project).toBeNull();
+  });
+});
+
+describe('autosave and resets', () => {
+  const resetError = () => Object.assign(new Error('reset'), { status: 409, code: 'progress_reset' });
+
+  it('sends the counter it was loaded with, in the request and in the keepalive body', async () => {
+    const sent: string[] = [];
+    const { api, autosave } = setup({ keepalive: (_id, body) => sent.push(body) });
+    autosave.setEpoch(3);
+    autosave.update({ v: 1 }, progress());
+    autosave.flushOnHide();
+    expect(JSON.parse(sent[0]).epoch).toBe(3);
+    await autosave.flush();
+    expect(api.calls[0].body.epoch).toBe(3);
+  });
+
+  it('on a reset answer stops: drops the pending copy and the local one, never retries, reports reset', async () => {
+    const sent: string[] = [];
+    const { clock, api, storage, key, autosave } = setup({ keepalive: (_id, body) => sent.push(body) });
+    const seen: string[] = [];
+    autosave.subscribe((s) => seen.push(s));
+    autosave.update({ v: 1 }, progress(1));
+    api.failWith = resetError();
+    await clock.advance(1000);
+
+    expect(autosave.status()).toBe('reset');
+    expect(seen.at(-1)).toBe('reset');
+    expect(autosave.hasPending()).toBe(false);
+    expect(storage.data.size).toBe(0);
+    expect(clock.pending()).toBe(0);
+
+    api.failWith = null;
+    autosave.update({ v: 2 }, progress(2)); // the old studio's last flush
+    autosave.flushOnHide();
+    await autosave.flush();
+    await clock.advance(60_000);
+    expect(api.calls).toHaveLength(1);
+    expect(sent).toHaveLength(0);
+    expect(readLocal(storage, key)).toBeNull();
+  });
+
+  it('treats another 409 as a plain rejection', async () => {
+    const { clock, api, autosave } = setup();
+    api.failWith = Object.assign(new Error('x'), { status: 409, code: 'other' });
+    autosave.update({}, progress());
+    await clock.advance(1000);
+    expect(autosave.status()).toBe('rejected');
+  });
+
+  it('drops what is pending when it learns a different counter, and stamps new changes with it', async () => {
+    const { clock, api, autosave } = setup();
+    api.failWith = httpError(503);
+    autosave.update({ old: true }, progress());
+    await clock.advance(1000);
+    expect(autosave.hasPending()).toBe(true);
+
+    autosave.setEpoch(1);
+    expect(autosave.hasPending()).toBe(false);
+    expect(autosave.status()).toBe('idle');
+    api.failWith = null;
+    await clock.advance(30_000);
+    expect(api.calls).toHaveLength(1); // the retry of the old copy never happens
+
+    autosave.update({ fresh: true }, progress());
+    await autosave.flush();
+    expect(api.calls[1].body).toMatchObject({ project: { fresh: true }, epoch: 1 });
+  });
+
+  it('ignores the answer of a request made before the counter changed', async () => {
+    const { clock, api, autosave } = setup();
+    api.hold = true;
+    autosave.update({ old: true }, progress());
+    await clock.advance(1000);
+    autosave.setEpoch(1);
+    api.failWith = resetError();
+    api.hold = false;
+    api.release();
+    await settle();
+    expect(autosave.status()).toBe('idle');
+    autosave.update({ fresh: true }, progress());
+    expect(autosave.hasPending()).toBe(true);
+  });
+
+  it('the registry forgets a reset controller, so the next visit starts a new one', async () => {
+    const clock = fakeClock();
+    const api = new FakeApi();
+    api.failWith = resetError();
+    const registry = createAutosaveRegistry((gameId) =>
+      createAutosave({ gameId, key: localKey(1, gameId), save: api.save, storage: new MemoryStore(), now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer }),
+    );
+    const first = registry.get('a');
+    first.update({ n: 1 }, progress());
+    await registry.flushAll();
+    expect(first.status()).toBe('reset');
+    expect(registry.hasPending()).toBe(false);
+    expect(registry.get('a')).not.toBe(first);
+    expect(registry.get('a').status()).toBe('idle');
   });
 });
 

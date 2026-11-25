@@ -36,6 +36,8 @@ Un solo proceso sirve la API y la aplicación compilada (`dist/`). Los datos que
 3. Si pegás un nombre que ya existe, se actualiza en lugar de duplicarse.
 4. En **Clase activa**, elegí qué clase está en marcha. Los chicos ven los juegos de esa clase para su nivel, los que ya empezaron y el proyecto libre.
 
+**Reiniciar el progreso.** En **Alumnos**, abrí «⋯» de un chico y elegí «Reiniciar progreso» para borrar todos sus juegos guardados (el chico, su grado y su nivel quedan), o en **Progreso** «Reiniciar juego» para uno solo. El reinicio es definitivo: cada chico y juego tiene un contador que sube con cada reinicio, y el servidor rechaza (409 `progress_reset`) todo lo guardado con un contador anterior. Así el progreso no vuelve desde un juego abierto, un reintento pendiente o la copia local del navegador (se descarta al abrir). Si el chico tenía el juego abierto, en su próximo guardado ve el aviso «Tu profe reinició este juego» y empieza de cero.
+
 Guardá solo nombres de pila: cualquiera que llegue al servidor puede ver la lista de nombres. No hay código de acceso por decisión del taller; revisalo antes de publicar el servidor en internet.
 
 ## Niveles

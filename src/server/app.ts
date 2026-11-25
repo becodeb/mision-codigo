@@ -15,14 +15,16 @@ import type {
   GameProgress,
   ImportStudentsResponse,
   OkResponse,
+  ProjectNotFoundBody,
   ProjectResponse,
   ProjectsResponse,
+  ResetProgressResponse,
   SaveProjectResponse,
   SessionResponse,
   SettingsResponse,
   StudentsResponse,
 } from '../shared/api.ts';
-import { GAME_ID_PATTERN, MAX_BODY_BYTES, isTestGroup } from '../shared/api.ts';
+import { GAME_ID_PATTERN, MAX_BODY_BYTES, PROGRESS_RESET, isTestGroup } from '../shared/api.ts';
 import { KNOWN_GAME_IDS } from '../shared/gameIds.ts';
 import type { ClassId, LevelId } from '../shared/levels.ts';
 import { createAuth } from './auth.ts';
@@ -57,6 +59,8 @@ const progressSchema = z.object({
 const saveBody = z.object({
   project: z.unknown().refine((value) => value !== undefined),
   progress: progressSchema,
+  // Pages opened before resets existed send none: 0 is right for them until the first reset.
+  epoch: z.number().int().min(0).optional(),
 });
 const loginBody = z.object({ password: z.string().max(200) });
 const createStudentBody = z.object({ name: nameSchema, group: groupSchema, level: levelSchema });
@@ -91,8 +95,8 @@ function studentIdParam(req: Request): number {
   return Number(raw);
 }
 
-function toAdminStudent(student: StudentRow): AdminStudent {
-  return { id: student.id, name: student.name, group: student.group, level: student.level, createdAt: student.createdAt };
+function toAdminStudent(student: StudentRow, savedGames: number): AdminStudent {
+  return { id: student.id, name: student.name, group: student.group, level: student.level, createdAt: student.createdAt, savedGames };
 }
 
 export function createApp({ db, config, now = Date.now }: AppDeps) {
@@ -169,10 +173,21 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
 
   api.get('/projects/:gameId', auth.requireChild, (req, res) => {
     const gameId = gameIdParam(req);
-    const row = store.getProject(auth.studentOf(res).id, gameId);
-    if (!row) throw new AppError(404, 'project_not_found', 'Todavía no hay un proyecto guardado para este juego.');
+    const studentId = auth.studentOf(res).id;
+    const row = store.getProject(studentId, gameId);
+    const epoch = store.epochOf(studentId, gameId);
+    if (!row) {
+      // Still a 404 for pages that predate resets; the counter rides along for the ones that know it.
+      const missing: ProjectNotFoundBody = {
+        error: { code: 'project_not_found', message: 'Todavía no hay un proyecto guardado para este juego.' },
+        epoch,
+      };
+      res.status(404).json(missing);
+      return;
+    }
     const body: ProjectResponse = {
       gameId,
+      epoch,
       project: JSON.parse(row.project),
       progress: parseProgress(row.progress),
       updatedAt: row.updatedAt,
@@ -182,13 +197,15 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
 
   api.put('/projects/:gameId', auth.requireChild, (req, res) => {
     const gameId = gameIdParam(req);
-    const { project, progress } = parse(saveBody, req.body);
+    const { project, progress, epoch = 0 } = parse(saveBody, req.body);
     const updatedAt = store.saveProject(
       auth.studentOf(res).id,
       gameId,
+      epoch,
       JSON.stringify(project),
       JSON.stringify(progress satisfies GameProgress),
     );
+    if (updatedAt === null) throw new AppError(409, PROGRESS_RESET, 'Tu profe reinició este juego.');
     const body: SaveProjectResponse = { gameId, updatedAt };
     res.json(body);
   });
@@ -232,7 +249,8 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
   admin.use(auth.requireAdmin);
 
   admin.get('/students', (_req, res) => {
-    const body: AdminStudentsResponse = { students: store.listStudents().map(toAdminStudent) };
+    const counts = store.projectCounts();
+    const body: AdminStudentsResponse = { students: store.listStudents().map((s) => toAdminStudent(s, counts.get(s.id) ?? 0)) };
     res.json(body);
   });
 
@@ -241,7 +259,7 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
     if (store.findStudent(input.name, input.group)) {
       throw new AppError(409, 'student_exists', 'Ya hay un alumno con ese nombre en ese grupo.');
     }
-    const body: AdminStudentResponse = { student: toAdminStudent(store.createStudent(input)) };
+    const body: AdminStudentResponse = { student: toAdminStudent(store.createStudent(input), 0) };
     res.status(201).json(body);
   });
 
@@ -264,7 +282,7 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
       throw new AppError(409, 'student_exists', 'Ya hay un alumno con ese nombre en ese grupo.');
     }
     const updated = store.updateStudent(id, patch as { name?: string; group?: string; level?: LevelId });
-    const body: AdminStudentResponse = { student: toAdminStudent(updated as StudentRow) };
+    const body: AdminStudentResponse = { student: toAdminStudent(updated as StudentRow, store.projectCounts().get(id) ?? 0) };
     res.json(body);
   });
 
@@ -276,13 +294,24 @@ export function createApp({ db, config, now = Date.now }: AppDeps) {
     res.json(body);
   });
 
+  function existingStudentId(req: Request): number {
+    const id = studentIdParam(req);
+    if (!store.getStudent(id)) throw new AppError(404, 'student_not_found', 'No encontramos a ese alumno.');
+    return id;
+  }
+
+  // Resets, not plain deletes: an open game, a retry or an unsent local copy must not bring the progress back.
   admin.delete('/students/:id/projects/:gameId', (req, res) => {
-    const studentId = studentIdParam(req);
+    const studentId = existingStudentId(req);
     const gameId = gameIdParam(req);
-    if (!store.deleteProject(studentId, gameId)) {
-      throw new AppError(404, 'project_not_found', 'Ese alumno no tiene un proyecto guardado para este juego.');
-    }
+    store.resetGame(studentId, gameId);
     const body: OkResponse = { ok: true };
+    res.json(body);
+  });
+
+  admin.delete('/students/:id/projects', (req, res) => {
+    const removed = store.resetStudent(existingStudentId(req));
+    const body: ResetProgressResponse = { ok: true, removed };
     res.json(body);
   });
 

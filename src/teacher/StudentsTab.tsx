@@ -45,9 +45,7 @@ export function StudentsTab() {
             const { [id]: _gone, ...rest } = errors;
             return rest;
           });
-          setNotice(`${nameOf(id)} pasó al ${teamName(level)}.`);
-          clearTimeout(noticeTimer.current);
-          noticeTimer.current = setTimeout(() => setNotice(null), 3500);
+          showNotice(`${nameOf(id)} pasó al ${teamName(level)}.`);
         },
         onError: (id, error) => setLevelErrors((errors) => ({ ...errors, [id]: levelSaveMessage(nameOf(id), error) })),
       }),
@@ -97,6 +95,23 @@ export function StudentsTab() {
     }
   };
 
+  const showNotice = (text: string) => {
+    setNotice(text);
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(null), 3500);
+  };
+
+  const reset = async (student: AdminStudent): Promise<string | null> => {
+    try {
+      await adminApi.resetStudent(student.id);
+      setStudents((list) => list?.map((s) => (s.id === student.id ? { ...s, savedGames: 0 } : s)) ?? list);
+      showNotice(`Se reinició el progreso de ${student.name}.`);
+      return null;
+    } catch (error) {
+      return errorMessage(error);
+    }
+  };
+
   const add = async (input: CreateStudentRequest): Promise<{ error: string } | { added: string }> => {
     const clash = studentsRef.current ? findDuplicate(studentsRef.current, input.name, input.group) : undefined;
     if (clash) return { error: duplicateMessage(clash.name, clash.group) };
@@ -140,6 +155,7 @@ export function StudentsTab() {
           onLevel={changeLevel}
           onUpdate={update}
           onDelete={remove}
+          onReset={reset}
         />
       )}
       <ImportBox onImport={importList} />

@@ -8,6 +8,7 @@ import type {
   CreateStudentRequest,
   ImportStudentsResponse,
   OkResponse,
+  ResetProgressResponse,
   SettingsResponse,
   UpdateStudentRequest,
 } from '../shared/api.ts';
@@ -51,5 +52,9 @@ export const setActiveClass = (activeClass: ClassId) =>
   guarded(send<SettingsResponse>('PATCH', '/api/admin/settings', { activeClass }));
 
 export const getProgress = () => guarded(get<AdminProgressResponse>('/api/admin/progress'));
-export const deleteProject = (studentId: number, gameId: string) =>
+/** Deletes the saved game and makes every unsent copy of it stale. */
+export const resetGame = (studentId: number, gameId: string) =>
   guarded(send<OkResponse>('DELETE', `/api/admin/students/${studentId}/projects/${encodeURIComponent(gameId)}`));
+/** Same for every game of the child. The student, group and level stay. */
+export const resetStudent = (studentId: number) =>
+  guarded(send<ResetProgressResponse>('DELETE', `/api/admin/students/${studentId}/projects`));

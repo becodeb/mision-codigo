@@ -6,10 +6,10 @@ import type { GameRow, ProgressRow } from './progressView.ts';
 interface RowsProps {
   rows: ProgressRow[];
   /** Resolves null on success, otherwise the message to show. */
-  onDeleteProject: (studentId: number, gameId: string) => Promise<string | null>;
+  onResetGame: (studentId: number, gameId: string) => Promise<string | null>;
 }
 
-function ProgressLine({ row, onDeleteProject }: { row: ProgressRow; onDeleteProject: RowsProps['onDeleteProject'] }) {
+function ProgressLine({ row, onResetGame }: { row: ProgressRow; onResetGame: RowsProps['onResetGame'] }) {
   const [armed, setArmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -36,16 +36,16 @@ function ProgressLine({ row, onDeleteProject }: { row: ProgressRow; onDeleteProj
         {error && <span className="t-row-error" role="alert">{error}</span>}
         {armed ? (
           <span className="t-confirm">
-            <span>¿Borrar el proyecto?</span>
+            <span>¿Reiniciar este juego?</span>
             <button
               className="t-btn t-btn-danger"
               onClick={async () => {
-                const message = await onDeleteProject(row.studentId, row.gameId);
+                const message = await onResetGame(row.studentId, row.gameId);
                 setError(message);
                 setArmed(false);
               }}
             >
-              Sí, borrar
+              Sí, reiniciar
             </button>
             <button className="t-btn" onClick={() => setArmed(false)}>Cancelar</button>
           </span>
@@ -53,9 +53,9 @@ function ProgressLine({ row, onDeleteProject }: { row: ProgressRow; onDeleteProj
           <button
             className="t-btn"
             onClick={() => setArmed(true)}
-            aria-label={`Borrar el proyecto ${row.gameTitle} de ${row.name}`}
+            aria-label={`Reiniciar el juego ${row.gameTitle} de ${row.name}`}
           >
-            Borrar proyecto
+            Reiniciar juego
           </button>
         )}
       </td>
@@ -63,7 +63,7 @@ function ProgressLine({ row, onDeleteProject }: { row: ProgressRow; onDeleteProj
   );
 }
 
-export function ProgressTable({ rows, onDeleteProject }: RowsProps) {
+export function ProgressTable({ rows, onResetGame }: RowsProps) {
   if (rows.length === 0) {
     return <p className="t-empty">Todavía no hay proyectos guardados. Aparecen apenas un chico empieza un juego.</p>;
   }
@@ -84,7 +84,7 @@ export function ProgressTable({ rows, onDeleteProject }: RowsProps) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <ProgressLine key={row.key} row={row} onDeleteProject={onDeleteProject} />
+            <ProgressLine key={row.key} row={row} onResetGame={onResetGame} />
           ))}
         </tbody>
       </table>

@@ -1,5 +1,6 @@
 // Child-facing API calls.
 import { ApiError, get, send } from '../net/http.ts';
+import type { ServerProject } from './autosave.ts';
 import type {
   OkResponse,
   ProjectResponse,
@@ -18,12 +19,12 @@ export const getSession = () => get<SessionResponse>('/api/session');
 export const endSession = () => send<OkResponse>('DELETE', '/api/session');
 export const listProjects = () => get<ProjectsResponse>('/api/projects');
 
-/** Resolves null when the child has no saved project for this game yet. */
-export async function getProject(gameId: string): Promise<ProjectResponse | null> {
+export async function getProject(gameId: string): Promise<ServerProject> {
   try {
-    return await get<ProjectResponse>(projectPath(gameId));
+    const saved = await get<ProjectResponse>(projectPath(gameId));
+    return { saved, epoch: saved.epoch };
   } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null;
+    if (error instanceof ApiError && error.status === 404) return { saved: null, epoch: error.epoch ?? 0 };
     throw error;
   }
 }

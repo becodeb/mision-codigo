@@ -35,9 +35,9 @@ export function ProgressTab() {
     return () => window.clearInterval(timer);
   }, [refresh]);
 
-  const deleteProject = async (studentId: number, gameId: string): Promise<string | null> => {
+  const resetGame = async (studentId: number, gameId: string): Promise<string | null> => {
     try {
-      await adminApi.deleteProject(studentId, gameId);
+      await adminApi.resetGame(studentId, gameId);
       await refresh();
       return null;
     } catch (e) {
@@ -81,7 +81,7 @@ export function ProgressTab() {
         <>
           <section className="t-card" aria-labelledby="progreso-alumnos">
             <h2 id="progreso-alumnos">Por alumno</h2>
-            <ProgressTable rows={rows} onDeleteProject={deleteProject} />
+            <ProgressTable rows={rows} onResetGame={resetGame} />
             <NotStarted students={waiting} />
           </section>
           <section className="t-card" aria-labelledby="progreso-juegos">

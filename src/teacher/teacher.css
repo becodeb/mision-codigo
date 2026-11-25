@@ -608,6 +608,13 @@ code {
   justify-content: flex-start;
 }
 
+/* Reset and delete side by side; one under the other when the row is narrow. */
+.t-stu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .t-lvgroup {
   display: grid;
   gap: 8px;

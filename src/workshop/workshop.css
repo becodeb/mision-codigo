@@ -87,6 +87,19 @@
   box-shadow: 0 4px 14px rgba(36, 26, 77, 0.35);
 }
 
+/* The teacher reset the game: a notice the child closes. */
+.w-notice-close {
+  min-width: 32px;
+  min-height: 32px;
+  margin: -4px -8px -4px 2px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 /* ---------- Name screen ---------- */
 .n-hero {
   display: flex;

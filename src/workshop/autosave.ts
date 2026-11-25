@@ -6,15 +6,19 @@
 // - The server copy is updated a second after the last change (and at least every few seconds while
 //   the child keeps working).
 // - After a failure the newest copy is retried periodically until it goes through.
+// - Every copy carries the reset counter (epoch) it was loaded with. When the teacher resets the game the
+//   server refuses it (409): the controller then drops everything it holds and never sends again.
+import { PROGRESS_RESET } from '../shared/api.ts';
 import type { GameProgress, ProjectResponse, SaveProjectRequest, SaveProjectResponse } from '../shared/api.ts';
 
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'rejected' | 'signedout';
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'rejected' | 'signedout' | 'reset';
 
 export type SaveFn = (gameId: string, body: SaveProjectRequest) => Promise<SaveProjectResponse>;
 
 export interface KeyValueStore {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
 }
 
 /** What the browser keeps for one student and game. */
@@ -23,6 +27,8 @@ export interface LocalCopy {
   progress: GameProgress;
   /** ISO time of the last change, from the injected clock. Strictly increasing per controller. */
   savedAt: string;
+  /** The reset counter the copy was made under. Copies from before resets existed have none: 0. */
+  epoch: number;
 }
 
 export const DEBOUNCE_MS = 1000;
@@ -63,7 +69,8 @@ export function readLocal(storage: KeyValueStore | null, key: string): StoredCop
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<LocalCopy>;
     if (typeof parsed.savedAt !== 'string' || !isProgress(parsed.progress) || !('project' in parsed)) return null;
-    const copy: LocalCopy = { project: parsed.project, progress: parsed.progress, savedAt: parsed.savedAt };
+    const epoch = typeof parsed.epoch === 'number' ? parsed.epoch : 0;
+    const copy: LocalCopy = { project: parsed.project, progress: parsed.progress, savedAt: parsed.savedAt, epoch };
     return { copy, synced: storage.getItem(syncKey(key)) === copy.savedAt };
   }, null);
 }
@@ -71,6 +78,14 @@ export function readLocal(storage: KeyValueStore | null, key: string): StoredCop
 function writeLocal(storage: KeyValueStore | null, key: string, copy: LocalCopy): void {
   if (!storage) return;
   safely(() => storage.setItem(key, JSON.stringify(copy)), undefined);
+}
+
+function removeLocal(storage: KeyValueStore | null, key: string): void {
+  if (!storage) return;
+  safely(() => {
+    storage.removeItem(key);
+    storage.removeItem(syncKey(key));
+  }, undefined);
 }
 
 function markSynced(storage: KeyValueStore | null, key: string, savedAt: string): void {
@@ -84,6 +99,8 @@ export interface AutosaveOptions {
   gameId: string;
   /** Storage key of the local copy, see `localKey`. */
   key: string;
+  /** The reset counter the project was loaded with; `setEpoch` changes it. */
+  epoch?: number;
   save: SaveFn;
   storage: KeyValueStore | null;
   now?: () => number;
@@ -97,6 +114,8 @@ export interface AutosaveOptions {
 }
 
 export interface Autosave {
+  /** The reset counter the server reported on loading. A different one means what is pending is from before a reset: it is dropped. */
+  setEpoch(epoch: number): void;
   /** Called by the studio on every change. */
   update(project: unknown, progress: GameProgress): void;
   /** Sends the newest copy now. Resolves when it was sent or failed. */
@@ -110,10 +129,11 @@ export interface Autosave {
   dispose(): void;
 }
 
-function classify(error: unknown): 'signedout' | 'rejected' | 'offline' {
-  const status = typeof error === 'object' && error !== null ? (error as { status?: unknown }).status : undefined;
+function classify(error: unknown): 'signedout' | 'rejected' | 'offline' | 'reset' {
+  const { status, code } = (typeof error === 'object' && error !== null ? error : {}) as { status?: unknown; code?: unknown };
   if (typeof status !== 'number' || status === 0 || status >= 500) return 'offline';
   if (status === 401) return 'signedout';
+  if (status === 409 && code === PROGRESS_RESET) return 'reset';
   if (status === 408 || status === 429) return 'offline';
   return 'rejected';
 }
@@ -122,6 +142,7 @@ export function createAutosave(options: AutosaveOptions): Autosave {
   const {
     gameId,
     key,
+    epoch: initialEpoch = 0,
     save,
     storage,
     now = Date.now,
@@ -133,6 +154,7 @@ export function createAutosave(options: AutosaveOptions): Autosave {
     keepalive,
   } = options;
 
+  let epoch = initialEpoch;
   let latest: LocalCopy | null = null;
   /** Bumped on every change. */
   let revision = 0;
@@ -164,6 +186,24 @@ export function createAutosave(options: AutosaveOptions): Autosave {
 
   const hasPending = (): boolean => latest !== null && syncedRevision !== revision;
 
+  /** Forgets the unsent copy: there is nothing to send, and what was sent no longer counts. */
+  function dropPending(): void {
+    clearDebounce();
+    clearRetry();
+    latest = null;
+    syncedRevision = revision;
+    resendRequested = false;
+  }
+
+  /** The teacher reset this game: nothing of this controller may reach the server or the browser again. */
+  function reset(): void {
+    dropPending();
+    removeLocal(storage, key);
+    disposed = true;
+    setStatus('reset');
+    listeners.clear();
+  }
+
   function scheduleRetry(): void {
     clearRetry();
     if (disposed) return;
@@ -182,16 +222,21 @@ export function createAutosave(options: AutosaveOptions): Autosave {
     if (!hasPending() || latest === null) return Promise.resolve();
     clearRetry();
     const sentRevision = revision;
+    const sentEpoch = epoch;
     const sent = latest;
     setStatus('saving');
     inflight = (async () => {
       try {
-        await save(gameId, { project: sent.project, progress: sent.progress });
+        await save(gameId, { project: sent.project, progress: sent.progress, epoch: sentEpoch });
+        // The epoch changed while the request ran: it belonged to a project that is gone.
+        if (sentEpoch !== epoch) return;
         syncedRevision = sentRevision;
         markSynced(storage, key, sent.savedAt);
         setStatus(sentRevision === revision ? 'saved' : 'saving');
       } catch (error) {
+        if (sentEpoch !== epoch) return;
         const kind = classify(error);
+        if (kind === 'reset') return reset();
         setStatus(kind);
         if (kind === 'offline') scheduleRetry();
       }
@@ -223,11 +268,17 @@ export function createAutosave(options: AutosaveOptions): Autosave {
   }
 
   return {
+    setEpoch(next) {
+      if (next === epoch || disposed) return;
+      epoch = next;
+      dropPending();
+      setStatus('idle');
+    },
     update(project, progress) {
       if (disposed) return;
       if (!hasPending()) firstPendingAt = now();
       lastStamp = Math.max(now(), lastStamp + 1);
-      latest = { project, progress, savedAt: new Date(lastStamp).toISOString() };
+      latest = { project, progress, savedAt: new Date(lastStamp).toISOString(), epoch };
       revision += 1;
       writeLocal(storage, key, latest);
       schedule();
@@ -237,7 +288,7 @@ export function createAutosave(options: AutosaveOptions): Autosave {
     },
     flushOnHide() {
       if (!keepalive || !hasPending() || latest === null) return;
-      const body = JSON.stringify({ project: latest.project, progress: latest.progress } satisfies SaveProjectRequest);
+      const body = JSON.stringify({ project: latest.project, progress: latest.progress, epoch } satisfies SaveProjectRequest);
       if (new TextEncoder().encode(body).length > KEEPALIVE_LIMIT_BYTES) return;
       keepalive(gameId, body);
     },
@@ -268,9 +319,22 @@ export interface LoadedProject {
   needsUpload: boolean;
 }
 
+/** What the server holds for one child and game: the project, if any, and the game's reset counter (epoch). */
+export interface ServerProject {
+  saved: ProjectResponse | null;
+  epoch: number;
+}
+
+export interface LoadResult {
+  /** Null for a new project. */
+  project: LoadedProject | null;
+  /** The counter the autosave must send with its saves. */
+  epoch: number;
+}
+
 export interface LoadOptions {
-  /** Resolves null when the server has no project yet (404). Throws for anything else. */
-  fetchServer: () => Promise<ProjectResponse | null>;
+  /** Throws for anything but a reachable server: a game without a project is `{ saved: null }`. */
+  fetchServer: () => Promise<ServerProject>;
   storage: KeyValueStore | null;
   key: string;
 }
@@ -278,28 +342,34 @@ export interface LoadOptions {
 /**
  * Chooses what the studio starts from: the newer of the server and the local copy. A local copy the
  * server already holds never wins over the server, so work saved from another computer is not lost.
- * Returns null for a new project. When the server cannot be reached and there is no local copy, it
- * throws: starting empty could later overwrite a project that exists on the server.
+ * A local copy made under another reset counter than the server's is from before a reset by the teacher:
+ * it is deleted, never uploaded. The project is null for a new project. When the server cannot be reached
+ * and there is no local copy, it throws: starting empty could later overwrite a project that exists there.
  */
-export async function loadProject({ fetchServer, storage, key }: LoadOptions): Promise<LoadedProject | null> {
-  const stored = readLocal(storage, key);
-  let server: ProjectResponse | null;
+export async function loadProject({ fetchServer, storage, key }: LoadOptions): Promise<LoadResult> {
+  let stored = readLocal(storage, key);
+  let server: ServerProject;
   try {
     server = await fetchServer();
   } catch (error) {
     if (stored && classify(error) === 'offline') {
-      return { project: stored.copy.project, progress: stored.copy.progress, source: 'local', needsUpload: !stored.synced };
+      const { copy, synced } = stored;
+      return { project: { project: copy.project, progress: copy.progress, source: 'local', needsUpload: !synced }, epoch: copy.epoch };
     }
     throw error;
   }
 
-  const useLocal =
-    stored !== null && !stored.synced && (server === null || Date.parse(stored.copy.savedAt) > Date.parse(server.updatedAt));
-  if (useLocal && stored) {
-    return { project: stored.copy.project, progress: stored.copy.progress, source: 'local', needsUpload: true };
+  if (stored && stored.copy.epoch !== server.epoch) {
+    removeLocal(storage, key);
+    stored = null;
   }
-  if (server === null) return null;
-  return { project: server.project, progress: server.progress, source: 'server', needsUpload: false };
+  const { saved, epoch } = server;
+  const useLocal = stored !== null && !stored.synced && (saved === null || Date.parse(stored.copy.savedAt) > Date.parse(saved.updatedAt));
+  if (useLocal && stored) {
+    return { project: { project: stored.copy.project, progress: stored.copy.progress, source: 'local', needsUpload: true }, epoch };
+  }
+  if (saved === null) return { project: null, epoch };
+  return { project: { project: saved.project, progress: saved.progress, source: 'server', needsUpload: false }, epoch };
 }
 
 // ---- Registry ----
@@ -324,8 +394,13 @@ export function createAutosaveRegistry(make: (gameId: string) => Autosave): Auto
     get(gameId) {
       let controller = controllers.get(gameId);
       if (!controller) {
-        controller = make(gameId);
-        controllers.set(gameId, controller);
+        const made = make(gameId);
+        controller = made;
+        controllers.set(gameId, made);
+        // A reset controller is finished: the next visit to the game starts a new one with the new counter.
+        made.subscribe((status) => {
+          if (status === 'reset' && controllers.get(gameId) === made) controllers.delete(gameId);
+        });
       }
       return controller;
     },

@@ -14,6 +14,11 @@ export interface OkResponse {
   ok: true;
 }
 
+/** The 404 of a game without a saved project also tells the child's reset counter, see `ProjectResponse.epoch`. */
+export interface ProjectNotFoundBody extends ApiErrorBody {
+  epoch: number;
+}
+
 /** Names in this group are for teachers to try the games: never listed to children, entered only from the panel. */
 export const TEST_GROUP = 'Pruebas';
 export const isTestGroup = (group: string): boolean => group.trim().toLowerCase() === TEST_GROUP.toLowerCase();
@@ -70,10 +75,16 @@ export interface ProjectsResponse {
 export interface ProjectResponse extends ProjectSummary {
   /** Opaque to the server. */
   project: unknown;
+  /** How many times the teacher reset this game for the child. Saves must carry it, see `SaveProjectRequest.epoch`. */
+  epoch: number;
 }
+/** Error code of a save made with a copy that predates a reset (409). Nothing was written. */
+export const PROGRESS_RESET = 'progress_reset';
 export interface SaveProjectRequest {
   project: unknown;
   progress: GameProgress;
+  /** The `epoch` the copy was loaded with. Missing counts as 0 (pages opened before resets existed). */
+  epoch?: number;
 }
 export interface SaveProjectResponse {
   gameId: string;
@@ -97,6 +108,8 @@ export interface AdminStudent {
   group: string;
   level: LevelId;
   createdAt: string;
+  /** Games with a saved project: what a progress reset would delete. */
+  savedGames: number;
 }
 export interface AdminStudentsResponse {
   students: AdminStudent[];
@@ -113,6 +126,12 @@ export interface UpdateStudentRequest {
   name?: string;
   group?: string;
   level?: LevelId;
+}
+
+export interface ResetProgressResponse {
+  ok: true;
+  /** Saved games that were deleted. */
+  removed: number;
 }
 
 export interface ImportStudentsRequest {

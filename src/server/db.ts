@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import type { ClassId, LevelId } from '../shared/levels.ts';
 
 // Each entry is one schema version. Append new entries; never edit old ones.
-const MIGRATIONS: string[] = [
+export const MIGRATIONS: string[] = [
   `
   CREATE TABLE students (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +28,19 @@ const MIGRATIONS: string[] = [
   );
   INSERT INTO settings (key, value) VALUES ('activeClass', '1');
   `,
+  // Progress resets: a counter per child and game (game_id '' counts for all games) so saves from before a reset are refused.
+  `
+  CREATE TABLE resets (
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    game_id TEXT NOT NULL,
+    epoch INTEGER NOT NULL,
+    PRIMARY KEY (student_id, game_id)
+  );
+  `,
 ];
+
+/** `resets.game_id` of the counter that covers every game of a child, saved or not. Never a valid game id. */
+const ALL_GAMES = '';
 
 export function migrate(db: DatabaseSync): void {
   db.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');
@@ -142,6 +154,19 @@ export function createStore(db: DatabaseSync, now: () => number = Date.now) {
     return row ? toStudent(row) : null;
   }
 
+  function epochOf(studentId: number, gameId: string): number {
+    const row = db
+      .prepare('SELECT COALESCE(SUM(epoch), 0) AS epoch FROM resets WHERE student_id = ? AND game_id IN (?, ?)')
+      .get(studentId, gameId, ALL_GAMES) as unknown as { epoch: number };
+    return row.epoch;
+  }
+
+  function bumpEpoch(studentId: number, gameId: string): void {
+    db.prepare(
+      'INSERT INTO resets (student_id, game_id, epoch) VALUES (?, ?, 1) ON CONFLICT (student_id, game_id) DO UPDATE SET epoch = epoch + 1',
+    ).run(studentId, gameId);
+  }
+
   return {
     transaction,
     findStudent,
@@ -223,23 +248,55 @@ export function createStore(db: DatabaseSync, now: () => number = Date.now) {
       return row ? { project: row.project, progress: row.progress, updatedAt: row.updated_at } : null;
     },
 
-    saveProject(studentId: number, gameId: string, projectJson: string, progressJson: string): string {
-      const updatedAt = iso();
-      db.prepare(
-        `INSERT INTO projects (student_id, game_id, project, progress, updated_at)
-         VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT (student_id, game_id) DO UPDATE SET
-           project = excluded.project, progress = excluded.progress, updated_at = excluded.updated_at`,
-      ).run(studentId, gameId, projectJson, progressJson, updatedAt);
-      return updatedAt;
+    /** How many times this game was reset for the child: the counter of the game plus the one of all games. */
+    epochOf,
+
+    /**
+     * Saves unless the child's copy predates a reset. The check and the write share one transaction,
+     * so a reset can never slip between them. Returns null when the copy is stale (nothing written).
+     */
+    saveProject(studentId: number, gameId: string, epoch: number, projectJson: string, progressJson: string): string | null {
+      return transaction(() => {
+        if (epoch < epochOf(studentId, gameId)) return null;
+        const updatedAt = iso();
+        db.prepare(
+          `INSERT INTO projects (student_id, game_id, project, progress, updated_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT (student_id, game_id) DO UPDATE SET
+             project = excluded.project, progress = excluded.progress, updated_at = excluded.updated_at`,
+        ).run(studentId, gameId, projectJson, progressJson, updatedAt);
+        return updatedAt;
+      });
     },
 
-    deleteProject(studentId: number, gameId: string): boolean {
-      return (
-        Number(
-          db.prepare('DELETE FROM projects WHERE student_id = ? AND game_id = ?').run(studentId, gameId).changes,
-        ) > 0
-      );
+    /** Deletes the saved game, if any, and makes every older copy of it (open game, retry, local copy) stale. */
+    resetGame(studentId: number, gameId: string): boolean {
+      return transaction(() => {
+        const removed = Number(db.prepare('DELETE FROM projects WHERE student_id = ? AND game_id = ?').run(studentId, gameId).changes) > 0;
+        bumpEpoch(studentId, gameId);
+        return removed;
+      });
+    },
+
+    /**
+     * Deletes every saved game of the child and returns how many. One counter for all games, not one per
+     * known id: it also covers games that only exist as unsent local copies, and ids added to the catalog later.
+     */
+    resetStudent(studentId: number): number {
+      return transaction(() => {
+        const removed = Number(db.prepare('DELETE FROM projects WHERE student_id = ?').run(studentId).changes);
+        bumpEpoch(studentId, ALL_GAMES);
+        return removed;
+      });
+    },
+
+    /** Saved games per child, for the teacher's list. */
+    projectCounts(): Map<number, number> {
+      const rows = db.prepare('SELECT student_id, COUNT(*) AS n FROM projects GROUP BY student_id').all() as unknown as {
+        student_id: number;
+        n: number;
+      }[];
+      return new Map(rows.map((r) => [r.student_id, r.n]));
     },
 
     /** Every project without its heavy JSON, joined with its student. */

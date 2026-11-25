@@ -7,7 +7,7 @@ import type { LevelId } from '../shared/levels.ts';
 import type { StudioProps } from '../studio/contract.ts';
 import { getProject, listProjects } from './api.ts';
 import { loadProject, localKey } from './autosave.ts';
-import type { AutosaveRegistry, SaveStatus } from './autosave.ts';
+import type { Autosave, AutosaveRegistry, SaveStatus } from './autosave.ts';
 import { FREE_GAME_ID, nextGame } from './chooser.ts';
 import { nextToPlay } from './picker.ts';
 import { SaveNotice } from './SaveNotice.tsx';
@@ -34,28 +34,42 @@ interface Props {
 type Load =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; initial: StudioProps['initial'] };
+  /** `owner` is the autosave the project was loaded for: after a reset the old project must not reach the new one. */
+  | { kind: 'ready'; initial: StudioProps['initial']; owner: Autosave };
+
+const RESET_MESSAGE = 'Tu profe reinició este juego. ¡Empezá de nuevo!';
 
 export function StudioHost({ studentId, level, gameId, author, registry, storage, onExit, onChoose, onOpenGame, onSignedOut }: Props) {
   const game = useMemo(() => (gameId === FREE_GAME_ID ? null : (gameById(gameId) ?? null)), [gameId]);
-  const autosave = registry.get(gameId);
+  /* A reset by the teacher finishes the controller: a new one (and a new Studio) takes over and loads the fresh project. */
+  const [resets, setResets] = useState(0);
+  const [resetNotice, setResetNotice] = useState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const autosave = useMemo(() => registry.get(gameId), [registry, gameId, resets]);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [status, setStatus] = useState<SaveStatus>(autosave.status());
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     setStatus(autosave.status());
-    return autosave.subscribe(setStatus);
+    return autosave.subscribe((next) => {
+      setStatus(next);
+      if (next === 'reset') {
+        setResetNotice(true);
+        setResets((n) => n + 1);
+      }
+    });
   }, [autosave]);
 
   useEffect(() => {
     let cancelled = false;
     setLoad({ kind: 'loading' });
     loadProject({ fetchServer: () => getProject(gameId), storage, key: localKey(studentId, gameId) })
-      .then((loaded) => {
+      .then(({ project: loaded, epoch }) => {
         if (cancelled) return;
+        autosave.setEpoch(epoch);
         if (loaded?.needsUpload) autosave.update(loaded.project, loaded.progress);
-        setLoad({ kind: 'ready', initial: loaded ? { project: loaded.project, progress: loaded.progress } : null });
+        setLoad({ kind: 'ready', initial: loaded ? { project: loaded.project, progress: loaded.progress } : null, owner: autosave });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -95,7 +109,7 @@ export function StudioHost({ studentId, level, gameId, author, registry, storage
     return following ? { title: following.title, open: () => void registry.flushAll().then(() => onOpenGame(following.id)) } : null;
   }, [game, onChoose, peers, registry, onOpenGame]);
 
-  if (load.kind === 'loading') {
+  if (load.kind === 'loading' || (load.kind === 'ready' && load.owner !== autosave)) {
     return (
       <main className="w-screen gutter">
         <p className="w-status" role="status">Abriendo tu proyecto…</p>
@@ -130,7 +144,7 @@ export function StudioHost({ studentId, level, gameId, author, registry, storage
         }
       >
         <Studio
-          key={gameId}
+          key={`${gameId}:${resets}`}
           game={game}
           level={level}
           initial={load.initial}
@@ -142,6 +156,14 @@ export function StudioHost({ studentId, level, gameId, author, registry, storage
         />
       </Suspense>
       <SaveNotice status={status} />
+      {resetNotice && (
+        <p className="w-notice" role="status">
+          {RESET_MESSAGE}{' '}
+          <button className="w-notice-close" onClick={() => setResetNotice(false)} aria-label="Cerrar el aviso">
+            ✕
+          </button>
+        </p>
+      )}
     </>
   );
 }

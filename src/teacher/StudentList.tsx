@@ -16,14 +16,24 @@ interface RowProps {
   /** Resolves null on success, otherwise the message to show. */
   onUpdate: (id: number, patch: UpdateStudentRequest) => Promise<string | null>;
   onDelete: (id: number) => Promise<string | null>;
+  /** Resolves null on success, otherwise the message to show. */
+  onReset: (student: AdminStudent) => Promise<string | null>;
 }
 
-function StudentRow({ student, levelError, onLevel, onUpdate, onDelete }: RowProps) {
+/** What the confirmation says is lost. With nothing saved the button still works: it clears copies a child has not sent yet. */
+const resetQuestion = ({ name, savedGames: n }: AdminStudent): string =>
+  `¿Reiniciar el progreso de ${name}? ` +
+  (n === 0
+    ? 'No tiene juegos guardados; se limpian las copias que no llegaron a enviarse.'
+    : `Se ${n === 1 ? 'borra 1 juego guardado' : `borran ${n} juegos guardados`} y no se puede deshacer.`) +
+  ` ${name} sigue en la lista, con su nivel.`;
+
+function StudentRow({ student, levelError, onLevel, onUpdate, onDelete, onReset }: RowProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(student.name);
   const [group, setGroup] = useState(student.group);
   const [error, setError] = useState<string | null>(null);
-  const [armed, setArmed] = useState(false);
+  const [armed, setArmed] = useState<'delete' | 'reset' | null>(null);
 
   // Follow the server copy after a refresh.
   useEffect(() => {
@@ -73,7 +83,7 @@ function StudentRow({ student, levelError, onLevel, onUpdate, onDelete }: RowPro
         aria-label={`Más opciones de ${student.name}`}
         onClick={() => {
           setOpen((o) => !o);
-          setArmed(false);
+          setArmed(null);
         }}
       >
         ⋯
@@ -104,7 +114,7 @@ function StudentRow({ student, levelError, onLevel, onUpdate, onDelete }: RowPro
               onKeyDown={onKey}
             />
           </label>
-          {armed ? (
+          {armed === 'delete' ? (
             <div className="t-confirm">
               <span>¿Borrar a {student.name} y su avance?</span>
               <button
@@ -113,18 +123,37 @@ function StudentRow({ student, levelError, onLevel, onUpdate, onDelete }: RowPro
                   const failure = await onDelete(student.id);
                   if (failure) {
                     setError(failure);
-                    setArmed(false);
+                    setArmed(null);
                   }
                 }}
               >
                 Sí, borrar
               </button>
-              <button className="t-btn" onClick={() => setArmed(false)}>Cancelar</button>
+              <button className="t-btn" onClick={() => setArmed(null)}>Cancelar</button>
+            </div>
+          ) : armed === 'reset' ? (
+            <div className="t-confirm">
+              <span>{resetQuestion(student)}</span>
+              <button
+                className="t-btn t-btn-danger"
+                onClick={async () => {
+                  setError(await onReset(student));
+                  setArmed(null);
+                }}
+              >
+                Sí, reiniciar
+              </button>
+              <button className="t-btn" onClick={() => setArmed(null)}>Cancelar</button>
             </div>
           ) : (
-            <button className="t-btn t-stu-delete" onClick={() => setArmed(true)} aria-label={`Borrar a ${student.name}`}>
-              Borrar alumno
-            </button>
+            <div className="t-stu-actions">
+              <button className="t-btn" onClick={() => setArmed('reset')} aria-label={`Reiniciar el progreso de ${student.name}`}>
+                Reiniciar progreso
+              </button>
+              <button className="t-btn t-stu-delete" onClick={() => setArmed('delete')} aria-label={`Borrar a ${student.name}`}>
+                Borrar alumno
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -142,9 +171,10 @@ interface Props {
   onLevel: RowProps['onLevel'];
   onUpdate: RowProps['onUpdate'];
   onDelete: RowProps['onDelete'];
+  onReset: RowProps['onReset'];
 }
 
-export function StudentList({ students, levelErrors, notice, onLevel, onUpdate, onDelete }: Props) {
+export function StudentList({ students, levelErrors, notice, onLevel, onUpdate, onDelete, onReset }: Props) {
   const [query, setQuery] = useState('');
   const [order, setOrder] = useState<Order>('name');
   const searching = query.trim() !== '';
@@ -160,6 +190,7 @@ export function StudentList({ students, levelErrors, notice, onLevel, onUpdate, 
       onLevel={onLevel}
       onUpdate={onUpdate}
       onDelete={onDelete}
+      onReset={onReset}
     />
   );
 

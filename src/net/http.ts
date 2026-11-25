@@ -5,12 +5,15 @@ import type { ApiErrorBody } from '../shared/api.ts';
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** The child's reset counter, when the server sent it along (the 404 of a game without a project). */
+  readonly epoch: number | undefined;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, epoch?: number) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.epoch = epoch;
   }
 
   get isNetwork(): boolean {
@@ -27,9 +30,10 @@ export interface RequestOptions {
 
 async function readError(response: Response): Promise<ApiError> {
   try {
-    const parsed = (await response.json()) as Partial<ApiErrorBody>;
+    const parsed = (await response.json()) as Partial<ApiErrorBody> & { epoch?: unknown };
     if (parsed.error && typeof parsed.error.message === 'string') {
-      return new ApiError(response.status, String(parsed.error.code ?? 'error'), parsed.error.message);
+      const epoch = typeof parsed.epoch === 'number' ? parsed.epoch : undefined;
+      return new ApiError(response.status, String(parsed.error.code ?? 'error'), parsed.error.message, epoch);
     }
   } catch {
     // Not JSON: a proxy error page, for example.

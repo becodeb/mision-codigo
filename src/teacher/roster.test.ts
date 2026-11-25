@@ -21,6 +21,7 @@ const kid = (name: string, level: LevelId = 1, group = '3.º A'): AdminStudent =
   group,
   level,
   createdAt: '2026-11-04T12:00:00.000Z',
+  savedGames: 0,
 });
 
 const roster = () => [kid('Sofía', 2), kid('Mateo', 1), kid('Álvaro', 2, '4.º B'), kid('Luna', 5), kid('joaquín', 1, '')];
