@@ -53,6 +53,9 @@ export function winMark(p: P): string {
 
 export const newSprites = (p: P, base: P): SpriteProgram[] => p.sprites.filter((s) => !base.sprites.some((b) => b.id === s.id));
 
+/** Los scripts de un personaje, o ninguno si el chico lo sacó del juego. Los controles usan esto, nunca `spriteOf`. */
+export const scriptsOfSprite = (p: P, id: string): Script[] => p.sprites.find((s) => s.id === id)?.scripts ?? [];
+
 /* ---------- cambiar el proyecto (para las pruebas) ---------- */
 
 export const spriteOf = (p: P, id: string): SpriteProgram => p.sprites.find((s) => s.id === id)!;

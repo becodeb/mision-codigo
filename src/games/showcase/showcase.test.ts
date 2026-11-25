@@ -328,3 +328,16 @@ describe('a child who reacts slowly can win', () => {
     expect(g.machine.score).toBeGreaterThanOrEqual(8);
   });
 });
+
+describe('a game with a sprite removed', () => {
+  it.each(SHOWCASE.map((g) => [g.title, g] as const))('%s: no check crashes', (_title, game) => {
+    const without = [...game.setup.sprites.map((s) => [s.id]), game.setup.sprites.map((s) => s.id)];
+    for (const gone of without) {
+      const program = clone(game.setup);
+      program.sprites = program.sprites.filter((s) => !gone.includes(s.id));
+      for (const pillar of game.showcase!.pillars) expect(() => pillar.ok(program), `${gone} / ${pillar.id}`).not.toThrow();
+      for (const step of stepsOf(game)) expect(() => step.check(contextOf(program, true)), `${gone} / ${step.id}`).not.toThrow();
+      expect(() => game.showcase!.goal(program), `${gone} / goal`).not.toThrow();
+    }
+  });
+});

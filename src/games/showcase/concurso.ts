@@ -8,7 +8,7 @@ import { addScore, face, hide, jump, onClick, onFlag, onPoints, onReceive, proje
 import type { Block, ProjectProgram, Script } from '../../language/ir.ts';
 import { blocksForLevel, type BlockType } from '../../language/catalog.ts';
 import { numField } from '../checks.ts';
-import { addSprite, blocksOf, card, count, differs, firstBlock, inside, lookCards, newSprites, scriptsWith, showcaseGame, spriteOf, winMark } from './kit.ts';
+import { addSprite, blocksOf, card, count, differs, firstBlock, inside, lookCards, newSprites, scriptsOfSprite, scriptsWith, showcaseGame, spriteOf, winMark } from './kit.ts';
 
 interface Round {
   question: string;
@@ -70,7 +70,7 @@ export const EL_CONCURSO_DE_ROBI = showcaseGame({
   ],
   goal: (p) => `Respondé bien las ${winMark(p)}preguntas de {robi}`,
   pillars: [
-    { id: 'preguntas', broken: '{robi} ya no hace preguntas', ok: (p) => spriteOf(p, 'robi').scripts.some((s) => s.hat.type === 'a_flag' && count(inside(s), 'a_say') > 0), restore: { sprite: 'robi', script: onFlag(say(ROUNDS[0].question)) } },
+    { id: 'preguntas', broken: '{robi} ya no hace preguntas', ok: (p) => scriptsOfSprite(p, 'robi').some((s) => s.hat.type === 'a_flag' && count(inside(s), 'a_say') > 0), restore: { sprite: 'robi', script: onFlag(say(ROUNDS[0].question)) } },
     { id: 'sumar', broken: 'Acertar ya no suma puntos', ok: (p) => blocksOf(p, 'a_addscore').some((b) => numField(b, 'N') > 0), restore: { sprite: RIGHT[0], script: GOOD(ROUNDS[0].next) } },
     { id: 'siguiente', broken: 'Al acertar ya no viene la pregunta que sigue', ok: (p) => blocksOf(p, 'a_send').length > 0, restore: { sprite: RIGHT[0], script: GOOD(ROUNDS[0].next) } },
     { id: 'ganar', broken: 'Ya no se puede ganar', ok: (p) => wins(p).length > 0, restore: { sprite: 'robi', script: onPoints(3, sound('fanfarria'), win()) } },

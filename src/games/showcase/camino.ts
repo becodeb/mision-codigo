@@ -6,7 +6,7 @@ import type { Block, ProjectProgram } from '../../language/ir.ts';
 import { blocksForLevel, type BlockType } from '../../language/catalog.ts';
 import { numField } from '../checks.ts';
 import type { Pillar } from '../types.ts';
-import { addSprite, addTo, blocksOf, card, count, differs, firstBlock, inside, lookCards, newSprites, numbers, scriptsWith, setNumber, showcaseGame, spriteOf, winMark } from './kit.ts';
+import { addSprite, addTo, blocksOf, card, count, differs, firstBlock, inside, lookCards, newSprites, numbers, scriptsOfSprite, scriptsWith, setNumber, showcaseGame, spriteOf, winMark } from './kit.ts';
 
 /** «tu turno»: whoever sends it puts Toby back where he started. */
 const BACK = 'm1';
@@ -144,7 +144,7 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
       how: [{ t: 'Poné [a_jump] abajo del [a_sound], arriba del [a_send]', on: 'a_jump' }, { t: 'Tocá **▶** y llevá a {toby} al {tesoro}: ¡salta!', on: 'try' }],
       demo: onTouching('toby', addScore(1), sound('campana'), jump(), send(BACK)),
       concept: 'Secuencia: las órdenes se cumplen una abajo de la otra.', ask: '¿Qué hace el tesoro cuando llegás?',
-      built: (p) => spriteOf(p, 'tesoro').scripts.some((sc) => count(inside(sc), ...CHEER) > 0),
+      built: (p) => scriptsOfSprite(p, 'tesoro').some((sc) => count(inside(sc), ...CHEER) > 0),
       solve: (p) => { spriteOf(p, 'tesoro').scripts[0].body.splice(2, 0, jump()); },
     }),
   ],

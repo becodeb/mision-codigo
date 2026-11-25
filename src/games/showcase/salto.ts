@@ -9,7 +9,7 @@ import {
 import { blocksForLevel, type BlockType } from '../../language/catalog.ts';
 import type { ProjectProgram } from '../../language/ir.ts';
 import { blocksInList, numField } from '../checks.ts';
-import { blocksOf, card, count, differs, firstBlock, inside, lookCards, numbers, scriptsWith, setNumber, showcaseGame, spriteOf, winMark } from './kit.ts';
+import { blocksOf, card, count, differs, firstBlock, inside, lookCards, numbers, scriptsOfSprite, scriptsWith, setNumber, showcaseGame, spriteOf, winMark } from './kit.ts';
 
 /** El corredor pisa un poco más arriba que las piedras: las ve venir de frente y el salto le alcanza para pasarlas. */
 const GROUND = -110;
@@ -34,7 +34,7 @@ const base = project('parque', [
   sprite('rayo', 'bolt', [BOLT(), onTouching('tomi', sound('explosion'), lose())], { x: 228, y: -25, size: 100, visible: false, name: 'Rayo' }),
 ]);
 
-const flies = (p: ProjectProgram, id: string): boolean => spriteOf(p, id).scripts.some((s) => s.hat.type === 'a_flag' && count(inside(s), ...TRAVEL) > 0);
+const flies = (p: ProjectProgram, id: string): boolean => scriptsOfSprite(p, id).some((s) => s.hat.type === 'a_flag' && count(inside(s), ...TRAVEL) > 0);
 
 export const SALTA_SIN_PARAR = showcaseGame({
   id: 'muestra-salto', level: 4, order: 2, title: 'Saltá sin parar', cover: 'tomi',
@@ -104,7 +104,7 @@ export const SALTA_SIN_PARAR = showcaseGame({
       demo: onPoints(5, show()),
       example: [{ sprite: 'rayo', scripts: [onPoints(5, show())] }],
       concept: 'Condiciones: algo nuevo aparece cuando llegás a cierto puntaje.', ask: '¿Cuándo aparece el rayo y por qué no hay que saltarlo?',
-      built: (p) => spriteOf(p, 'rayo').scripts.some((s) => s.hat.type === 'a_points' && count(inside(s), 'a_show') > 0),
+      built: (p) => scriptsOfSprite(p, 'rayo').some((s) => s.hat.type === 'a_points' && count(inside(s), 'a_show') > 0),
       solve: (p) => { spriteOf(p, 'rayo').scripts.push(onPoints(5, show())); },
     }),
     card({
