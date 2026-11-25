@@ -5,7 +5,7 @@ import { blocklyToIr, flattenScripts, irToBlockly } from '../../language/convert
 import type { Block, ProjectProgram, Script, SpriteProgram } from '../../language/ir.ts';
 import { Game } from '../../runtime/testing.ts';
 import { LEVEL_IDS } from '../../shared/levels.ts';
-import { applyPlan, planDemo, type SpriteView } from '../../studio/demoPlan.ts';
+import { applyPlan, planDemo, stepOn, type SpriteView } from '../../studio/demoPlan.ts';
 import { Pilot, centerOf, touchingNow } from '../level4/autopilot.ts';
 import { stepsOf } from '../proof.ts';
 import type { GameStep, StepContext } from '../types.ts';
@@ -39,6 +39,24 @@ function mark(scripts: Script[]): void {
   };
   for (const sc of scripts) { visit(sc.hat); sc.body.forEach(visit); }
 }
+
+/** What a child sees of a step: marks become what they draw (a block, a face, a button) and everything else stays. */
+const visible = (t: string, nameOf: (id: string) => string = () => 'Nombre'): string =>
+  t.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\[\w+\]/g, '▢').replace(/\{(\w+)\}/g, (_m, id: string) => nameOf(id));
+/** Words of a step, a drawn block, face or button counting as one. */
+const wordsOf = (t: string): number => t.replace(/\*\*(.+?)\*\*/g, 'B').replace(/\[\w+\]/g, 'B').replace(/\{\w+\}/g, 'B').split(/\s+/).filter(Boolean).length;
+
+/** The forms a step must never take: a block or a place on its own, with no sentence around it. */
+const TELEGRAPHIC: [RegExp, string][] = [
+  [/^Ahí\b/i, '«Ahí …»'],
+  [/^Hueco\b/i, '«Hueco …»'],
+  [/^(Dos|Tres)\s+[[{*]/i, '«Dos [x]»'],
+  [/^(Adentro|Afuera|Abajo|Arriba)\s+[[{*]/i, '«Adentro [x]»'],
+  [/^En el hueco\b/i, '«En el hueco …»'],
+  [/\bun \*\*\d[^*]*\*\*\s*$/i, '«Cambiá un 100»'],
+  [/^(Poné|Traé|Elegí|Cambiá|Sumá)\s+(otra|otro|un|una|el|la|los|las)?\s*([[{]\w+[\]}]|\*\*[^*]+\*\*)\s*$/i, '«Poné [x]» with no place'],
+  [/^(Probá|Tocá|Tocalo|Apretá)\s*(\*\*[^*]+\*\*|la tecla|lo)?\s*\.?$/i, '«Probá ▶» alone'],
+];
 
 describe('showcase games', () => {
   it('has at least one for each level, and the entry game is the first of its list', () => {
@@ -83,18 +101,58 @@ describe('showcase games', () => {
     });
 
     it('names only sprites of the game in its texts', () => {
-      const texts = cards.flatMap((c) => c.card!.how.map((h) => h.t)).concat(game.showcase!.pillars.map((p) => p.broken));
+      const texts = cards.flatMap((c) => [c.card!.aim!, ...c.card!.how.map((h) => h.t)]).concat(game.showcase!.pillars.map((p) => p.broken));
       for (const t of texts) for (const m of t.matchAll(/\{(\w+)\}/g)) expect(game.setup.sprites.some((s) => s.id === m[1]), t).toBe(true);
     });
 
     it('draws real blocks in its steps, and every step belongs to something the hand does', () => {
       for (const c of cards) {
         for (const h of c.card!.how) {
-          for (const m of h.t.matchAll(/\[(\w+)\]/g)) expect(game.toolbox, `${c.id}: ${m[1]}`).toContain(m[1]);
-          expect(['add', 'point', 'modal', 'change', 'tune', 'try'].includes(h.on) || game.toolbox.includes(h.on as BlockType), `${c.id}: ${h.on}`).toBe(true);
+          for (const m of h.t.matchAll(/\[(\w+)\]/g)) expect(game.toolbox.includes(m[1] as BlockType) || flattenScripts(game.setup.sprites.flatMap((x) => x.scripts)).some((b) => b.type === m[1]), `${c.id}: ${m[1]}`).toBe(true);
+          const tunes = c.card!.tune === undefined ? [] : Array.isArray(c.card!.tune) ? c.card!.tune : [c.card!.tune];
+          const known = ['add', 'point', 'modal', 'change', 'tune', 'try', ...tunes.map((t) => t.on ?? 'tune')];
+          expect(known.includes(h.on) || game.toolbox.includes(h.on.replace(/#\d+$/, '') as BlockType), `${c.id}: ${h.on}`).toBe(true);
         }
+        for (const m of (c.card!.aim ?? '').matchAll(/\[(\w+)\]/g)) expect(game.toolbox, `${c.id} aim: ${m[1]}`).toContain(m[1]);
         expect(new Set(c.card!.how.map((h) => h.on)).size, c.id).toBe(c.card!.how.length);
         if (c.id !== 'fondo' && c.id !== 'personaje') expect(c.card!.how.at(-1)!.on, c.id).toBe('try');
+      }
+    });
+
+    it('says what each card is for, in one line that is never repeated', () => {
+      const nameOf = (id: string): string => game.setup.sprites.find((x) => x.id === id)?.name ?? id;
+      const seen = new Set<string>();
+      for (const c of cards) {
+        const aim = c.card!.aim;
+        expect(aim, c.id).toBeTruthy();
+        expect(wordsOf(aim!), `${c.id}: ${aim}`).toBeGreaterThanOrEqual(3);
+        expect(visible(aim!, nameOf).length, `${c.id}: ${aim}`).toBeLessThanOrEqual(80);
+        expect(/[.:;]$/.test(aim!), `${c.id}: ${aim}`).toBe(false);
+        expect(seen.has(aim!), `${c.id} repeats «${aim}»`).toBe(false);
+        seen.add(aim!);
+        /* The steps do not say it again. */
+        for (const h of c.card!.how) expect(h.t, c.id).not.toBe(aim);
+      }
+    });
+
+    it('writes every step as a whole sentence that says what and where', () => {
+      const nameOf = (id: string): string => game.setup.sprites.find((x) => x.id === id)?.name ?? id;
+      for (const c of cards) {
+        for (const h of c.card!.how) {
+          expect(wordsOf(h.t), `${c.id}: ${h.t}`).toBeGreaterThanOrEqual(3);
+          expect(wordsOf(h.t), `${c.id}: ${h.t}`).toBeLessThanOrEqual(16);
+          expect(visible(h.t, nameOf).length, `${c.id}: ${h.t}`).toBeLessThanOrEqual(110);
+          for (const [bad, what] of TELEGRAPHIC) expect(bad.test(h.t), `${c.id}: ${h.t} is ${what}`).toBe(false);
+        }
+      }
+    });
+
+    it('ends by saying what to look at, not just «Probá ▶»', () => {
+      for (const c of cards) {
+        const last = c.card!.how.at(-1)!;
+        if (last.on !== 'try') continue;
+        expect(wordsOf(last.t), `${c.id}: ${last.t}`).toBeGreaterThanOrEqual(5);
+        expect(/¡|mirá|escuchá|leé|contá|hasta ganar|fijate/i.test(last.t), `${c.id}: ${last.t}`).toBe(true);
       }
     });
 
@@ -156,16 +214,25 @@ describe('showcase games', () => {
         const scripts = demoOf(step);
         if (!scripts.length) continue;
         const sprites = clone(game.setup).sprites;
-        if (step.card!.newSprite) sprites.push({ id: 's1', art: 'heart', name: 'Nuevo', x: 0, y: 0, scripts: [] });
+        /* A sprite the child adds comes with the flag block already there. */
+        const flag = (game.level <= 2 ? 'f_flag' : 'a_flag') as BlockType;
+        if (step.card!.newSprite) sprites.push({ id: 's1', art: 'heart', name: 'Nuevo', x: 0, y: 0, scripts: [{ hat: { type: flag, fields: {}, inputs: {}, body: [], elseBody: [] }, body: [] }] });
         sprites.forEach((s) => mark(s.scripts));
         const target = step.card!.newSprite ? 's1' : step.card!.sprite!;
         let plan = planDemo({ scripts, sprite: target }, sprites.map(viewOf), target);
-        for (let i = 0; i < 20 && plan.kind !== 'try'; i++) {
+        let built = false;
+        for (let i = 0; i < 20 && plan.kind !== 'try' && !built; i++) {
           expect(['hat', 'block', 'move'], `${step.id}: ${plan.kind}`).toContain(plan.kind);
+          if (plan.kind === 'hat' || plan.kind === 'block') {
+            /* Until the card is built, every piece the hand brings is one of its steps: the bar never jumps back. */
+            const on = stepOn(step.card!.how, scripts, plan.kind === 'hat' ? plan.hat : plan.block);
+            expect(step.card!.how.map((h) => h.on), `${step.id}: the hand brings ${on}`).toContain(on);
+          }
           applyPlan(sprites.find((s) => s.id === target)!, plan);
+          built = step.card!.built({ ...game.setup, sprites } as ProjectProgram);
           plan = planDemo({ scripts, sprite: target }, sprites.map(viewOf), target);
         }
-        expect(plan.kind, step.id).toBe('try');
+        expect(built || plan.kind === 'try', step.id).toBe(true);
       }
     });
 

@@ -68,12 +68,13 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
     { id: 'ganar', broken: 'Ya no se puede ganar', ok: (p) => scriptsWith(p, 'a_points').some((s) => count(inside(s), 'a_win') > 0), restore: { sprite: 'toby', script: WIN() } },
   ],
   cards: [
-    ...lookCards(base, { hero: 'toby', talker: 'toby', sounder: 'piedra', picture: false, sayBlock: 'a_sayfor', newPlace: 'mar', newArt: 'michi' }),
+    ...lookCards(base, { hero: 'toby', talker: 'toby', sounder: 'piedra', picture: false, sayBlock: 'a_sayfor', newPlace: 'mar', newArt: 'michi', sayAim: 'Que {toby} diga otra cosa cuando empieza el juego', soundAim: 'Que suene otro sonido cuando {toby} toca una {piedra}', soundTry: 'Tocá **▶** y chocá a {toby} con una {piedra}: ¡suena distinto!' }),
     card({
       id: 'velocidad', icon: '💨', label: 'Velocidad', sprite: 'toby',
       title: 'Cambiá la velocidad',
-      how: [{ t: 'Cambiá el **10**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
-      block: { type: 'a_changex', caption: 'Tocá este número y cambialo.' },
+      aim: 'Que {toby} avance más rápido con las flechas',
+      how: [{ t: 'En [a_changex] de la flecha derecha, cambiá el **10** por uno más grande', on: 'change' }, { t: 'Tocá **▶** y mové a {toby} con las flechas: ¡mirá qué rápido va!', on: 'try' }],
+      block: { type: 'a_changex', caption: 'Tocá este número y cambialo.', where: (b) => numField(b, 'N') === 10 },
       concept: 'Coordenadas: moverse es cambiar los números de x y de y.', ask: '¿Qué pasa si ponés un número más grande?',
       built: (p) => scriptsWith(p, 'a_key').some((s) => inside(s).some((b) => STEPS.includes(b.type) && Number.isFinite(numField(b, 'N')) && Math.abs(numField(b, 'N')) !== 10)),
       solve: (p) => { setNumber(firstBlock(p, 'toby', 'a_changex'), 'N', 14); },
@@ -81,7 +82,8 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
     card({
       id: 'otra', icon: '➕', label: 'Otra piedra', newSprite: true, point: 'add-sprite',
       title: 'Una piedra más en el camino',
-      how: [{ t: 'Tocá **+ Agregar**', on: 'add' }, { t: 'Poné [a_touching]', on: 'a_touching' }, { t: 'Elegí a {toby}', on: 'tune' }, { t: 'Poné [a_send]', on: 'a_send' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {toby} vuelva al principio si toca un personaje nuevo',
+      how: [{ t: 'Tocá **+ Agregar** y sumá un personaje', on: 'add' }, { t: 'Traé [a_touching] a un lugar vacío', on: 'a_touching' }, { t: 'En [a_touching], elegí a {toby}', on: 'tune' }, { t: 'Poné [a_send] abajo de [a_touching]', on: 'a_send' }, { t: 'Tocá **▶** y llevá a {toby} hasta el personaje nuevo: ¡vuelve al principio!', on: 'try' }],
       tune: { type: 'a_touching', field: 'T', when: (b) => b.fields.T !== 'toby' },
       demo: onTouching('toby', send(BACK)),
       example: [{ sprite: 'Nuevo', scripts: [onTouching('toby', sound('explosion'), send(BACK))] }],
@@ -92,7 +94,8 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
     card({
       id: 'distinta', icon: '🎢', label: 'Se mueve', sprite: 'piedra',
       title: 'Una piedra que se mueve distinto',
-      how: [{ t: 'Cambiá el **1.6**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {piedra} suba y baje a otra velocidad',
+      how: [{ t: 'En el [a_glide] de arriba, cambiá el **1.6** por otro número', on: 'change' }, { t: 'Tocá **▶** y mirá cómo se mueve {piedra}', on: 'try' }],
       block: { type: 'a_glide', caption: 'Tocá un número: con menos segundos va más rápido.' },
       concept: 'Coordenadas y tiempo: decirle a dónde ir y cuánto tardar.', ask: '¿Por dónde pasa la piedra y dónde está escrito?',
       built: (p) => (['T', 'X', 'Y'] as const).some((k) => differs(numbers(p, 'a_glide', k), numbers(base, 'a_glide', k))),
@@ -101,7 +104,8 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
     card({
       id: 'meta', icon: '🏁', label: 'Meta', sprite: 'toby',
       title: 'Cambiá la meta',
-      how: [{ t: 'Cambiá el **3**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que se gane llegando al tesoro más o menos veces',
+      how: [{ t: 'En [a_points], cambiá el **3** por otro número', on: 'change' }, { t: 'Tocá **▶** y llevá a {toby} al {tesoro} hasta ganar', on: 'try' }],
       block: { type: 'a_points', caption: 'Tocá el 3 y poné otro número.' },
       concept: 'Condiciones: algo pasa recién cuando se llega a un número.', ask: '¿Cómo sabe el juego que ganaste?',
       built: (p) => scriptsWith(p, 'a_points').some((s) => count(inside(s), 'a_win') > 0 && numField(s.hat, 'N') !== 3),
@@ -110,10 +114,14 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
     card({
       id: 'mundo', icon: '🌍', label: 'Otro mundo', sprite: 'toby',
       title: 'El segundo mundo',
-      how: [{ t: 'Poné [a_points]', on: 'a_points' }, { t: 'Poné [a_backdrop]', on: 'a_backdrop' }, { t: 'Elegí otro lugar', on: 'tune' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que el juego pase a otro lugar cuando llegás 2 veces al tesoro',
+      how: [{ t: 'Traé [a_points] a un lugar vacío de {toby}', on: 'a_points' }, { t: 'En [a_points], cambiá el **5** por **2**', on: 'tune_points' }, { t: 'Poné [a_backdrop] abajo de [a_points]', on: 'a_backdrop' }, { t: 'En [a_backdrop], elegí un lugar nuevo', on: 'tune' }, { t: 'Tocá **▶** y llegá 2 veces al tesoro: ¡cambia el lugar!', on: 'try' }],
       demo: onPoints(2, backdrop('nieve')),
       example: [{ sprite: 'toby', scripts: [onPoints(2, backdrop('nieve'))] }],
-      tune: { type: 'a_backdrop', field: 'B', when: (b, p) => b.fields.B === p.backdrop },
+      tune: [
+        { type: 'a_points', field: 'N', on: 'tune_points', when: (b) => numField(b, 'N') === 5 },
+        { type: 'a_backdrop', field: 'B', when: (b, p) => b.fields.B === p.backdrop },
+      ],
       concept: 'Condiciones: el juego cambia cuando llegás a cierto puntaje.', ask: '¿Qué tiene que pasar para cambiar de mundo?',
       built: (p) => p.sprites.some((s) => s.scripts.some((sc) => inside(sc).some((b) => b.type === 'a_backdrop' && b.fields.B !== p.backdrop))),
       solve: (p) => addTo(p, 'toby', onPoints(2, backdrop(p.backdrop === 'nieve' ? 'mar' : 'nieve'))),
@@ -121,7 +129,8 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
     card({
       id: 'atajo', icon: '⚡', label: 'Atajo', sprite: 'toby',
       title: 'Un atajo con una tecla',
-      how: [{ t: 'Poné [a_key]', on: 'a_key' }, { t: 'Elegí **espacio**', on: 'tune' }, { t: 'Poné [a_goto]', on: 'a_goto' }, { t: 'Apretá **espacio**', on: 'try' }], tap: 'stage',
+      aim: 'Que al apretar la barra espaciadora {toby} vaya a otro lugar',
+      how: [{ t: 'Traé [a_key] a un lugar vacío de {toby}', on: 'a_key' }, { t: 'En [a_key], elegí la tecla **espacio**', on: 'tune' }, { t: 'Poné [a_goto] abajo de [a_key]', on: 'a_goto' }, { t: 'Apretá **espacio** en el teclado: ¡{toby} cambia de lugar!', on: 'try' }], tap: 'stage',
       demo: onKey(' ', goTo(60, -60)),
       tune: { type: 'a_key', field: 'K', when: (b, _p, all) => b.fields.K !== ' ' && all.filter((x) => x.type === 'a_key' && x.fields.K === b.fields.K).length > 1 },
       concept: 'Coordenadas: ir a un lugar es decirle su x y su y.', ask: '¿A qué lugar te lleva la tecla y cómo lo sabés?',
@@ -131,7 +140,8 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
     card({
       id: 'festejo', icon: '🎉', label: 'Festejo', sprite: 'tesoro',
       title: 'Un festejo en el tesoro',
-      how: [{ t: 'Poné [a_jump]', on: 'a_jump' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {tesoro} salte de alegría cuando {toby} llega',
+      how: [{ t: 'Poné [a_jump] abajo del [a_sound], arriba del [a_send]', on: 'a_jump' }, { t: 'Tocá **▶** y llevá a {toby} al {tesoro}: ¡salta!', on: 'try' }],
       demo: onTouching('toby', addScore(1), sound('campana'), jump(), send(BACK)),
       concept: 'Secuencia: las órdenes se cumplen una abajo de la otra.', ask: '¿Qué hace el tesoro cuando llegás?',
       built: (p) => spriteOf(p, 'tesoro').scripts.some((sc) => count(inside(sc), ...CHEER) > 0),

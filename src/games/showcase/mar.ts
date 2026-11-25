@@ -28,11 +28,12 @@ export const NOCHE_DE_BOO = showcaseGame({
     { id: 'estrella', broken: 'Nada suma estrellas cuando lo tocás', ok: (p) => scriptsWith(p, 'f_click').some((s) => count(inside(s), 'f_star') > 0), restore: { sprite: 'boo', script: CAUGHT() } },
   ],
   cards: [
-    ...lookCards(base, { hero: 'boo', talker: 'robi', sounder: 'boo', picture: true, sayBlock: 'f_say', newPlace: 'selva', newArt: 'pulpi' }),
+    ...lookCards(base, { hero: 'boo', talker: 'robi', sounder: 'boo', picture: true, sayBlock: 'f_say', newPlace: 'selva', newArt: 'pulpi', sayAim: 'Que {robi} diga otra cosa cuando empieza el juego', soundAim: 'Que suene un sonido distinto cuando atrapás a {boo}', soundTry: 'Tocá **▶** y atrapá a {boo}: ¡suena distinto!' }),
     card({
       id: 'velocidad', icon: '⏱️', label: 'Velocidad', sprite: 'boo',
       title: 'Cambiá la velocidad',
-      how: [{ t: 'Cambiá el [f_wait]', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {boo} se quede menos tiempo a la vista: ¡más difícil!',
+      how: [{ t: 'Cambiá el **2** del [f_wait] por un número más chico', on: 'change' }, { t: 'Tocá **▶** y mirá cuánto tiempo se queda {boo}', on: 'try' }],
       block: { type: 'f_wait', caption: 'Tocá el número del reloj.' },
       concept: 'Dificultad: cambiar un número cambia cómo se juega.', ask: '¿Qué número cambiaste y qué pasó?',
       built: (p) => differs(numbers(p, 'f_wait', 'N'), numbers(base, 'f_wait', 'N')),
@@ -41,7 +42,8 @@ export const NOCHE_DE_BOO = showcaseGame({
     card({
       id: 'vueltas', icon: '🔁', label: 'Vueltas', sprite: 'boo',
       title: 'Que aparezca más o menos veces',
-      how: [{ t: 'Cambiá las [f_repeat]', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {boo} aparezca más o menos veces antes de irse',
+      how: [{ t: 'En [f_repeat], cambiá el **9** por otro número', on: 'change' }, { t: 'Tocá **▶** y contá cuántas veces aparece {boo}', on: 'try' }],
       block: { type: 'f_repeat', caption: 'Tocá el número de las vueltas.' },
       concept: 'Bucles: repetir sin escribir todo de nuevo.', ask: '¿Para qué sirven las vueltas?',
       built: (p) => blocksOf(p, 'f_repeat').some((r) => count(r.body, 'f_random', 'f_show', 'f_hide') > 0 && r.fields.N !== 9),
@@ -50,7 +52,8 @@ export const NOCHE_DE_BOO = showcaseGame({
     card({
       id: 'doble', icon: '⭐', label: 'Más puntos', sprite: 'boo',
       title: 'Que valga 2 puntos',
-      how: [{ t: 'Poné otra [f_star]', on: 'f_star' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {boo} te dé 2 estrellas cada vez que lo atrapás',
+      how: [{ t: 'Poné otra [f_star] abajo de la [f_star] de {boo}', on: 'f_star' }, { t: 'Tocá **▶** y atrapá a {boo}: ¡ahora suma 2!', on: 'try' }],
       demo: fClick(fStar(), fStar(), fHide(), fSound('risa')),
       concept: 'Secuencia: las órdenes se cumplen una abajo de la otra.', ask: '¿Por qué ahora suma dos puntos?',
       built: (p) => scriptsWith(p, 'f_click').some((s) => count(inside(s), 'f_star') >= 2),
@@ -59,7 +62,8 @@ export const NOCHE_DE_BOO = showcaseGame({
     card({
       id: 'cancion', icon: '🎵', label: 'Canción', sprite: 'robi',
       title: 'Componé una canción',
-      how: [{ t: 'Poné dos [f_note]', on: 'f_note' }, { t: 'Tocá a {robi}', on: 'try' }], tap: 'robi',
+      aim: 'Que {robi} toque una canción más larga y la repita',
+      how: [{ t: 'Poné dos [f_note] más adentro de [f_repeat], abajo de la última', on: 'f_note' }, { t: 'Tocá a {robi} y escuchá la canción más larga', on: 'try' }], tap: 'robi',
       demo: fClick(fRepeat(2, fNote('do'), fNote('mi'), fNote('sol'), fNote('la'), fNote('sol'))),
       concept: 'Bucles: una melodía corta que se repite.', ask: '¿Qué parte de la canción se repite?',
       built: (p) => blocksOf(p, 'f_note').length >= 5,
@@ -68,7 +72,8 @@ export const NOCHE_DE_BOO = showcaseGame({
     card({
       id: 'baile', icon: '🕺', label: 'Baile', sprite: 'coni',
       title: 'Un baile que se repite',
-      how: [{ t: 'Poné [f_repeat]', on: 'f_repeat' }, { t: 'Adentro [f_spin]', on: 'f_spin' }, { t: 'Tocá a {coni}', on: 'try' }], tap: 'coni',
+      aim: 'Que {coni} salte y después gire varias veces',
+      how: [{ t: 'Poné [f_repeat] abajo del [f_sound], al final', on: 'f_repeat' }, { t: 'Poné [f_spin] adentro de [f_repeat]', on: 'f_spin' }, { t: 'Tocá a {coni} y mirá cuántas vueltas da', on: 'try' }], tap: 'coni',
       demo: fClick(fJump(), fSound('boing'), fRepeat(2, fSpin())),
       concept: 'Bucles: repetir sin escribir todo de nuevo.', ask: '¿Cuántas veces repite el movimiento? ¿Dónde lo dice?',
       built: (p) => p.sprites.some((s) => s.scripts.some((sc) => inside(sc).some((b) => b.type === 'f_repeat' && count(b.body, ...DANCE) > 0))),
@@ -77,7 +82,8 @@ export const NOCHE_DE_BOO = showcaseGame({
     card({
       id: 'mensaje', icon: '✉️', label: 'Mensaje', sprite: 'boo',
       title: 'Un mensaje secreto',
-      how: [{ t: '{boo} [f_send]', on: 'f_send' }, { t: '{coni} [f_recv]', on: 'f_recv' }, { t: 'Poné [f_jump]', on: 'f_jump' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {coni} salte cada vez que atrapás a {boo}',
+      how: [{ t: 'Poné [f_send] abajo de todos los bloques de {boo}', on: 'f_send' }, { t: 'Traé [f_recv] a un lugar vacío de {coni}', on: 'f_recv' }, { t: 'Poné [f_jump] abajo de [f_recv]', on: 'f_jump' }, { t: 'Tocá **▶** y atrapá a {boo}: ¡{coni} salta!', on: 'try' }],
       demo: fClick(fStar(), fHide(), fSound('risa'), fSend('red')),
       example: [{ sprite: 'boo', scripts: [fClick(fStar(), fHide(), fSound('risa'), fSend('red'))] }, { sprite: 'coni', scripts: [fRecv('red', fJump(), fSound('aplauso'))] }],
       concept: 'Mensajes: los personajes se avisan cosas entre ellos.', ask: '¿Cómo se entera el otro personaje?',
@@ -87,7 +93,8 @@ export const NOCHE_DE_BOO = showcaseGame({
     card({
       id: 'amigo', icon: '➕', label: 'Amigo', newSprite: true, point: 'add-sprite',
       title: 'Sumá un personaje',
-      how: [{ t: 'Tocá **+ Agregar**', on: 'add' }, { t: 'Poné [f_click]', on: 'f_click' }, { t: 'Poné [f_jump]', on: 'f_jump' }, { t: 'Tocalo', on: 'try' }], tap: 'new',
+      aim: 'Que un personaje nuevo salte cuando lo tocás',
+      how: [{ t: 'Tocá **+ Agregar** y sumá un personaje', on: 'add' }, { t: 'Traé [f_click] a un lugar vacío', on: 'f_click' }, { t: 'Poné [f_jump] abajo de [f_click]', on: 'f_jump' }, { t: 'Tocá al personaje nuevo: ¡salta!', on: 'try' }], tap: 'new',
       demo: fClick(fJump()),
       concept: 'Crear: programar un personaje desde cero.', ask: '¿Qué le programaste al personaje nuevo?',
       built: (p) => newSprites(p, base).some((s) => s.scripts.some((sc) => sc.body.length > 0)),

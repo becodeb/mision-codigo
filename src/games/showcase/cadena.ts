@@ -35,11 +35,12 @@ export const REACCION_EN_CADENA = showcaseGame({
     { id: 'final', broken: 'Nadie suma la estrella al final', ok: (p) => scriptsWith(p, 'f_recv').some((s) => count(inside(s), 'f_star') > 0), restore: { sprite: 'estrella', script: fRecv('yellow', fSpin(), fStar(), fSound('fanfarria')) } },
   ],
   cards: [
-    ...lookCards(base, { hero: 'estrella', talker: 'toby', sounder: 'pelota', picture: true, sayBlock: 'f_say', newPlace: 'selva', newArt: 'heart', soundTap: 'pelota' }),
+    ...lookCards(base, { hero: 'estrella', talker: 'toby', sounder: 'pelota', picture: true, sayBlock: 'f_say', newPlace: 'selva', newArt: 'heart', soundTap: 'pelota', sayAim: 'Que {toby} diga otra cosa cuando empieza el juego', soundAim: 'Que al tocar a {pelota} suene un sonido distinto' }),
     card({
-      id: 'eslabon', icon: '➕', label: 'Eslabón', newSprite: true, point: 'add-sprite',
+      id: 'eslabon', icon: '➕', label: 'Otro eslabón', newSprite: true, point: 'add-sprite',
       title: 'Sumá un eslabón más',
-      how: [{ t: 'Tocá **+ Agregar**', on: 'add' }, { t: 'Poné [f_recv]', on: 'f_recv' }, { t: 'Poné [f_jump]', on: 'f_jump' }, { t: 'Tocá a {pelota}', on: 'try' }], tap: 'pelota',
+      aim: 'Que un personaje nuevo se sume a la cadena y salte',
+      how: [{ t: 'Tocá **+ Agregar** y sumá un personaje', on: 'add' }, { t: 'Traé [f_recv] a un lugar vacío', on: 'f_recv' }, { t: 'Poné [f_jump] abajo de [f_recv]', on: 'f_jump' }, { t: 'Tocá a {pelota}: ¡el personaje nuevo salta!', on: 'try' }], tap: 'pelota',
       demo: fRecv('red', fJump()),
       concept: 'Mensajes: un personaje nuevo puede enterarse de lo que pasa.', ask: '¿Cómo se entera el personaje nuevo?',
       built: (p) => newSprites(p, base).some((s) => s.scripts.some((sc) => sc.hat.type === 'f_recv' && sc.body.length > 0)),
@@ -48,7 +49,8 @@ export const REACCION_EN_CADENA = showcaseGame({
     card({
       id: 'esperar', icon: '⏱️', label: 'Esperar', sprite: 'toby',
       title: 'Que Toby se tome su tiempo',
-      how: [{ t: 'Poné [f_wait]', on: 'f_wait' }, { t: 'Tocá a {pelota}', on: 'try' }], tap: 'pelota',
+      aim: 'Que {toby} espere un momento antes de saltar',
+      how: [{ t: 'Poné [f_wait] arriba del [f_jump], justo abajo de [f_recv]', on: 'f_wait' }, { t: 'Tocá a {pelota}: ¡{toby} espera para saltar!', on: 'try' }], tap: 'pelota',
       demo: fRecv('red', fWait(1), fJump(), fSend('blue'), fSound('guau')),
       concept: 'Tiempo: una espera hace que cada cosa pase en su momento.', ask: '¿Qué cambió en la cadena cuando agregaste la espera?',
       built: (p) => scriptsWith(p, 'f_recv').some((s) => count(inside(s), 'f_wait') > 0),
@@ -57,7 +59,8 @@ export const REACCION_EN_CADENA = showcaseGame({
     card({
       id: 'vueltas', icon: '🔁', label: 'Vueltas', sprite: 'pulpi',
       title: 'Un baile que se repite',
-      how: [{ t: 'Poné [f_repeat]', on: 'f_repeat' }, { t: 'Adentro [f_spin]', on: 'f_spin' }, { t: 'Tocá a {pelota}', on: 'try' }], tap: 'pelota',
+      aim: 'Que {pulpi} gire muchas veces seguidas',
+      how: [{ t: 'Poné [f_repeat] abajo del [f_spin] de {pulpi}', on: 'f_repeat' }, { t: 'Poné otro [f_spin] adentro de [f_repeat]', on: 'f_spin' }, { t: 'Tocá a {pelota} y mirá cuántas vueltas da {pulpi}', on: 'try' }], tap: 'pelota',
       demo: fRecv('blue', fRepeat(2, fSpin()), fSend('yellow'), fSound('magia')),
       concept: 'Bucles: repetir sin escribir todo de nuevo.', ask: '¿Cuántas vueltas da? ¿Dónde lo dice?',
       built: (p) => blocksOf(p, 'f_repeat').some((b) => count(b.body, ...DANCE) > 0),
@@ -65,8 +68,9 @@ export const REACCION_EN_CADENA = showcaseGame({
     }),
     card({
       id: 'mismo', icon: '📨', label: 'Mismo sobre', sprite: 'pelota',
-      title: 'Que {pelota} también escuche el último sobre',
-      how: [{ t: 'Poné [f_recv]', on: 'f_recv' }, { t: 'Elegí el sobre amarillo', on: 'tune' }, { t: 'Poné [f_jump]', on: 'f_jump' }, { t: 'Tocá a {pelota}', on: 'try' }], tap: 'pelota',
+      title: 'Que la pelota también escuche el último sobre',
+      aim: 'Que {pelota} también salte al final de la cadena',
+      how: [{ t: 'Traé [f_recv] a un lugar vacío de {pelota}', on: 'f_recv' }, { t: 'En [f_recv], elegí el sobre amarillo', on: 'tune' }, { t: 'Poné [f_jump] abajo de [f_recv]', on: 'f_jump' }, { t: 'Tocá a {pelota}: ¡al final también salta ella!', on: 'try' }], tap: 'pelota',
       demo: fRecv('yellow', fJump()),
       tune: { type: 'f_recv', field: 'C', when: (b) => b.fields.C !== 'yellow' },
       concept: 'Mensajes: un mismo aviso lo pueden escuchar varios a la vez.', ask: '¿Quiénes se enteran del mismo sobre?',
@@ -76,7 +80,8 @@ export const REACCION_EN_CADENA = showcaseGame({
     card({
       id: 'final', icon: '🎆', label: 'Gran final', sprite: 'estrella',
       title: 'Un gran final',
-      how: [{ t: 'Poné [f_backdrop]', on: 'f_backdrop' }, { t: 'Elegí otro lugar', on: 'tune' }, { t: 'Tocá a {pelota}', on: 'try' }], tap: 'pelota',
+      aim: 'Que el juego pase a otro lugar al final de la cadena',
+      how: [{ t: 'Poné [f_backdrop] al final, abajo de todos los bloques de {estrella}', on: 'f_backdrop' }, { t: 'En [f_backdrop], elegí un lugar nuevo', on: 'tune' }, { t: 'Tocá a {pelota}: ¡al final cambia el lugar!', on: 'try' }], tap: 'pelota',
       demo: fRecv('yellow', fSpin(), fStar(), fSound('fanfarria'), fBackdrop('espacio')),
       tune: { type: 'f_backdrop', field: 'B', when: (b, p) => b.fields.B === p.backdrop },
       concept: 'Eventos: el último mensaje puede cambiar todo el juego.', ask: '¿Qué hace el último de la cadena?',
@@ -86,7 +91,8 @@ export const REACCION_EN_CADENA = showcaseGame({
     card({
       id: 'musica', icon: '🎵', label: 'Música', sprite: 'pulpi',
       title: 'Que Pulpi toque una melodía',
-      how: [{ t: 'Poné dos [f_note]', on: 'f_note' }, { t: 'Tocá a {pelota}', on: 'try' }], tap: 'pelota',
+      aim: 'Que {pulpi} toque una melodía de dos notas',
+      how: [{ t: 'Poné dos [f_note] seguidas abajo del [f_send]', on: 'f_note' }, { t: 'Tocá a {pelota} y escuchá las notas de {pulpi}', on: 'try' }], tap: 'pelota',
       demo: fRecv('blue', fSpin(), fSend('yellow'), fNote('do'), fNote('sol'), fSound('magia')),
       concept: 'Secuencia: las notas suenan una atrás de la otra.', ask: '¿Qué suena primero y qué suena después?',
       built: (p) => blocksOf(p, 'f_note').length >= 2,

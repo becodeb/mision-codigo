@@ -475,7 +475,7 @@ describe('Saltá sin parar', () => {
     const withBolt = (p: ProjectProgram, frameMs: number): Game => {
       const g = new Game(p, { seed: 1, frameMs });
       g.flag();
-      g.machine.setScore(4);
+      g.machine.setScore(5);
       return g;
     };
 

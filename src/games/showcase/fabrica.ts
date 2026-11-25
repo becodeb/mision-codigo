@@ -37,7 +37,7 @@ const limits = (p: ProjectProgram): number[] =>
 /** «**200** » when the game is won by having more than 199, or nothing: the goal follows what the child changed. */
 const target = (p: ProjectProgram): string => (limits(p).length ? `**${limits(p)[0] + 1}** ` : '');
 
-const mundo = (to: string): Script => onFlag(waitUntil(gt(variable('monedas'), 99)), backdrop(to));
+const mundo = (to: string): Script => onFlag(waitUntil(gt(variable('monedas'), 10)), backdrop(to));
 
 export const LA_FABRICA_DE_MONEDAS = showcaseGame({
   id: 'muestra-fabrica', level: 5, order: 2, title: 'La fábrica de monedas', cover: 'coin',
@@ -58,11 +58,12 @@ export const LA_FABRICA_DE_MONEDAS = showcaseGame({
     { id: 'ganar', broken: 'Ya no se puede ganar', ok: (p) => blocksOf(p, 'a_win').length > 0, restore: { sprite: 'moneda', script: WIN() } },
   ],
   cards: [
-    ...lookCards(base, { hero: 'moneda', talker: 'robi', sounder: 'moneda', picture: false, sayBlock: 'a_sayfor', newPlace: 'castillo', newArt: 'apple' }),
+    ...lookCards(base, { hero: 'moneda', talker: 'robi', sounder: 'moneda', picture: false, sayBlock: 'a_sayfor', newPlace: 'castillo', newArt: 'apple', soundTap: 'moneda', soundWhere: (b) => b.fields.S === 'campana', sayAim: 'Que {robi} diga otra cosa cuando empieza el juego', soundAim: 'Que suene otro sonido cada vez que tocás a {moneda}' }),
     card({
       id: 'clic', icon: '👆', label: 'Más por clic', sprite: 'moneda',
       title: 'Que cada clic valga más al empezar',
-      how: [{ t: 'Cambiá el **1**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que cada clic en {moneda} sume más monedas',
+      how: [{ t: 'En el [a_setvar] que dice porClic, cambiá el **1** por un número más grande', on: 'change' }, { t: 'Tocá **▶**, después tocá a {moneda}: ¡cada clic suma más!', on: 'try' }],
       block: { type: 'a_setvar', caption: 'Tocá el 1 y poné otro número.', where: (b) => b.fields.NAME === 'porClic' },
       concept: 'Variables: un número con nombre que el programa recuerda y cambia.', ask: '¿Qué variable cambiaste y qué pasó con cada clic?',
       built: (p) => setOf(p, 'porClic').some((b) => valueOf(b) !== 1),
@@ -71,7 +72,8 @@ export const LA_FABRICA_DE_MONEDAS = showcaseGame({
     card({
       id: 'meta', icon: '🏁', label: 'Meta', sprite: 'moneda',
       title: 'Cambiá cuántas monedas hay que juntar',
-      how: [{ t: 'Cambiá el **199**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que se gane con más o menos monedas',
+      how: [{ t: 'Cambiá el **199** del [a_waituntil] por otro número', on: 'change' }, { t: 'Tocá **▶** y juntá monedas hasta ganar', on: 'try' }],
       block: { type: 'v_num', caption: 'Tocá el 199: se gana cuando hay más monedas que ese número.', where: (b) => Number(b.fields.V) === LIMIT },
       concept: 'Operadores: comparar dos números dice si algo se cumple.', ask: '¿Qué compara el juego para saber que ganaste?',
       built: (p) => limits(p).some((n) => n !== LIMIT),
@@ -80,7 +82,8 @@ export const LA_FABRICA_DE_MONEDAS = showcaseGame({
     card({
       id: 'ayudantes', icon: '🤖', label: 'Ayudantes', sprite: 'moneda',
       title: 'Empezar con ayudantes',
-      how: [{ t: 'Cambiá el **0**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que empieces con ayudantes que juntan monedas solos',
+      how: [{ t: 'En el [a_setvar] que dice ayudantes, cambiá el **0** por **2**', on: 'change' }, { t: 'Tocá **▶** y mirá cómo suben las monedas sin tocar nada', on: 'try' }],
       block: { type: 'a_setvar', caption: 'Tocá el 0 y poné cuántos ayudantes hay al empezar.', where: (b) => b.fields.NAME === 'ayudantes' },
       concept: 'Variables: el valor con el que empieza cambia todo lo que sigue.', ask: '¿Qué pasa con las monedas si empezás con más ayudantes?',
       built: (p) => setOf(p, 'ayudantes').some((b) => valueOf(b) !== 0),
@@ -89,7 +92,8 @@ export const LA_FABRICA_DE_MONEDAS = showcaseGame({
     card({
       id: 'mejora', icon: '⭐', label: 'Mejora', sprite: 'estrella',
       title: 'Una mejora más grande',
-      how: [{ t: 'Cambiá el **1**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que comprar la {estrella} mejore tu clic más que antes',
+      how: [{ t: 'En el [a_changevar] que dice porClic, cambiá el **1** por uno más grande', on: 'change' }, { t: 'Tocá **▶**, juntá 50 monedas y tocá a {estrella}: ¡cada clic vale más!', on: 'try' }],
       block: { type: 'a_changevar', caption: 'Tocá el 1 y poné cuánto sube cada clic.', where: (b) => b.fields.NAME === 'porClic' },
       concept: 'Variables: sumarle a una variable la hace crecer.', ask: '¿Cuánto vale ahora cada clic después de comprar la mejora?',
       built: (p) => changesOf(p, 'porClic').some((b) => valueOf(b) >= 2),
@@ -98,7 +102,8 @@ export const LA_FABRICA_DE_MONEDAS = showcaseGame({
     card({
       id: 'azar', icon: '🎲', label: 'Azar', sprite: 'robi',
       title: 'Que paguen cuando quieran',
-      how: [{ t: 'En el **1** [v_random]', on: 'v_random' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que los ayudantes de {robi} paguen en tiempos distintos',
+      how: [{ t: 'Poné [v_random] en el hueco de [a_wait], donde está el **1**', on: 'v_random' }, { t: 'Tocá **▶**, juntá 20 monedas y tocá a {robi}: ¡mirá cuándo suben!', on: 'try' }],
       demo: PAY(),
       example: [{ sprite: 'robi', scripts: [onFlag(forever(wait(randomBetween(1, 3)), changeVar('monedas', variable('ayudantes'))))] }],
       values: [{ type: 'v_random', into: 'a_wait', input: 'N' }],
@@ -109,7 +114,8 @@ export const LA_FABRICA_DE_MONEDAS = showcaseGame({
     card({
       id: 'nombre', icon: '🙋', label: 'Tu nombre', sprite: 'robi',
       title: 'Que te pregunte el nombre',
-      how: [{ t: 'Poné [a_ask]', on: 'a_ask' }, { t: 'Adentro [v_answer]', on: 'v_answer' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {robi} te pregunte cómo te llamás y te salude',
+      how: [{ t: 'Poné [a_ask] arriba del [a_sayfor], justo abajo de [a_flag]', on: 'a_ask' }, { t: 'Poné [v_answer] en el hueco de [a_sayfor], donde está el texto', on: 'v_answer' }, { t: 'Tocá **▶**, escribí tu nombre y leé cómo te saluda {robi}', on: 'try' }],
       demo: onFlag(ask('¿Cómo te llamás?'), sayFor('¡Hola!', 2)),
       example: [{ sprite: 'robi', scripts: [onFlag(ask('¿Cómo te llamás?'), sayFor(join('¡Hola, ', answer()), 2))] }],
       values: [{ type: 'v_answer', into: 'a_sayfor', input: 'T' }],
@@ -120,13 +126,14 @@ export const LA_FABRICA_DE_MONEDAS = showcaseGame({
     card({
       id: 'mundo', icon: '🌍', label: 'Otro mundo', sprite: 'estrella',
       title: 'El segundo mundo',
-      how: [{ t: 'Poné [a_waituntil]', on: 'a_waituntil' }, { t: 'Poné [a_backdrop]', on: 'a_backdrop' }, { t: 'Elegí otro lugar', on: 'tune' }, { t: 'En el hueco [v_gt]', on: 'v_gt' }, { t: 'Ahí [v_var]', on: 'v_var' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que el juego pase a otro lugar cuando tengas más de 10 monedas',
+      how: [{ t: 'Poné [a_waituntil] abajo del [a_say]', on: 'a_waituntil' }, { t: 'Poné [a_backdrop] abajo de [a_waituntil]', on: 'a_backdrop' }, { t: 'En [a_backdrop], elegí un lugar nuevo', on: 'tune' }, { t: 'Poné [v_gt] en el hueco de [a_waituntil]', on: 'v_gt' }, { t: 'Poné [v_var] a la izquierda del [v_gt]', on: 'v_var' }, { t: 'Tocá **▶** y juntá 11 monedas: ¡cambia el lugar!', on: 'try' }],
       demo: mundo('castillo'),
       example: [{ sprite: 'estrella', scripts: [mundo('castillo')] }],
       tune: { type: 'a_backdrop', field: 'B', when: (b, p) => b.fields.B === p.backdrop },
       values: [{ type: 'v_gt', into: 'a_waituntil', input: 'C' }, { type: 'v_var', into: 'v_gt', input: 'A' }],
       concept: 'Condiciones: el juego cambia cuando una variable llega a cierto valor.', ask: '¿Qué tiene que pasar para cambiar de mundo?',
-      built: (p) => p.sprites.some((s) => s.scripts.some((sc) => inside(sc).some((b) => b.type === 'a_backdrop' && b.fields.B !== p.backdrop))),
+      built: (p) => p.sprites.some((s) => s.scripts.some((sc) => inside(sc).some((b) => b.type === 'a_backdrop' && b.fields.B !== p.backdrop) && inside(sc).some((b) => b.type === 'a_waituntil' && b.inputs.C?.type === 'v_gt' && b.inputs.C.inputs.A?.type === 'v_var'))),
       solve: (p) => addTo(p, 'estrella', mundo(p.backdrop === 'nieve' ? 'mar' : 'nieve')),
     }),
   ],

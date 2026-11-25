@@ -54,12 +54,13 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
     { id: 'ganar', broken: 'Ya no se puede ganar', ok: (p) => scriptsWith(p, 'a_points').concat(scriptsWith(p, 'a_touching')).some((s) => count(inside(s), 'a_win') > 0), restore: { sprite: 'nova', script: WIN() } },
   ],
   cards: [
-    ...lookCards(base, { hero: 'nova', talker: 'nova', sounder: 'estrella', picture: false, sayBlock: 'a_sayfor', newPlace: 'mar', newArt: 'pulpi' }),
+    ...lookCards(base, { hero: 'nova', talker: 'nova', sounder: 'estrella', picture: false, sayBlock: 'a_sayfor', newPlace: 'mar', newArt: 'pulpi', sayAim: 'Que {nova} diga otra cosa cuando empieza el juego', soundAim: 'Que suene otro sonido cuando {nova} junta una {estrella}', soundTry: 'Tocá **▶** y juntá una {estrella}: ¡suena distinto!' }),
     card({
       id: 'velocidad', icon: '💨', label: 'Velocidad', sprite: 'nova',
       title: 'Cambiá la velocidad',
-      how: [{ t: 'Cambiá el **12**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
-      block: { type: 'a_changex', caption: 'Tocá este número y cambialo.' },
+      aim: 'Que {nova} se mueva más rápido con las flechas',
+      how: [{ t: 'En [a_changex] de la flecha derecha, cambiá el **12** por uno más grande', on: 'change' }, { t: 'Tocá **▶** y mové a {nova} con las flechas: ¡mirá qué rápido va!', on: 'try' }],
+      block: { type: 'a_changex', caption: 'Tocá este número y cambialo.', where: (b) => numField(b, 'N') === 12 },
       concept: 'Coordenadas: moverse es cambiar los números de x y de y.', ask: '¿Qué pasa si ponés un número más grande?',
       built: (p) => scriptsWith(p, 'a_key').some((s) => inside(s).some((b) => STEPS.includes(b.type) && Number.isFinite(numField(b, 'N')) && Math.abs(numField(b, 'N')) !== 12)),
       solve: (p) => { setNumber(firstBlock(p, 'nova', 'a_changex'), 'N', 20); },
@@ -67,7 +68,8 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
     card({
       id: 'meta', icon: '🏁', label: 'Meta', sprite: 'nova',
       title: 'Cambiá la meta',
-      how: [{ t: 'Cambiá el **10**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que el juego se gane con otra cantidad de estrellas',
+      how: [{ t: 'En [a_points], cambiá el **10** por otro número', on: 'change' }, { t: 'Tocá **▶** y juntá estrellas hasta ganar', on: 'try' }],
       block: { type: 'a_points', caption: 'Tocá el 10 y poné otro número.' },
       concept: 'Condiciones: algo pasa recién cuando se llega a un número.', ask: '¿Cómo sabe el juego que ganaste?',
       built: (p) => scriptsWith(p, 'a_points').some((s) => count(inside(s), 'a_win') > 0 && numField(s.hat, 'N') !== 10),
@@ -76,7 +78,8 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
     card({
       id: 'valor', icon: '💰', label: 'Más puntos', sprite: 'estrella',
       title: 'Que valga más puntos',
-      how: [{ t: 'Cambiá el **1**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que cada estrella valga más puntos',
+      how: [{ t: 'En [a_addscore], cambiá el **1** por un número más grande', on: 'change' }, { t: 'Tocá **▶** y juntá una estrella: ¡suma más!', on: 'try' }],
       block: { type: 'a_addscore', caption: 'Tocá el 1 y poné un número más grande.' },
       concept: 'Puntos: un número que el juego recuerda.', ask: '¿Dónde dice cuántos puntos suma?',
       built: (p) => blocksOf(p, 'a_addscore').some((b) => numField(b, 'N') >= 2),
@@ -85,7 +88,8 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
     card({
       id: 'poder', icon: '⚡', label: 'Poder', sprite: 'nova',
       title: 'Un poder secreto',
-      how: [{ t: 'Poné [a_key]', on: 'a_key' }, { t: 'Elegí **espacio**', on: 'tune' }, { t: 'Poné [a_jump]', on: 'a_jump' }, { t: 'Apretá **espacio**', on: 'try' }], tap: 'stage',
+      aim: 'Que {nova} salte cuando apretás la barra espaciadora',
+      how: [{ t: 'Traé [a_key] a un lugar vacío de {nova}', on: 'a_key' }, { t: 'En [a_key], elegí la tecla **espacio**', on: 'tune' }, { t: 'Poné [a_jump] abajo de [a_key]', on: 'a_jump' }, { t: 'Apretá **espacio** en el teclado: ¡{nova} salta!', on: 'try' }], tap: 'stage',
       demo: onKey(' ', jump()),
       tune: { type: 'a_key', field: 'K', when: (b, _p, all) => b.fields.K !== ' ' && all.filter((x) => x.type === 'a_key' && x.fields.K === b.fields.K).length > 1 },
       concept: 'Eventos: cada tecla despierta sus propios bloques.', ask: '¿Qué hace la barra espaciadora y cómo lo programaste?',
@@ -95,7 +99,8 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
     card({
       id: 'meteorito', icon: '☄️', label: 'Peligro', sprite: 'meteorito',
       title: 'Cambiá el meteorito',
-      how: [{ t: 'Cambiá el **4**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {meteorito} cruce la pantalla más rápido o más lento',
+      how: [{ t: 'En el [a_glide] de arriba, cambiá el **4** por otro número', on: 'change' }, { t: 'Tocá **▶** y mirá cómo cruza {meteorito}', on: 'try' }],
       block: { type: 'a_glide', caption: 'Tocá el 4: con menos segundos va más rápido.' },
       concept: 'Coordenadas y tiempo: decirle a dónde ir y cuánto tardar.', ask: '¿Por dónde pasa y dónde está escrito?',
       built: (p) => (['T', 'X', 'Y'] as const).some((k) => differs(numbers(p, 'a_glide', k), numbers(base, 'a_glide', k))),
@@ -104,7 +109,8 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
     card({
       id: 'mundo', icon: '🌍', label: 'Otro mundo', sprite: 'nova',
       title: 'El segundo mundo',
-      how: [{ t: 'Poné [a_points]', on: 'a_points' }, { t: 'Poné [a_backdrop]', on: 'a_backdrop' }, { t: 'Elegí otro lugar', on: 'tune' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que el juego pase a otro lugar cuando llegás a 5 puntos',
+      how: [{ t: 'Traé [a_points] a un lugar vacío de {nova}', on: 'a_points' }, { t: 'Poné [a_backdrop] abajo de [a_points]', on: 'a_backdrop' }, { t: 'En [a_backdrop], elegí un lugar nuevo', on: 'tune' }, { t: 'Tocá **▶** y juntá 5 puntos: ¡cambia el lugar!', on: 'try' }],
       demo: onPoints(5, backdrop('mar')),
       example: [{ sprite: 'nova', scripts: [onPoints(5, backdrop('mar'))] }],
       tune: { type: 'a_backdrop', field: 'B', when: (b, p) => b.fields.B === p.backdrop },
@@ -115,7 +121,8 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
     card({
       id: 'clic', icon: '👆', label: 'Clic', sprite: 'nova',
       title: 'Que reaccione al clic',
-      how: [{ t: 'Poné [a_click]', on: 'a_click' }, { t: 'Poné [a_sayfor]', on: 'a_sayfor' }, { t: 'Tocá a {nova}', on: 'try' }], tap: 'nova',
+      aim: 'Que {nova} diga algo cuando le hacés clic',
+      how: [{ t: 'Traé [a_click] a un lugar vacío de {nova}', on: 'a_click' }, { t: 'Poné [a_sayfor] abajo de [a_click]', on: 'a_sayfor' }, { t: 'Tocá a {nova}: ¡dice algo!', on: 'try' }], tap: 'nova',
       demo: onClick(sayFor('¡Hola!', 2)),
       concept: 'Eventos: un clic también despierta bloques.', ask: '¿Qué pasa si le hago clic?',
       built: (p) => scriptsWith(p, 'a_click').some((s) => s.body.length > 0),
@@ -124,7 +131,8 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
     card({
       id: 'premio', icon: '🎁', label: 'Premio', newSprite: true, point: 'add-sprite',
       title: 'Un premio nuevo',
-      how: [{ t: 'Tocá **+ Agregar**', on: 'add' }, { t: 'Poné [a_touching]', on: 'a_touching' }, { t: 'Elegí a {nova}', on: 'tune' }, { t: 'Poné [a_addscore]', on: 'a_addscore' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {nova} sume puntos al tocar un personaje nuevo',
+      how: [{ t: 'Tocá **+ Agregar** y sumá un personaje', on: 'add' }, { t: 'Traé [a_touching] a un lugar vacío', on: 'a_touching' }, { t: 'En [a_touching], elegí a {nova}', on: 'tune' }, { t: 'Poné [a_addscore] abajo de [a_touching]', on: 'a_addscore' }, { t: 'Tocá **▶** y llevá a {nova} hasta el personaje nuevo: ¡suma puntos!', on: 'try' }],
       tune: { type: 'a_touching', field: 'T', when: (b) => b.fields.T !== 'nova' },
       demo: onTouching('nova', addScore(1), goToRandom()),
       example: [{ sprite: 'Nuevo', scripts: [onTouching('nova', addScore(2), goToRandom())] }],

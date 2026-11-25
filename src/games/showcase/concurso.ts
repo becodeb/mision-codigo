@@ -76,12 +76,16 @@ export const EL_CONCURSO_DE_ROBI = showcaseGame({
     { id: 'ganar', broken: 'Ya no se puede ganar', ok: (p) => wins(p).length > 0, restore: { sprite: 'robi', script: onPoints(3, sound('fanfarria'), win()) } },
   ],
   cards: [
-    ...lookCards(base, { hero: 'a1', talker: 'robi', sounder: RIGHT[0], picture: false, sayBlock: 'a_say', newPlace: 'aula', newArt: 'juli' }).map((c) =>
-      (c.id === 'frase' ? { ...c, card: { ...c.card!, how: [{ t: 'Cambiá [a_say]', on: 'change' }, { t: 'Probá **▶**', on: 'try' }] } } : c)),
+    ...lookCards(base, {
+      hero: 'a1', talker: 'robi', sounder: RIGHT[0], picture: false, sayBlock: 'a_say', newPlace: 'aula', newArt: 'juli',
+      sayAim: 'Que {robi} empiece el juego diciendo otra cosa', soundAim: 'Que suene otro sonido cuando acertás la primera pregunta',
+      soundTry: 'Tocá **▶** y acertá la primera pregunta: ¡suena distinto!',
+    }),
     card({
       id: 'pregunta', icon: '❓', label: 'Pregunta', sprite: 'robi',
       title: 'Cambiá la pregunta',
-      how: [{ t: 'Cambiá lo que dice [a_say]', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {robi} haga tu propia pregunta',
+      how: [{ t: 'En [a_say] de {robi}, escribí tu pregunta', on: 'change' }, { t: 'Tocá **▶** y leé la pregunta de {robi}', on: 'try' }],
       block: { type: 'a_say', caption: 'Tocá el texto y escribí tu pregunta.' },
       concept: 'Datos: lo que el programa dice se puede cambiar.', ask: '¿Qué pregunta pusiste y quién tiene la respuesta?',
       built: (p) => differs(textsOf(p, ['robi']), textsOf(base, ['robi'])),
@@ -90,7 +94,8 @@ export const EL_CONCURSO_DE_ROBI = showcaseGame({
     card({
       id: 'respuestas', icon: '🔤', label: 'Respuestas', sprite: RIGHT[0],
       title: 'Cambiá las respuestas',
-      how: [{ t: 'Cambiá lo que dice [a_say]', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que la primera pregunta tenga otras respuestas',
+      how: [{ t: 'En [a_say], escribí otra respuesta para {b1}', on: 'change' }, { t: 'Tocá **▶** y leé las respuestas de la primera pregunta', on: 'try' }],
       block: { type: 'a_say', caption: 'Tocá el texto y escribí otra respuesta.' },
       concept: 'Datos: cada personaje dice lo que le escribís.', ask: '¿Quién dice la respuesta correcta?',
       built: (p) => differs(textsOf(p, ANSWERS), textsOf(base, ANSWERS)),
@@ -99,7 +104,8 @@ export const EL_CONCURSO_DE_ROBI = showcaseGame({
     card({
       id: 'festejo', icon: '🎉', label: 'Festejo', sprite: 'robi',
       title: 'Un festejo para el ganador',
-      how: [{ t: 'Poné [a_jump]', on: 'a_jump' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {robi} salte de alegría cuando ganás',
+      how: [{ t: 'Poné [a_jump] abajo del [a_sound], arriba del [a_win]', on: 'a_jump' }, { t: 'Tocá **▶** y respondé bien todo: ¡{robi} salta!', on: 'try' }],
       demo: onPoints(3, sound('fanfarria'), jump(), win()),
       concept: 'Secuencia: las órdenes se cumplen una abajo de la otra.', ask: '¿Qué hace Robi cuando ganás?',
       built: (p) => wins(p).some((s) => count(inside(s), ...CHEER) > 0),
@@ -108,7 +114,8 @@ export const EL_CONCURSO_DE_ROBI = showcaseGame({
     card({
       id: 'final', icon: '📣', label: 'Mensaje final', sprite: 'robi',
       title: 'Un mensaje para el final',
-      how: [{ t: 'Poné [a_sayfor]', on: 'a_sayfor' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que {robi} felicite al ganador con un mensaje',
+      how: [{ t: 'Poné [a_sayfor] abajo del [a_sound], arriba del [a_win]', on: 'a_sayfor' }, { t: 'Tocá **▶** y respondé bien todo: leé el mensaje de {robi}', on: 'try' }],
       demo: onPoints(3, sound('fanfarria'), sayFor('¡Sos un genio!', 2), win()),
       concept: 'Datos: lo que el programa dice se puede cambiar.', ask: '¿Qué le dice Robi al ganador?',
       built: (p) => wins(p).some((s) => count(inside(s), ...FINAL) > 0),
@@ -117,7 +124,8 @@ export const EL_CONCURSO_DE_ROBI = showcaseGame({
     card({
       id: 'pista', icon: '💡', label: 'Pista', newSprite: true, point: 'add-sprite',
       title: 'Una pista para ayudar',
-      how: [{ t: 'Tocá **+ Agregar**', on: 'add' }, { t: 'Poné [a_click]', on: 'a_click' }, { t: 'Poné [a_sayfor]', on: 'a_sayfor' }, { t: 'Tocalo', on: 'try' }], tap: 'new',
+      aim: 'Que un personaje nuevo dé una pista cuando lo tocás',
+      how: [{ t: 'Tocá **+ Agregar** y sumá un personaje', on: 'add' }, { t: 'Traé [a_click] a un lugar vacío', on: 'a_click' }, { t: 'Poné [a_sayfor] abajo de [a_click]', on: 'a_sayfor' }, { t: 'Tocá al personaje nuevo y leé la pista', on: 'try' }], tap: 'new',
       demo: onClick(sayFor('¡Pensá en los bichos!', 2)),
       concept: 'Eventos: un clic también despierta bloques.', ask: '¿Qué pasa cuando le hacés clic a tu pista?',
       built: (p) => newSprites(p, base).some((s) => s.scripts.some((sc) => sc.hat.type === 'a_click' && count(inside(sc), 'a_say', 'a_sayfor', 'a_thinkfor') > 0)),
@@ -126,7 +134,8 @@ export const EL_CONCURSO_DE_ROBI = showcaseGame({
     card({
       id: 'error', icon: '😕', label: 'Error', sprite: WRONG[0],
       title: 'Cambiá el sonido del error',
-      how: [{ t: 'Cambiá [a_sound]', on: 'change' }, { t: 'Tocá a {a1}', on: 'try' }], tap: 'a1',
+      aim: 'Que suene otro sonido cuando una respuesta está mal',
+      how: [{ t: 'En [a_sound], elegí otro sonido para {a1}', on: 'change' }, { t: 'Tocá a {a1} y escuchá el sonido nuevo', on: 'try' }], tap: 'a1',
       block: { type: 'a_sound', caption: 'Tocá el sonido y elegí otro.' },
       concept: 'Datos: cada sonido suena cuando el programa llega a ese bloque.', ask: '¿Cuándo suena ese sonido?',
       built: (p) => WRONG.some((id) => blocksOf({ ...p, sprites: p.sprites.filter((s) => s.id === id) }, 'a_sound').some((b) => b.fields.S !== 'bip')),
@@ -135,7 +144,8 @@ export const EL_CONCURSO_DE_ROBI = showcaseGame({
     card({
       id: 'meta', icon: '🏁', label: 'Meta', sprite: 'robi',
       title: 'Cambiá cuántas hay que acertar',
-      how: [{ t: 'Cambiá el **3**', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      aim: 'Que se gane con más o menos respuestas bien',
+      how: [{ t: 'En [a_points], cambiá el **3** por otro número', on: 'change' }, { t: 'Tocá **▶** y respondé bien hasta ganar', on: 'try' }],
       block: { type: 'a_points', caption: 'Tocá el 3 y poné otro número.' },
       concept: 'Condiciones: algo pasa recién cuando se llega a un número.', ask: '¿Cómo sabe el juego que ganaste?',
       built: (p) => wins(p).some((s) => numField(s.hat, 'N') !== 3),

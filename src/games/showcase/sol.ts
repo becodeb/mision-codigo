@@ -25,11 +25,12 @@ export const ESTRELLA_FUGITIVA = showcaseGame({
     { id: 'estrella', broken: 'Nada suma estrellas cuando lo tocás', ok: (p) => scriptsWith(p, 'f_click').some((s) => count(inside(s), 'f_star') > 0), restore: { sprite: 'estrella', script: fClick(fRandom(), fStar(), fSound('magia')) } },
   ],
   cards: [
-    ...lookCards(base, { hero: 'toby', talker: 'toby', sounder: 'michi', picture: true, sayBlock: 'f_say', newPlace: 'playa', newArt: 'lumi', soundTap: 'michi' }),
+    ...lookCards(base, { hero: 'toby', talker: 'toby', sounder: 'michi', picture: true, sayBlock: 'f_say', newPlace: 'playa', newArt: 'lumi', soundTap: 'michi', sayAim: 'Que {toby} diga otra cosa cuando empieza el juego', soundAim: 'Que al tocar a {michi} suene un sonido distinto' }),
     card({
       id: 'doble', icon: '⭐', label: 'Más puntos', sprite: 'estrella',
       title: 'Que valga 2 puntos',
-      how: [{ t: 'Poné otra [f_star]', on: 'f_star' }, { t: 'Tocá a {estrella}', on: 'try' }], tap: 'estrella',
+      aim: 'Que {estrella} te dé 2 puntos cada vez que la tocás',
+      how: [{ t: 'Poné otra [f_star] abajo de la que ya hay', on: 'f_star' }, { t: 'Tocá a {estrella} y mirá cómo suma 2 puntos', on: 'try' }], tap: 'estrella',
       demo: fClick(fRandom(), fStar(), fStar(), fSound('magia')),
       concept: 'Secuencia: las órdenes se cumplen una abajo de la otra.', ask: '¿Por qué ahora suma dos puntos?',
       built: (p) => scriptsWith(p, 'f_click').some((s) => count(inside(s), 'f_star') >= 2),
@@ -38,7 +39,8 @@ export const ESTRELLA_FUGITIVA = showcaseGame({
     card({
       id: 'achicar', icon: '🤏', label: 'Tamaño', sprite: 'estrella',
       title: 'Que cambie de tamaño',
-      how: [{ t: 'Poné [f_shrink]', on: 'f_shrink' }, { t: 'Tocá a {estrella}', on: 'try' }], tap: 'estrella',
+      aim: 'Que {estrella} se haga más chica cada vez que la tocás',
+      how: [{ t: 'Poné [f_shrink] al final, abajo de todos los bloques', on: 'f_shrink' }, { t: 'Tocá a {estrella}: ¡se achica!', on: 'try' }], tap: 'estrella',
       demo: fClick(fRandom(), fStar(), fSound('magia'), fShrink()),
       concept: 'Dificultad: un bloque puede hacer el juego más fácil o más difícil.', ask: '¿Qué le pasa cada vez que la tocás?',
       built: (p) => p.sprites.some((s) => s.scripts.some((sc) => count(inside(sc), 'f_grow', 'f_shrink') > 0)),
@@ -47,7 +49,8 @@ export const ESTRELLA_FUGITIVA = showcaseGame({
     card({
       id: 'baile', icon: '🕺', label: 'Baile', sprite: 'toby',
       title: 'Inventá un baile',
-      how: [{ t: 'Poné [f_spin]', on: 'f_spin' }, { t: 'Poné [f_jump]', on: 'f_jump' }, { t: 'Tocá a {toby}', on: 'try' }], tap: 'toby',
+      aim: 'Que {toby} haga un baile de tres pasos al tocarlo',
+      how: [{ t: 'Poné [f_spin] abajo del [f_jump]', on: 'f_spin' }, { t: 'Poné otro [f_jump] abajo del [f_spin]', on: 'f_jump' }, { t: 'Tocá a {toby}: ¡salta, gira y salta!', on: 'try' }], tap: 'toby',
       demo: fClick(fJump(), fSpin(), fJump(), fSound('guau')),
       concept: 'Secuencia: el orden de los bloques cambia lo que pasa.', ask: '¿En qué orden se mueve? ¿Dónde lo dice?',
       built: (p) => scriptsWith(p, 'f_click').some((s) => count(inside(s), ...MOVES) >= 3),
@@ -56,7 +59,8 @@ export const ESTRELLA_FUGITIVA = showcaseGame({
     card({
       id: 'cara', icon: '😮', label: 'Cara', sprite: 'michi',
       title: 'Que ponga una cara',
-      how: [{ t: 'Poné [f_face]', on: 'f_face' }, { t: 'Tocá a {michi}', on: 'try' }], tap: 'michi',
+      aim: 'Que {michi} ponga una cara nueva cuando lo tocás',
+      how: [{ t: 'Poné [f_face] justo abajo de [f_click], antes de los otros', on: 'f_face' }, { t: 'Tocá a {michi} y mirá qué cara pone', on: 'try' }], tap: 'michi',
       demo: fClick(fFace('sorpresa'), fSpin(), fSound('miau')),
       concept: 'Eventos: algo pasa cuando alguien toca.', ask: '¿Qué tiene que pasar para que cambie de cara?',
       built: (p) => p.sprites.some((s) => s.scripts.some((sc) => count(inside(sc), 'f_face') > 0)),
@@ -65,7 +69,8 @@ export const ESTRELLA_FUGITIVA = showcaseGame({
     card({
       id: 'viaje', icon: '🚀', label: 'Viaje', sprite: 'michi',
       title: 'Un viaje',
-      how: [{ t: 'Poné [f_backdrop]', on: 'f_backdrop' }, { t: 'Elegí otro lugar', on: 'tune' }, { t: 'Tocá a {michi}', on: 'try' }], tap: 'michi',
+      aim: 'Que al tocar a {michi} el juego pase en otro lugar',
+      how: [{ t: 'Poné [f_backdrop] al final, abajo de todos los bloques', on: 'f_backdrop' }, { t: 'En [f_backdrop], elegí un lugar nuevo', on: 'tune' }, { t: 'Tocá a {michi}: ¡cambia el lugar!', on: 'try' }], tap: 'michi',
       demo: fClick(fSpin(), fSound('miau'), fBackdrop('espacio')),
       tune: { type: 'f_backdrop', field: 'B', when: (b, p) => b.fields.B === p.backdrop },
       concept: 'Eventos: un toque puede cambiar todo el juego.', ask: '¿Qué bloque hace el viaje?',
@@ -75,7 +80,8 @@ export const ESTRELLA_FUGITIVA = showcaseGame({
     card({
       id: 'amigo', icon: '➕', label: 'Amigo', newSprite: true, point: 'add-sprite',
       title: 'Sumá un amigo',
-      how: [{ t: 'Tocá **+ Agregar**', on: 'add' }, { t: 'Poné [f_click]', on: 'f_click' }, { t: 'Poné [f_jump]', on: 'f_jump' }, { t: 'Tocalo', on: 'try' }], tap: 'new',
+      aim: 'Que un personaje nuevo salte cuando lo tocás',
+      how: [{ t: 'Tocá **+ Agregar** y sumá un personaje', on: 'add' }, { t: 'Traé [f_click] a un lugar vacío', on: 'f_click' }, { t: 'Poné [f_jump] abajo de [f_click]', on: 'f_jump' }, { t: 'Tocá al personaje nuevo: ¡salta!', on: 'try' }], tap: 'new',
       demo: fClick(fJump()),
       concept: 'Crear: programar un personaje desde cero.', ask: '¿Qué le programaste al personaje nuevo?',
       built: (p) => newSprites(p, base).some((s) => s.scripts.some((sc) => sc.body.length > 0)),
