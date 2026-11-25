@@ -13,6 +13,9 @@ import { SHOWCASE, showcaseFor, showcasesFor } from './index.ts';
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
+/** Games where a touch ends the game by design: the one who sits still loses, but never in the first seconds. */
+const TOUCH_ENDS = new Set(['muestra-salto']);
+
 /** The program as the editor gives it back: through Blockly's own format and back. */
 function throughEditor(p: ProjectProgram): ProjectProgram {
   return { ...clone(p), sprites: p.sprites.map((s) => ({ ...clone(s), scripts: blocklyToIr(irToBlockly(s.scripts)) })) };
@@ -190,8 +193,10 @@ describe('showcase games', () => {
       for (let seed = 1; seed <= 20; seed++) {
         const runner = new Game(game.setup, { seed });
         runner.flag();
-        runner.run(12_000);
-        expect(runner.machine.ended, `seed ${seed}`).not.toBe('lose');
+        /* A game that is all about not being touched ends when the first thing arrives: it must not come before there is time to read the screen. */
+        const first = TOUCH_ENDS.has(game.id) ? runner.run(2500) : runner.run(12_000);
+        expect(first.machine.ended, `seed ${seed}`).not.toBe('lose');
+        if (TOUCH_ENDS.has(game.id)) expect(runner.runUntil(() => runner.machine.ended === 'lose', 20_000), `seed ${seed}: it can be lost`).toBe(true);
         expect(runner.machine.errors).toEqual([]);
       }
     });
