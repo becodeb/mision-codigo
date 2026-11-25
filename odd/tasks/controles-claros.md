@@ -32,9 +32,9 @@ screen says them, and click games (levels 1 and 2) look the same as keyboard gam
 
 ## Tasks
 
-- [ ] T1 `controls.ts`: pure derivation of keys, movers and clickable sprites from a program, with tests.
-- [ ] T2 Legend: drawn controls and goal on the entry screen, always visible while playing and in the editor.
-- [ ] T3 Coach: on-stage keys or hand until the child does it, back after idling, and an answer to wrong attempts.
+- [x] T1 `controls.ts`: pure derivation of keys, movers and clickable sprites from a program, with tests. Commit 798861c; `controls.test.ts` (12 tests). Route: delegated, one writer.
+- [x] T2 Legend: drawn controls and goal on the entry screen, always visible while playing and in the editor. Commit 8dd6fbd; `Controls.tsx`, `How.tsx`, `Showcase.goal` per game; checked in the browser at 1366x768, 1200x800 and a 440px-high window. Route: delegated, one writer.
+- [x] T3 Coach: on-stage keys or hand until the child does it, back after idling, and an answer to wrong attempts. Commit 73a1ee0; `coach.ts` (headless state machine, 19 tests with fake timers), `session.coach.test.ts`, drawing in `stage.ts`. Route: delegated, one writer.
 - [ ] T4 Verify in the browser the five games: mouse, keyboard, touch, 1366x768 and 1200x800.
 
 ## Acceptance
@@ -47,3 +47,4 @@ screen says them, and click games (levels 1 and 2) look the same as keyboard gam
 ## Progress
 
 - Baseline: typecheck clean, 48 files / 1219 tests pass.
+- T1-T3 done on the branch; typecheck clean, 51 files / 1256 tests pass, build passes. T4 (browser pass of all five games with mouse, keyboard and touch) is still the parent's.
