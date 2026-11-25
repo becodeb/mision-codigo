@@ -40,6 +40,8 @@ export const KNOWN_GAME_IDS: ReadonlySet<string> = new Set([
   'muestra-concierto',
   'muestra-cadena',
   'muestra-feria',
+  'muestra-camino',
+  'muestra-concurso',
   // Versiones fáciles de la Clase 2 (games/muestra.ts).
   'mi-mascota-facil',
   'banda-parque-facil',
