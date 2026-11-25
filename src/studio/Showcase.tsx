@@ -6,16 +6,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ART, ICON, type ArtId } from '../art/index.ts';
 import { ControlsLegend } from './Controls.tsx';
 import { hasControls } from './controls.ts';
-import { How } from './How.tsx';
-import type { GameDefinition, GameStep } from '../games/types.ts';
+import type { GameDefinition } from '../games/types.ts';
 import { programOf } from './doc.ts';
 import { Modal } from './Modal.tsx';
 import { recapOf } from './recap.ts';
-import { pickHow } from './chips.ts';
 import type { SessionSnapshot, StudioSession } from './session.ts';
-import { mountExample } from './workspace.ts';
-
-type Scripts = NonNullable<GameStep['example']>[number]['scripts'];
+import { Blocks, type Scripts } from './Example.tsx';
+import { Tutorial } from './Tutorial.tsx';
 
 const Icon = ({ html }: { html: string }) => <span className="mc-icon" dangerouslySetInnerHTML={{ __html: html }} />;
 
@@ -120,51 +117,6 @@ function Wall({ session, snap, onExit, onRecap, several }: WallProps) {
         <strong>{done}<i>/{steps.length}</i></strong>
         <span className="sc-bar"><i style={{ width: `${(done / steps.length) * 100}%` }} /></span>
       </button>
-    </section>
-  );
-}
-
-function Blocks({ session, scripts }: { session: StudioSession; scripts: Scripts }) {
-  const host = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!host.current) return;
-    try {
-      return mountExample(host.current, session.tier, scripts);
-    } catch (e) {
-      console.warn('Example failed', e);
-      return undefined;
-    }
-  }, [session, scripts]);
-  return <div className="mc-example-ws" ref={host} data-point="example" />;
-}
-
-/** The same row: the way back, which card it is, and its steps. The hand shows the rest by itself. */
-function Tutorial({ session, snap }: WallProps) {
-  const step = session.cardStep;
-  if (!step?.card) return null;
-  const card = step.card;
-  const celebrate = snap.celebrating?.stepId === step.id;
-  /* On another sprite, going to the right one is a step of its own, right before the one that needs it. */
-  const steps: { t: string; on: string }[] = [...card.how];
-  if (snap.pick) steps.splice(Math.max(0, steps.findIndex((h) => h.on === snap.pick!.before)), 0, { t: pickHow(snap.pick.id), on: 'pick' });
-  const at = Math.max(0, steps.findIndex((h) => h.on === snap.on));
-  return (
-    <section className={`sc-wall sc-tutorial${celebrate ? ' all' : ''}`} data-point="guide" aria-live="polite">
-      <button type="button" className="sc-round" aria-label="Volver" onClick={() => session.openCard(null)}><span aria-hidden="true">←</span></button>
-      <button type="button" className={`sc-card ${card.kind} on${celebrate ? ' done fresh' : ''}`} aria-label={`Escuchar: ${step.title}`} onClick={() => session.listen()}>
-        <span className="ic" aria-hidden="true">{card.icon}</span>
-        <span className="lb">{card.label}</span>
-        {celebrate && <span className="ok" aria-hidden="true">✓</span>}
-      </button>
-      {celebrate ? (
-        <p className="sc-yes">¡Lo lograste!</p>
-      ) : (
-        <ol className="sc-steps">
-          {steps.map((h, i) => (
-            <li key={i} className={`${h.on === 'pick' ? 'pick ' : ''}${i < at ? 'done' : i === at ? 'on' : ''}`} aria-current={i === at ? 'step' : undefined}><How session={session} text={h.t} /></li>
-          ))}
-        </ol>
-      )}
     </section>
   );
 }

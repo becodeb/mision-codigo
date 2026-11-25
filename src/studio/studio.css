@@ -344,28 +344,37 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 .sc-sum strong i { font-style: normal; font-size: 16px; color: var(--ink-soft); }
 .sc-bar { display: block; width: 50px; height: 8px; border-radius: 99px; background: #EADFC9; overflow: hidden; }
 .sc-bar i { display: block; height: 100%; background: var(--go); transition: width .5s; }
-.sc-steps { flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; counter-reset: paso; display: flex; align-items: center; gap: 10px; font: 700 19px/1.1 var(--font-display); }
-.sc-steps li { counter-increment: paso; display: flex; align-items: center; gap: 7px; min-width: 0; padding: 8px 14px 8px 8px; border-radius: 18px; opacity: .5; transition: opacity .25s, background .25s; white-space: nowrap; }
-.sc-steps li::before { content: counter(paso); flex: none; width: 30px; height: 30px; border-radius: 50%; background: #B9B2CF; color: #fff; font: 800 17px/30px var(--font-body); text-align: center; }
-.sc-steps li.on { opacity: 1; background: #FFF0DD; }
-.sc-steps li.on::before { background: var(--accent); }
-.sc-steps li.done { opacity: .75; }
-.sc-steps li.done::before { content: "✓"; background: var(--go); }
-.sc-steps:has(li:nth-child(6)) { gap: 0; font-size: 17px; }
-.sc-steps:has(li:nth-child(6)) li { padding-right: 9px; }
+/* The open card: the aim on top with the dots of its steps, and under it the one step the child is on, whole. */
+.sc-tutorial { padding-top: 6px; padding-bottom: 6px; }
+.sc-lines { flex: 1; min-width: 0; display: grid; gap: 3px; align-content: center; }
+.sc-aimrow { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sc-aim { margin: 0; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0 5px; font: 800 15px/1.2 var(--font-display); color: var(--ink-soft); }
+.sc-aim .how-spr svg { width: 22px; height: 26px; }
+.sc-aim .how-block { padding: 2px 6px; font-size: 12px; }
+.sc-aim .how-block img { width: 22px; height: 22px; }
+.sc-aim .how-btn { padding: 1px 6px; border-radius: 8px; }
+.sc-dots { flex: none; display: flex; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.sc-dots li { width: 15px; height: 15px; border-radius: 50%; background: #D5CFE4; display: grid; place-items: center; font: 800 10px/1 var(--font-body); color: #fff; transition: background .25s, transform .25s; }
+.sc-dots li.done { background: var(--go); }
+.sc-dots li.done::before { content: "✓"; }
+.sc-dots li.on { background: var(--accent); transform: scale(1.35); box-shadow: 0 0 0 3px #FFE1BC; }
+.sc-now { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 3px 7px; padding: 4px 12px; border-radius: 16px; background: #FFF0DD; font: 800 20px/1.2 var(--font-display); width: fit-content; max-width: 100%; }
+.sc-now .how-block img { width: 30px; height: 30px; }
+.sc-now .how-spr svg { width: 30px; height: 36px; }
+.mc-studio .sc-seeit { flex: none; border: 2px solid #3D3380; border-radius: 14px; min-height: 46px; max-width: 118px; padding: 4px 10px; background: #fff; color: #3D3380; font: 800 15px/1.1 var(--font-display); display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: left; }
+.mc-studio .sc-seeit:hover { background: #EFE8FD; }
+.mc-modal-card.sc-finished { width: min(760px, 100%); gap: 8px; }
+.sc-fin-aim { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; font: 800 20px/1.2 var(--font-display); }
+.sc-fin-parts { display: grid; gap: 10px; }
+.sc-fin-parts.many { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.sc-fin-parts figure { margin: 0; min-width: 0; }
+.sc-fin-parts figcaption { font: 800 17px/1.1 var(--font-display); display: flex; align-items: center; gap: 6px; }
+.sc-finished .mc-example-ws { height: clamp(160px, 34dvh, 280px); }
+.sc-fin-parts.many .mc-example-ws { height: clamp(130px, 22dvh, 200px); }
 @media (max-width: 1150px) {
-  .sc-steps { gap: 2px; font-size: 16px; }
-  .sc-steps li { padding-right: 8px; }
-  .sc-steps li::before { width: 25px; height: 25px; font-size: 15px; line-height: 25px; }
+  .sc-now { font-size: 19px; }
   .how-block { padding: 5px 8px; font-size: 13px; }
 }
-/* A long tutorial never piles words up: the current step is always whole, the done ones shrink to their tick, and what comes later is cut. */
-.sc-steps li.on { flex: none; }
-.sc-steps li:not(.on) { overflow: hidden; }
-.sc-steps:has(li:nth-child(5)) li.done { flex: none; padding-right: 8px; }
-.sc-steps:has(li:nth-child(5)) li.done > span { display: none; }
-/* Once the sprite is picked, its face is enough: the row is for what comes next. */
-.sc-steps li.pick.done > span:first-of-type, .sc-steps li.pick.done .nm { display: none; }
 .mc-studio .mc-sp-card.pick { border-color: var(--accent); background: #FFF0DD; animation: sc-nudge .9s ease-in-out infinite; }
 .how-btn { border: 2px solid var(--line-2); border-radius: 11px; padding: 5px 9px; background: #fff; }
 .how-btn.go { background: var(--go); border-color: var(--go); color: #fff; padding: 5px 13px; }
@@ -456,7 +465,6 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 @media (max-width: 860px) {
   .sc-wall { flex-wrap: wrap; }
   .sc-cards { flex-basis: 100%; grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
-  .sc-steps { flex-wrap: wrap; gap: 8px 16px; font-size: 17px; }
   .mc-show-bar { flex-wrap: wrap; }
   .mc-show-bar h2 { width: 100%; }
 }

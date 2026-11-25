@@ -69,6 +69,11 @@ export interface StepCard {
   label: string;
   /** `look` changes how the game looks or sounds; `code` changes what happens. */
   kind: 'look' | 'code';
+  /**
+   * What the child will see in the game when the card is done, one line with the same marks as `how`
+   * («Que {chispa} se agrande cuando tengas más de 5 puntos»). Read before the first step on levels 1 and 2.
+   */
+  aim?: string;
   /** The programming idea behind it: a name, then a plain explanation. */
   concept: string;
   /**

@@ -951,7 +951,8 @@ export class StudioSession {
   listen(): void {
     if (this.showcase) {
       const step = this.cardStep;
-      if (step?.card) void this.say(step.card.how.map((h) => sayHow(h.t, (id) => this.named(`{${id}}`))).join('. '), true);
+      /* The tapped square repeats the aim and the step the child is on, not the whole card. */
+      if (step?.card) void this.say(this.cardSpeech(true), true);
       return;
     }
     const flat = this.viewedStep;
@@ -1100,6 +1101,7 @@ export class StudioSession {
     this.cardId = id;
     this.cardOn = null;
     this.cardPick = null;
+    this.aimSaid = false;
     playSfx('pop');
     hush();
     this.emit();
@@ -1224,6 +1226,22 @@ export class StudioSession {
 
   private cardOn: string | null = null;
   private cardPick: CardPick | null = null;
+  /** The aim of the open card was read aloud already (levels 1 and 2 hear it once, before its first step). */
+  private aimSaid = false;
+
+  /** The words of the step the child is on, with the pick step when it is the one. */
+  private currentHow(): string | undefined {
+    const on = this.cardOn;
+    return on === 'pick' && this.cardPick ? pickHow(this.cardPick.id) : this.cardStep?.card?.how.find((h) => h.on === on)?.t ?? this.cardStep?.card?.how[0]?.t;
+  }
+
+  /** What the voice says for the open card: the aim, when it was not said yet or on request, then the current step. */
+  private cardSpeech(withAim: boolean): string {
+    const say = (t: string): string => sayHow(t, (id) => this.named(`{${id}}`));
+    const aim = withAim ? this.cardStep?.card?.aim : undefined;
+    const how = this.currentHow();
+    return [aim && say(aim), how && say(how)].filter(Boolean).join('. ');
+  }
 
   /** Works out the current step again. A new one is read aloud to the younger children. */
   private refreshOn(): void {
@@ -1238,7 +1256,11 @@ export class StudioSession {
     this.cardOn = on;
     this.cardPick = pick;
     const text = on === 'pick' && pick ? pickHow(pick.id) : this.cardStep?.card?.how.find((h) => h.on === on)?.t;
-    if (text && this.spoken && !this.celebrating) void this.say(sayHow(text, (id) => this.named(`{${id}}`)));
+    if (text && this.spoken && !this.celebrating) {
+      const first = !this.aimSaid;
+      this.aimSaid = true;
+      void this.say(this.cardSpeech(first));
+    }
     this.emit();
   }
 
