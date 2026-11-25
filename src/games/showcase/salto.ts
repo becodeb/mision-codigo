@@ -99,7 +99,7 @@ export const SALTA_SIN_PARAR = showcaseGame({
       demo: onPoints(4, show()),
       example: [{ sprite: 'rayo', scripts: [onPoints(4, show())] }],
       concept: 'Condiciones: algo nuevo aparece cuando llegás a cierto puntaje.', ask: '¿Cuándo aparece el rayo y por qué no hay que saltarlo?',
-      built: (p) => scriptsWith(p, 'a_points').some((s) => count(inside(s), 'a_show') > 0),
+      built: (p) => spriteOf(p, 'rayo').scripts.some((s) => s.hat.type === 'a_points' && count(inside(s), 'a_show') > 0),
       solve: (p) => { spriteOf(p, 'rayo').scripts.push(onPoints(4, show())); },
     }),
     card({

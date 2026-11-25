@@ -32,7 +32,7 @@ const base = project('selva', [
     HOME(),
     WIN(),
   ], { x: START.x, y: START.y, size: 70, name: 'Toby' }),
-  sprite('tesoro', 'treasure', [GOAL()], { x: 205, y: -60, size: 130, name: 'Tesoro' }),
+  sprite('tesoro', 'treasure', [GOAL()], { x: 188, y: -60, size: 130, name: 'Tesoro' }),
   sprite('piedra', 'rock', [bob(-120, -140, 60, 1.6), HURT()], { x: -120, y: -140, size: 110, name: 'Piedra' }),
   sprite('piedra2', 'rock', [HURT()], { x: -5, y: -30, size: 110, name: 'Piedra' }),
   sprite('piedra3', 'rock', [HURT()], { x: -5, y: 105, size: 110, name: 'Piedra' }),
@@ -86,7 +86,7 @@ export const EL_CAMINO_DE_PIEDRAS = showcaseGame({
       demo: onTouching('toby', send(BACK)),
       example: [{ sprite: 'Nuevo', scripts: [onTouching('toby', sound('explosion'), send(BACK))] }],
       concept: 'Mensajes: un personaje avisa y otro hace caso.', ask: '¿Qué le avisa tu piedra a Toby cuando la toca?',
-      built: (p) => newSprites(p, base).some((s) => s.scripts.some((sc) => sc.hat.type === 'a_touching' && sc.hat.fields.T === 'toby' && count(inside(sc), 'a_send') > 0)),
+      built: (p) => newSprites(p, base).some((s) => s.scripts.some((sc) => sc.hat.type === 'a_touching' && sc.hat.fields.T === 'toby' && inside(sc).some((b) => b.type === 'a_send' && b.fields.M === BACK))),
       solve: (p) => addSprite(p, 'rock', onTouching('toby', send(BACK))),
     }),
     card({

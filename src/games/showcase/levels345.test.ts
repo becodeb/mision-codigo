@@ -636,7 +636,7 @@ describe('Cuidá el tesoro', () => {
   });
 
   it('the goal and the card «Perder»: with it, an arrival ends the game, and with the number changed the goal follows', () => {
-    expect(goalOf('muestra-guardian')).toBe('Cuidá a {tesoro}: espantá **15** veces a {bomba} y a {rayo}');
+    expect(goalOf('muestra-guardian')).toBe('Espantá **15** veces a {bomba} y a {rayo}');
     const p = clone(setup);
     gameOf('muestra-guardian').phases[0].steps.find((s) => s.id === 'perder')!.card!.solve(p);
     const g = new Game(p, { seed: 1 });

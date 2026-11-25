@@ -41,7 +41,7 @@ export const CUIDA_EL_TESORO = showcaseGame({
     { icon: '💥', text: 'Si llega al tesoro, perdés un punto.' },
     { icon: '🏆', text: 'Con 15 puntos, ganás.' },
   ],
-  goal: (p) => `Cuidá a {tesoro}: espantá ${winMark(p) ? `${winMark(p)}veces ` : ''}a {bomba} y a {rayo}`,
+  goal: (p) => `Espantá ${winMark(p) ? `${winMark(p)}veces ` : ''}a {bomba} y a {rayo}`,
   pillars: [
     { id: 'vuelan', broken: '{bomba} ya no vuela hacia el tesoro', ok: (p) => p.sprites.some((s) => s.id !== 'tesoro' && s.scripts.some((sc) => sc.hat.type === 'a_flag' && count(inside(sc), 'a_glide') > 0)), restore: { sprite: 'bomba', script: FLY(FOES[0]) } },
     { id: 'espantar', broken: 'Hacer clic ya no suma puntos', ok: (p) => p.sprites.some((s) => s.id !== 'tesoro' && s.scripts.some((sc) => sc.hat.type === 'a_click' && inside(sc).some((b) => b.type === 'a_addscore' && numField(b, 'N') > 0))), restore: { sprite: 'bomba', script: SWAT() } },
@@ -92,7 +92,7 @@ export const CUIDA_EL_TESORO = showcaseGame({
       how: [{ t: 'Poné [a_lose]', on: 'a_lose' }, { t: 'Probá **▶**', on: 'try' }],
       demo: onTouching('tesoro', addScore(-1), sound('explosion'), hide(), lose()),
       concept: 'Reglas: qué pasa cuando dos cosas se tocan.', ask: '¿Cuándo se pierde y dónde está escrito?',
-      built: (p) => p.sprites.some((s) => s.scripts.some((sc) => count(inside(sc), 'a_lose') > 0)),
+      built: (p) => scriptsWith(p, 'a_touching').some((sc) => count(inside(sc), 'a_lose') > 0),
       solve: (p) => { spriteOf(p, 'bomba').scripts.find((s) => s.hat.type === 'a_touching')!.body.push(lose()); },
     }),
     card({
