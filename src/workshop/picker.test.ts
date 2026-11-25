@@ -38,9 +38,11 @@ describe('buildPicker', () => {
     expect(cards.map((c) => [c.done, c.finished, c.last])).toEqual([[2, false, false], [2, true, false], [1, false, true]]);
   });
 
-  it('a finished game is never «seguí con este», and counts as finished when every card is done', () => {
-    const { cards } = buildPicker(3, [saved('one', '2026-11-25T10:00:00Z', ['a', 'b', 'c', 'd'])], games);
+  it('a finished game is never «seguí con este» (the unfinished one played last is), and counts as finished when every card is done', () => {
+    const { cards } = buildPicker(3, [saved('one', '2026-11-25T10:00:00Z', ['a', 'b', 'c', 'd']), saved('two', '2026-11-25T09:00:00Z', ['e'])], games);
     expect(cards[0]).toMatchObject({ finished: true, last: false, done: 4 });
+    expect(cards[1]).toMatchObject({ finished: false, last: true });
+    expect(buildPicker(3, [saved('one', 'z', ['a', 'b', 'c', 'd'])], games).cards.some((c) => c.last)).toBe(false);
   });
 
   it('draws how each game is played from its program', () => {

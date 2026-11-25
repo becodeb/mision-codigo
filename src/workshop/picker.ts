@@ -13,7 +13,7 @@ export interface PickCard {
   total: number;
   started: boolean;
   finished: boolean;
-  /** The one played last, if it is not finished: «Seguí con este». */
+  /** The unfinished game played last: «Seguí con este». */
   last: boolean;
   /** How it is played, read from the game as it comes. */
   controls: Controls;
@@ -30,10 +30,10 @@ function summaryOf(game: GameDefinition, projects: readonly ProjectSummary[]): P
   return projects.find((p) => p.gameId === game.id);
 }
 
-/** The game with the most recent save, among the ones the child started. */
-function lastPlayed(games: readonly GameDefinition[], projects: readonly ProjectSummary[]): GameDefinition | null {
+/** The game with the most recent save, among the ones the child started (`skip` leaves some out). */
+function lastPlayed(games: readonly GameDefinition[], projects: readonly ProjectSummary[], skip: (g: GameDefinition) => boolean = () => false): GameDefinition | null {
   let best: { game: GameDefinition; at: number } | null = null;
-  for (const game of games) {
+  for (const game of games.filter((g) => !skip(g))) {
     const at = Date.parse(summaryOf(game, projects)?.updatedAt ?? '');
     if (Number.isFinite(at) && (!best || at > best.at)) best = { game, at };
   }
@@ -41,15 +41,18 @@ function lastPlayed(games: readonly GameDefinition[], projects: readonly Project
 }
 
 export function buildPicker(level: LevelId, projects: readonly ProjectSummary[], games: readonly GameDefinition[] = showcasesFor(level)): Picker {
-  const last = lastPlayed(games, projects);
+  const progress = games.map((game) => {
+    const summary = summaryOf(game, projects);
+    const ids = stepIds(game);
+    const completed = new Set(summary?.progress.completedSteps.map((s) => s.id));
+    const done = ids.filter((id) => completed.has(id)).length;
+    return { game, done, total: ids.length, started: !!summary, finished: !!summary && (summary.progress.finished || (ids.length > 0 && done === ids.length)) };
+  });
+  const last = lastPlayed(games, projects, (g) => progress.find((c) => c.game.id === g.id)!.finished);
   return {
-    cards: games.map((game) => {
-      const summary = summaryOf(game, projects);
-      const ids = stepIds(game);
-      const completed = new Set(summary?.progress.completedSteps.map((s) => s.id));
-      const done = ids.filter((id) => completed.has(id)).length;
-      const finished = !!summary && (summary.progress.finished || (ids.length > 0 && done === ids.length));
-      return { game, done, total: ids.length, started: !!summary, finished, last: last?.id === game.id && !finished, controls: controlsOf(game.setup, game.showcase?.tapAll === true) };
+    cards: progress.map((c) => {
+      const { game } = c;
+      return { ...c, last: last?.id === game.id, controls: controlsOf(game.setup, game.showcase?.tapAll === true) };
     }),
   };
 }

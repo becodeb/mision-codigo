@@ -67,7 +67,7 @@ export function GamePicker({ student, picker, problem, onOpen, onNotMe }: Props)
         <h1 id="pk-title">¡Hola, {student.name}! ¿A qué querés jugar?</h1>
       </header>
       {problem && <p className="pk-problem" role="status">{problem}</p>}
-      <div className="pk-grid" style={{ ['--n' as string]: n }}>
+      <div className="pk-grid" data-n={n} style={{ ['--n' as string]: n }}>
         {picker.cards.map((card) => <GameCard key={card.game.id} card={card} onOpen={onOpen} />)}
       </div>
       <footer className="pk-foot">
