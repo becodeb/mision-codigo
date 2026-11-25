@@ -25,9 +25,9 @@ describe('the faces drawn after «Hacé clic en»', () => {
     expect(handOf('muestra-feria')).toContain('<b>');
   });
 
-  it('stay at three when the point is more or less than four characters', () => {
+  it('stay at three when the point is three characters, and none for a quiz', () => {
     expect(facesOnHand('muestra-feria')).toBe(3);
-    expect(facesOnHand('muestra-concurso')).toBe(3);
+    expect(facesOnHand('muestra-concurso')).toBe(0);
     expect(facesOnHand('muestra-fabrica')).toBe(3);
   });
 });
