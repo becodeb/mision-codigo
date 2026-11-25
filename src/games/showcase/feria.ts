@@ -1,0 +1,91 @@
+/** Equipo Feria: blancos que saltan y cruzan, y una bomba que no hay que tocar. Bloques con dibujos, con vueltas y esperas. */
+import { fBackdrop, fClick, fDown, fFlag, fGrow, fHide, fRepeat, fRight, fSay, fShow, fSound, fSpin, fStar, fUp, fWait, project, sprite } from '../../language/ir.ts';
+import { blocksForLevel } from '../../language/catalog.ts';
+import { addSprite, card, clicksOf, count, differs, firstBlock, inside, lookCards, newSprites, numbers, showcaseGame, spriteOf } from './kit.ts';
+
+const CAUGHT = (sound: string) => fClick(fStar(), fHide(), fSound(sound), fWait(2), fShow());
+const BOOM = () => fClick(fSound('explosion'), fSpin());
+const CLOSE = () => fFlag(fSay('JUGAR'), fRepeat(9, fWait(3)), fSay('CHAU'));
+
+const base = project('parque', [
+  sprite('moneda', 'coin', [fFlag(fRepeat(8, fRight(), fWait(2)), fShow()), CAUGHT('campana')], { x: -210, y: 70, size: 140, name: 'Moneda' }),
+  sprite('manzana', 'apple', [fFlag(fRepeat(6, fUp(), fWait(2), fDown(), fWait(1)), fShow()), CAUGHT('magia')], { x: -20, y: -40, size: 140, name: 'Manzana' }),
+  sprite('pelota', 'ball', [fFlag(fRepeat(8, fUp(), fWait(1), fDown(), fWait(1)), fShow()), CAUGHT('aplauso')], { x: -170, y: -115, size: 140, name: 'Pelota' }),
+  sprite('bomba', 'bomb', [fFlag(fRepeat(6, fUp(), fWait(1), fDown(), fWait(2)), fShow()), BOOM()], { x: 70, y: -115, size: 140, name: 'Bomba' }),
+  sprite('pipo', 'pipo', [CLOSE()], { x: 190, y: -125, name: 'Pipo' }),
+]);
+
+export const LA_FERIA = showcaseGame({
+  id: 'muestra-feria', level: 2, order: 3, title: 'La feria de las pelotas', cover: 'apple',
+  pitch: 'Atrapá lo que se mueve, pero no toques la bomba.',
+  setup: base,
+  toolbox: blocksForLevel(2),
+  play: [
+    { icon: '🎯', text: 'Tocá lo que se mueve: se esconde y te da una estrella.' },
+    { icon: '💣', text: 'No toques la bomba: hace ¡bum! y no suma nada.' },
+    { icon: '👋', text: 'Cuando Pipo dice chau, se terminó la feria.' },
+  ],
+  goal: () => 'Atrapá {pelota}, {manzana} y {moneda} pero no {bomba}',
+  pillars: [
+    { id: 'atrapar', broken: 'Nada suma estrellas cuando lo tocás', ok: (p) => clicksOf(p, ...p.sprites.map((s) => s.id)).some((s) => count(inside(s), 'f_star') > 0), restore: { sprite: 'pelota', script: CAUGHT('aplauso') } },
+    { id: 'mueven', broken: '{manzana} ya no se mueve', ok: (p) => p.sprites.some((s) => s.scripts.some((sc) => sc.hat.type === 'f_flag' && count(inside(sc), 'f_up', 'f_right', 'f_down') > 0)), restore: { sprite: 'manzana', script: fFlag(fRepeat(6, fUp(), fWait(2), fDown(), fWait(1)), fShow()) } },
+  ],
+  cards: [
+    ...lookCards(base, { hero: 'pelota', talker: 'pipo', sounder: 'manzana', picture: true, sayBlock: 'f_say', newPlace: 'playa', newArt: 'heart', soundTap: 'manzana' }),
+    card({
+      id: 'ritmo', icon: '⏱️', label: 'Ritmo', sprite: 'pelota',
+      title: 'Cambiá el ritmo',
+      how: [{ t: 'Cambiá el [f_wait]', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      block: { type: 'f_wait', caption: 'Tocá el número del reloj.' },
+      concept: 'Dificultad: cambiar un número cambia cómo se juega.', ask: '¿Qué número cambiaste y qué pasó?',
+      built: (p) => differs(numbers(p, 'f_wait', 'N'), numbers(base, 'f_wait', 'N')),
+      solve: (p) => { firstBlock(p, 'pelota', 'f_wait').fields.N = 4; },
+    }),
+    card({
+      id: 'vueltas', icon: '🔁', label: 'Vueltas', sprite: 'manzana',
+      title: 'Que se mueva más o menos veces',
+      how: [{ t: 'Cambiá las [f_repeat]', on: 'change' }, { t: 'Probá **▶**', on: 'try' }],
+      block: { type: 'f_repeat', caption: 'Tocá el número de las vueltas.' },
+      concept: 'Bucles: repetir sin escribir todo de nuevo.', ask: '¿Para qué sirven las vueltas?',
+      built: (p) => differs(numbers(p, 'f_repeat', 'N'), numbers(base, 'f_repeat', 'N')),
+      solve: (p) => { firstBlock(p, 'manzana', 'f_repeat').fields.N = 3; },
+    }),
+    card({
+      id: 'doble', icon: '⭐', label: 'Más puntos', sprite: 'moneda',
+      title: 'Que valga 2 puntos',
+      how: [{ t: 'Poné otra [f_star]', on: 'f_star' }, { t: 'Tocá a {moneda}', on: 'try' }], tap: 'moneda',
+      demo: fClick(fStar(), fStar(), fHide(), fSound('campana'), fWait(2), fShow()),
+      concept: 'Secuencia: las órdenes se cumplen una abajo de la otra.', ask: '¿Por qué ahora suma dos puntos?',
+      built: (p) => clicksOf(p, ...p.sprites.map((s) => s.id)).some((s) => count(inside(s), 'f_star') >= 2),
+      solve: (p) => { spriteOf(p, 'moneda').scripts[1].body.unshift(fStar()); },
+    }),
+    card({
+      id: 'bum', icon: '💥', label: 'Bomba', sprite: 'bomba',
+      title: 'Una bomba cada vez más grande',
+      how: [{ t: 'Poné [f_grow]', on: 'f_grow' }, { t: 'Tocá a {bomba}', on: 'try' }], tap: 'bomba',
+      demo: fClick(fSound('explosion'), fSpin(), fGrow()),
+      concept: 'Dificultad: un bloque puede hacer el juego más fácil o más difícil.', ask: '¿Qué le pasa a la bomba cada vez que la tocás?',
+      built: (p) => clicksOf(p, 'bomba').some((s) => count(inside(s), 'f_grow', 'f_shrink') > 0),
+      solve: (p) => { spriteOf(p, 'bomba').scripts[1].body.push(fGrow()); },
+    }),
+    card({
+      id: 'viaje', icon: '🚀', label: 'Viaje', sprite: 'pelota',
+      title: 'Un viaje',
+      how: [{ t: 'Poné [f_backdrop]', on: 'f_backdrop' }, { t: 'Elegí otro lugar', on: 'tune' }, { t: 'Tocá a {pelota}', on: 'try' }], tap: 'pelota',
+      demo: fClick(fStar(), fHide(), fSound('aplauso'), fBackdrop('espacio'), fWait(2), fShow()),
+      tune: { type: 'f_backdrop', field: 'B', when: (b, p) => b.fields.B === p.backdrop },
+      concept: 'Eventos: un toque puede cambiar todo el juego.', ask: '¿Qué bloque hace el viaje?',
+      built: (p) => p.sprites.some((s) => s.scripts.some((sc) => inside(sc).some((b) => b.type === 'f_backdrop' && b.fields.B !== p.backdrop))),
+      solve: (p) => { spriteOf(p, 'pelota').scripts[1].body.splice(3, 0, fBackdrop(p.backdrop === 'nieve' ? 'mar' : 'nieve')); },
+    }),
+    card({
+      id: 'amigo', icon: '➕', label: 'Otro blanco', newSprite: true, point: 'add-sprite',
+      title: 'Sumá algo para atrapar',
+      how: [{ t: 'Tocá **+ Agregar**', on: 'add' }, { t: 'Poné [f_click]', on: 'f_click' }, { t: 'Poné [f_star]', on: 'f_star' }, { t: 'Tocalo', on: 'try' }], tap: 'new',
+      demo: fClick(fStar()),
+      concept: 'Crear: programar un personaje desde cero.', ask: '¿Qué le programaste al personaje nuevo?',
+      built: (p) => newSprites(p, base).some((s) => s.scripts.some((sc) => count(inside(sc), 'f_star') > 0)),
+      solve: (p) => addSprite(p, 'coni', fClick(fStar())),
+    }),
+  ],
+});

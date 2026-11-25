@@ -2,8 +2,10 @@
 import type { LevelId } from '../../shared/levels.ts';
 import type { GameDefinition } from '../types.ts';
 import { NOVA_EN_EL_ESPACIO } from './bosque.ts';
+import { REACCION_EN_CADENA } from './cadena.ts';
 import { LA_GRAN_CARRERA } from './carrera.ts';
 import { EL_CONCIERTO } from './concierto.ts';
+import { LA_FERIA } from './feria.ts';
 import { VUELO_DE_CHISPA } from './galaxia.ts';
 import { NOCHE_DE_BOO } from './mar.ts';
 import { ESTRELLA_FUGITIVA } from './sol.ts';
@@ -12,7 +14,7 @@ import { LLUVIA_DE_MANZANAS } from './volcan.ts';
 /** To add a game: a file here, its export in this list and its id in `shared/gameIds.ts`. Its `order` sets its place in the level. */
 export const SHOWCASE: GameDefinition[] = [
   ESTRELLA_FUGITIVA, LA_GRAN_CARRERA, EL_CONCIERTO,
-  NOCHE_DE_BOO,
+  NOCHE_DE_BOO, REACCION_EN_CADENA, LA_FERIA,
   NOVA_EN_EL_ESPACIO, LLUVIA_DE_MANZANAS, VUELO_DE_CHISPA,
 ];
 

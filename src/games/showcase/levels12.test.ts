@@ -132,3 +132,124 @@ describe('El concierto', () => {
     expect(g.machine.backdrop).toBe('teatro');
   });
 });
+
+describe('Reacción en cadena', () => {
+  const setup = setupOf('muestra-cadena');
+
+  /** The moment each link first moves (or scores), after one click on the ball. */
+  function chain(g: Game): Record<string, number> {
+    const at: Record<string, number> = {};
+    const t0 = g.time.now();
+    const score0 = g.machine.score ?? 0;
+    expect(click(g, 'pelota')).toBe('pelota');
+    for (let t = 0; t < 6000; t += 16) {
+      g.run(16);
+      const now = g.time.now() - t0;
+      if (g.sprite('pelota').rot !== 0) at.pelota ??= now;
+      if (g.sprite('toby').jy > 0) at.toby ??= now;
+      if (g.sprite('pulpi').rot !== 0) at.pulpi ??= now;
+      if ((g.machine.score ?? 0) > score0) at.estrella ??= now;
+    }
+    return at;
+  }
+
+  it('one click runs the four links in order', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    g.run(4000);
+    const at = chain(g);
+    expect(Object.keys(at).sort()).toEqual(['estrella', 'pelota', 'pulpi', 'toby']);
+    expect(at.pelota).toBeLessThan(at.toby);
+    expect(at.toby).toBeLessThan(at.pulpi);
+    expect(at.pulpi).toBeLessThan(at.estrella);
+    expect(g.machine.score).toBe(1);
+    expect(g.machine.errors).toEqual([]);
+  });
+
+  it('it can start again without the flag, and does the same again', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    g.run(4000);
+    const first = chain(g);
+    const places = g.machine.snapshot().sprites.map((s) => [s.id, s.x, s.size]);
+    expect(places).toEqual(setup.sprites.map((s) => [s.id, s.x, s.size ?? 100]));
+    const second = chain(g);
+    expect(second).toEqual(first);
+    expect(g.machine.score).toBe(2);
+    expect(g.machine.snapshot().sprites.map((s) => [s.id, s.x, s.size])).toEqual(places);
+  });
+
+  it('only the ball starts the chain: nobody else answers to a click', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    g.run(4000);
+    for (const id of ['toby', 'pulpi', 'estrella']) click(g, id);
+    g.run(3000);
+    expect(g.machine.score ?? 0).toBe(0);
+  });
+});
+
+describe('La feria de las pelotas', () => {
+  const setup = setupOf('muestra-feria');
+  const TARGETS = ['pelota', 'manzana', 'moneda'];
+
+  it('catching a target scores once, hides it, and brings it back', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    g.run(500);
+    for (const id of TARGETS) {
+      const score = g.machine.score ?? 0;
+      expect(click(g, id), id).toBe(id);
+      g.run(300);
+      expect(g.machine.score, id).toBe(score + 1);
+      expect(g.sprite(id).visible, id).toBe(false);
+      expect(click(g, id), `${id} is not there to click twice`).not.toBe(id);
+      g.run(3500);
+      expect(g.sprite(id).visible, id).toBe(true);
+    }
+    expect(g.machine.score).toBe(3);
+  });
+
+  it('the bomb makes noise and scores nothing, however many times it is touched', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    g.run(500);
+    const sounds = g.host.sfxLog.length;
+    for (let i = 0; i < 5; i++) { expect(click(g, 'bomba')).toBe('bomba'); g.run(900); }
+    expect(g.machine.score ?? 0).toBe(0);
+    expect(g.host.sfxLog.slice(sounds)).toContain('explosion');
+    expect(g.sprite('bomba').visible).toBe(true);
+  });
+
+  it('the targets move at different rhythms and never leave the stage', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    const seen: Record<string, Set<string>> = {};
+    for (let t = 0; t < 30_000; t += 100) {
+      g.run(100);
+      for (const s of setup.sprites) {
+        const now = g.sprite(s.id);
+        expect(Math.abs(now.x), s.id).toBeLessThanOrEqual(HW - 12);
+        (seen[s.id] ??= new Set()).add(`${Math.round(now.x)},${Math.round(now.y)}`);
+      }
+    }
+    for (const id of [...TARGETS, 'bomba']) expect(seen[id].size, id).toBeGreaterThan(2);
+    expect(g.sprite('moneda').x).toBeGreaterThan(150);
+  });
+
+  it('nothing overlaps at the start, and nothing stands where a child cannot click it', () => {
+    const g = new Game(setup, { seed: 1 });
+    for (const a of g.machine.instances) for (const b of g.machine.instances) if (a !== b) expect(overlaps(a, b), `${a.id} ${b.id}`).toBe(false);
+  });
+
+  it('the fair ends: Pipo says goodbye after the last target, and everything is back on show', () => {
+    const g = new Game(setup, { seed: 5 });
+    g.flag();
+    g.run(500);
+    click(g, 'pelota');
+    g.run(40_000);
+    expect(g.host.spoken.map((s) => s.text).at(-1)).toContain('Chau');
+    for (const s of setup.sprites) expect(g.sprite(s.id).visible, s.id).toBe(true);
+    expect(g.machine.errors).toEqual([]);
+  });
+});

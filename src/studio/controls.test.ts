@@ -55,6 +55,18 @@ describe('controls of the showcase games', () => {
     ]);
   });
 
+  it('the chain: only the ball answers to a click, and it is the point', () => {
+    const c = of('muestra-cadena');
+    expect(c.taps).toEqual([{ id: 'pelota', main: true }]);
+    expect(c.arrows).toEqual([]);
+  });
+
+  it('the fair: the three targets are the point, the bomb is not', () => {
+    expect(of('muestra-feria').taps).toEqual([
+      { id: 'moneda', main: true }, { id: 'manzana', main: true }, { id: 'pelota', main: true }, { id: 'bomba', main: false },
+    ]);
+  });
+
   it('every showcase game has something to do', () => {
     for (const g of SHOWCASE) expect(hasControls(controlsOf(g.setup)), g.id).toBe(true);
   });
@@ -140,10 +152,12 @@ describe('goal line', () => {
     expect(goal(5)).toBe('Juntá **10** {moneda} y esquivá {rayo}');
   });
 
-  it('names the goal of the games of level 1 that come after the first', () => {
+  it('names the goal of the games of levels 1 and 2 that come after the first', () => {
     const goalOf = (id: string): string => SHOWCASE.find((g) => g.id === id)!.showcase!.goal(SHOWCASE.find((g) => g.id === id)!.setup);
     expect(goalOf('muestra-carrera')).toBe('Llevá a {tomi} o a {coni} hasta {tesoro}');
     expect(goalOf('muestra-concierto')).toBe('Tocá una canción con {robi}, {michi}, {toby} y {pulpi}');
+    expect(goalOf('muestra-cadena')).toBe('Empezá la cadena con {pelota}');
+    expect(goalOf('muestra-feria')).toBe('Atrapá {pelota}, {manzana} y {moneda} pero no {bomba}');
   });
 
   it('takes the number from the program: changed, or left out when nothing wins', () => {
