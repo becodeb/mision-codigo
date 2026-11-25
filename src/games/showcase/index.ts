@@ -7,9 +7,11 @@ import { EL_CAMINO_DE_PIEDRAS } from './camino.ts';
 import { LA_GRAN_CARRERA } from './carrera.ts';
 import { EL_CONCIERTO } from './concierto.ts';
 import { EL_CONCURSO_DE_ROBI } from './concurso.ts';
+import { LA_FABRICA_DE_MONEDAS } from './fabrica.ts';
 import { LA_FERIA } from './feria.ts';
 import { VUELO_DE_CHISPA } from './galaxia.ts';
 import { CUIDA_EL_TESORO } from './guardian.ts';
+import { LLUVIA_DE_METEORITOS } from './meteoritos.ts';
 import { NOCHE_DE_BOO } from './mar.ts';
 import { SALTA_SIN_PARAR } from './salto.ts';
 import { ESTRELLA_FUGITIVA } from './sol.ts';
@@ -21,7 +23,7 @@ export const SHOWCASE: GameDefinition[] = [
   NOCHE_DE_BOO, REACCION_EN_CADENA, LA_FERIA,
   NOVA_EN_EL_ESPACIO, EL_CAMINO_DE_PIEDRAS, EL_CONCURSO_DE_ROBI,
   LLUVIA_DE_MANZANAS, SALTA_SIN_PARAR, CUIDA_EL_TESORO,
-  VUELO_DE_CHISPA,
+  VUELO_DE_CHISPA, LA_FABRICA_DE_MONEDAS, LLUVIA_DE_METEORITOS,
 ];
 
 /** The games of a level, entry game first: by `order`, then in the order of `SHOWCASE`. */

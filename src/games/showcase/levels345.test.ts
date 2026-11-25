@@ -645,3 +645,282 @@ describe('Cuidá el tesoro', () => {
     expect(g.machine.ended).toBe('lose');
   });
 });
+
+describe('La fábrica de monedas', () => {
+  const setup = setupOf('muestra-fabrica');
+  const num = (g: Game, name: string): number => Number(g.machine.vars.get(name));
+  const started = (frameMs = 20): Game => { const g = new Game(setup, { seed: 1, frameMs }); g.flag(); g.run(100); return g; };
+  const set = (g: Game, name: string, v: number): void => { g.machine.vars.set(name, v); };
+
+  /** Taps the coin `cps` times a second and buys what the plan says when there is enough. */
+  function play(cps: number, plan: 'coin' | 'helpers' | 'mix', frameMs = 20): { ended: string | null; ms: number; helpers: number; perClick: number } {
+    const g = started(frameMs);
+    const gap = 1000 / cps;
+    let ms = 0;
+    let next = 0;
+    while (ms < 300_000 && !g.machine.ended) {
+      if (ms >= next) {
+        next = ms + gap;
+        const coins = num(g, 'monedas');
+        if (plan !== 'coin' && coins >= 20 && num(g, 'ayudantes') < (plan === 'helpers' ? 6 : 2)) click(g, 'robi');
+        else if (plan === 'mix' && coins >= 50 && num(g, 'porClic') < 3) click(g, 'estrella');
+        else click(g, 'moneda');
+      }
+      g.run(frameMs);
+      ms += frameMs;
+    }
+    return { ended: g.machine.ended, ms, helpers: num(g, 'ayudantes'), perClick: num(g, 'porClic') };
+  }
+
+  it('a child who taps twice a second wins by buying in a minute or so, and takes longer by tapping alone', () => {
+    for (const frameMs of FRAMES) {
+      const tapping = play(2, 'coin', frameMs);
+      expect(tapping.ended).toBe('win');
+      for (const plan of ['helpers', 'mix'] as const) {
+        const r = play(2, plan, frameMs);
+        expect(r.ended, plan).toBe('win');
+        expect(r.ms, `${plan}, ${frameMs} ms frames`).toBeGreaterThan(45_000);
+        expect(r.ms, `${plan}, ${frameMs} ms frames`).toBeLessThan(90_000);
+        expect(r.ms, plan).toBeLessThan(tapping.ms - 20_000);
+      }
+    }
+  });
+
+  it('the coin gives what each tap is worth, the shop answers with a sound when there is not enough', () => {
+    const g = started();
+    click(g, 'moneda'); g.run(100);
+    expect(num(g, 'monedas')).toBe(1);
+    set(g, 'monedas', 19);
+    const bips = g.host.sfxLog.filter((s) => s === 'bip').length;
+    click(g, 'robi'); click(g, 'estrella'); g.run(100);
+    expect([num(g, 'monedas'), num(g, 'ayudantes'), num(g, 'porClic')]).toEqual([19, 0, 1]);
+    expect(g.host.sfxLog.filter((s) => s === 'bip').length).toBe(bips + 2);
+  });
+
+  it('a helper costs 20 and pays one coin a second, each one; the star costs 50 and makes every tap worth one more', () => {
+    const g = started();
+    set(g, 'monedas', 20);
+    click(g, 'robi'); g.run(100);
+    expect([num(g, 'monedas'), num(g, 'ayudantes')]).toEqual([0, 1]);
+    g.run(3000);
+    expect(num(g, 'monedas')).toBeGreaterThanOrEqual(2);
+    expect(num(g, 'monedas')).toBeLessThanOrEqual(4);
+    set(g, 'monedas', 40);
+    click(g, 'robi'); g.run(100);
+    expect(num(g, 'ayudantes')).toBe(2);
+    set(g, 'monedas', 0);
+    g.run(2000);
+    expect(num(g, 'monedas')).toBeGreaterThanOrEqual(3);
+    set(g, 'monedas', 50);
+    click(g, 'estrella'); g.run(100);
+    expect([num(g, 'monedas'), num(g, 'porClic')]).toEqual([0, 2]);
+    click(g, 'moneda'); g.run(100);
+    expect(num(g, 'monedas')).toBe(2);
+  });
+
+  it('wins when there are more than 199, not before', () => {
+    const g = started();
+    set(g, 'monedas', 199);
+    g.run(300);
+    expect(g.machine.ended).toBeNull();
+    click(g, 'moneda');
+    g.run(300);
+    expect(g.machine.ended).toBe('win');
+    expect(g.host.sfxLog).toContain('fanfarria');
+  });
+
+  it('the flag puts the three numbers back, even in the middle of a game', () => {
+    const g = started();
+    set(g, 'monedas', 120); set(g, 'porClic', 4); set(g, 'ayudantes', 5);
+    g.run(500);
+    g.flag();
+    g.run(40);
+    expect([num(g, 'monedas'), num(g, 'porClic'), num(g, 'ayudantes'), g.machine.ended]).toEqual([0, 1, 0, null]);
+    g.run(5000);
+    expect(num(g, 'monedas')).toBe(0);
+  });
+
+  it('every shop says its price, and the three characters stand clear of the numbers at the top left', () => {
+    const g = started();
+    g.run(2500);
+    expect(g.sprite('robi').bubble?.text).toBe('Ayudante: 20');
+    expect(g.sprite('estrella').bubble?.text).toBe('Mejora: 50');
+    for (const a of g.machine.instances) for (const b of g.machine.instances) if (a !== b) expect(overlaps(a, b), `${a.id} ${b.id}`).toBe(false);
+    /* The monitors: three rows of 30 high from the corner, at most 130 wide. */
+    for (const s of g.machine.instances) {
+      const b = g.machine.hitbox(s.id)!;
+      const under = b.x - b.r < -100 && b.feet + b.h > 180 - 8 - 3 * 36;
+      expect(under, s.id).toBe(false);
+    }
+  });
+
+  it('the coin comes first and the two shops answer too; the goal takes its number from the program', () => {
+    const c = controlsOf(setup);
+    expect(c.taps).toEqual([{ id: 'moneda', main: true }, { id: 'robi', main: true }, { id: 'estrella', main: true }]);
+    expect(c.arrows).toEqual([]);
+    expect(goalOf('muestra-fabrica')).toBe('Juntá **200** {moneda}');
+    const p = clone(setup);
+    gameOf('muestra-fabrica').phases[0].steps.find((s) => s.id === 'meta')!.card!.solve(p);
+    expect(goalOf('muestra-fabrica', p)).toBe('Juntá **100** {moneda}');
+    const none = clone(setup);
+    none.sprites.find((s) => s.id === 'moneda')!.scripts = none.sprites.find((s) => s.id === 'moneda')!.scripts.filter((s) => s.body[0]?.type !== 'a_waituntil');
+    expect(goalOf('muestra-fabrica', none)).toBe('Juntá {moneda}');
+  });
+});
+
+describe('Lluvia de meteoritos', () => {
+  const setup = setupOf('muestra-meteoritos');
+  const rocks = (g: Game) => g.machine.instances.filter((i) => i.spriteId === 'meteorito' && i.isClone);
+  const shots = (g: Game) => g.machine.instances.filter((i) => i.spriteId === 'bala' && i.isClone);
+  const lives = (g: Game): number => Number(g.machine.vars.get('vidas'));
+
+  /** Goes under the lowest rock and shoots when it is in line, looking every `react` ms. `shoot: false` only parks under the lane. */
+  function play(react: number, frameMs: number, shoot = true, maxMs = 240_000): { ended: string | null; ms: number; score: number; lives: number; mostClones: number; leftOver: number } {
+    const g = new Game(setup, { seed: 3, frameMs });
+    g.flag();
+    const hand = new Hand(g);
+    let ms = 0;
+    let look = 0;
+    let ready = 0;
+    let most = 0;
+    while (ms < maxMs && !g.machine.ended) {
+      if (ms >= look) {
+        look = ms + react;
+        const nova = g.sprite('nova');
+        const rock = rocks(g).filter((r) => r.visible && r.y > -150).sort((a, b) => a.y - b.y)[0];
+        if (!shoot) hand.hold(nova.x > -52 ? 'ArrowLeft' : nova.x < -48 ? 'ArrowRight' : '');
+        else if (rock) {
+          const dx = rock.x - nova.x;
+          hand.hold(...(Math.abs(dx) < 18 ? [] : [dx > 0 ? 'ArrowRight' : 'ArrowLeft']));
+          if (Math.abs(dx) < 30 && ms >= ready) { hand.tap(' '); ready = ms + 350; }
+        } else hand.hold();
+      }
+      hand.step();
+      ms += frameMs;
+      most = Math.max(most, g.machine.instances.filter((i) => i.isClone).length);
+    }
+    return { ended: g.machine.ended, ms, score: g.machine.score ?? 0, lives: lives(g), mostClones: most, leftOver: g.machine.instances.filter((i) => i.isClone).length };
+  }
+
+  it('a child who looks three or four times a second can win, on a slow or a fast screen, without ever crowding the stage', () => {
+    for (const frameMs of FRAMES) {
+      for (const react of [150, 300]) {
+        const r = play(react, frameMs);
+        expect(r, `${frameMs} ms frames, looking every ${react}`).toMatchObject({ ended: 'win', score: 15 });
+        expect(r.ms).toBeLessThan(60_000);
+        expect(r.ms).toBeGreaterThan(20_000);
+        expect(r.mostClones).toBeLessThanOrEqual(8);
+        expect(r.leftOver).toBe(0);
+        expect(r.lives).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('a child who stands in a lane and does not shoot loses, one life at a time', () => {
+    for (const frameMs of FRAMES) {
+      const r = play(300, frameMs, false);
+      expect(r, `${frameMs} ms`).toMatchObject({ ended: 'lose', score: 0, lives: 0 });
+      expect(r.ms).toBeGreaterThan(5000);
+      expect(r.ms).toBeLessThan(25_000);
+    }
+  });
+
+  it('sitting still at the start is safe: the rocks fall on the lanes beside Nova', () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const g = new Game(setup, { seed });
+      g.flag();
+      g.run(45_000);
+      expect([lives(g), g.machine.ended, g.machine.score]).toEqual([3, null, 0]);
+    }
+  });
+
+  it('space shoots one thing straight up from Nova, which goes away at the top; the original stays hidden', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    g.run(300);
+    g.sprite('nova').x = -50;
+    g.machine.keyDown(' '); g.machine.keyUp(' ');
+    g.run(100);
+    expect(shots(g)).toHaveLength(1);
+    const shot = shots(g)[0];
+    expect(shot.x).toBe(-50);
+    const y0 = shot.y;
+    g.run(300);
+    expect(shot.y).toBeGreaterThan(y0 + 40);
+    expect(shot.x).toBe(-50);
+    g.run(1500);
+    expect(shots(g)).toHaveLength(0);
+    for (const id of ['bala', 'meteorito']) expect(g.sprite(id).visible, id).toBe(false);
+  });
+
+  it('a shot and a rock that meet are both gone and it is a point; a rock that meets Nova takes a life and is gone', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    g.run(500);
+    const rock = rocks(g)[0];
+    const nova = g.sprite('nova');
+    nova.x = rock.x;
+    g.machine.keyDown(' '); g.machine.keyUp(' ');
+    for (let t = 0; t < 2500 && rocks(g).includes(rock); t += 20) g.run(20);
+    expect(rocks(g)).not.toContain(rock);
+    expect(g.machine.score).toBe(1);
+    expect(lives(g)).toBe(3);
+    expect(shots(g)).toHaveLength(0);
+    /* Now one that nobody stops. */
+    g.run(1000);
+    const next = rocks(g).find((r) => r.visible)!;
+    nova.x = next.x;
+    for (let t = 0; t < 4000 && rocks(g).includes(next); t += 20) g.run(20);
+    expect(lives(g)).toBe(2);
+    expect(g.machine.score).toBe(1);
+    expect(g.host.sfxLog).toContain('explosion');
+  });
+
+  it('two minutes of firing like mad and sweeping from side to side never fills the stage with clones, and nothing is left behind', () => {
+    for (const frameMs of FRAMES) {
+      const g = new Game(setup, { seed: 2, frameMs });
+      g.flag();
+      const hand = new Hand(g);
+      let most = 0;
+      for (let t = 0; t < 120_000 && !g.machine.ended; t += frameMs) {
+        hand.hold(Math.floor(t / 1500) % 2 ? 'ArrowLeft' : 'ArrowRight');
+        if (t % 100 < frameMs) hand.tap(' ');
+        hand.step();
+        most = Math.max(most, g.machine.instances.filter((i) => i.isClone).length);
+      }
+      expect(most, `${frameMs} ms`).toBeLessThanOrEqual(30);
+      hand.release();
+      if (!g.machine.ended) {
+        g.flag();
+        g.run(200);
+        expect(g.machine.instances.filter((i) => i.isClone).length).toBeLessThanOrEqual(2);
+      }
+      expect(g.machine.errors).toEqual([]);
+    }
+  });
+
+  it('the flag starts a clean game: no clones, three lives, no points, Nova in her place', () => {
+    const g = new Game(setup, { seed: 1 });
+    g.flag();
+    g.run(3000);
+    g.sprite('nova').x = 120;
+    g.machine.keyDown(' '); g.machine.keyUp(' ');
+    g.run(200);
+    expect(g.machine.instances.some((i) => i.isClone)).toBe(true);
+    g.flag();
+    g.run(40);
+    expect([lives(g), g.machine.score, g.sprite('nova').x, g.machine.ended]).toEqual([3, 0, 0, null]);
+    expect(g.machine.instances.filter((i) => i.isClone && i.spriteId === 'bala')).toHaveLength(0);
+  });
+
+  it('the arrows go sideways, the space bar shoots, and the goal follows the program', () => {
+    const c = controlsOf(setup);
+    expect(c).toMatchObject({ arrows: ['ArrowLeft', 'ArrowRight'], space: true, movers: ['nova'], spacers: ['nova'], taps: [], late: [] });
+    expect(goalOf('muestra-meteoritos')).toBe('Disparale a **15** {meteorito}');
+    const p = clone(setup);
+    gameOf('muestra-meteoritos').phases[0].steps.find((s) => s.id === 'meta')!.card!.solve(p);
+    expect(goalOf('muestra-meteoritos', p)).toBe('Disparale a **8** {meteorito}');
+    const g = new Game(setup, { seed: 1 });
+    for (const a of g.machine.instances) for (const b of g.machine.instances) if (a !== b) expect(overlaps(a, b), `${a.id} ${b.id}`).toBe(false);
+  });
+});
