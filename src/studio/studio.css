@@ -354,6 +354,14 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
   .sc-steps li::before { width: 25px; height: 25px; font-size: 15px; line-height: 25px; }
   .how-block { padding: 5px 8px; font-size: 13px; }
 }
+/* A long tutorial never piles words up: the current step is always whole, the done ones shrink to their tick, and what comes later is cut. */
+.sc-steps li.on { flex: none; }
+.sc-steps li:not(.on) { overflow: hidden; }
+.sc-steps:has(li:nth-child(5)) li.done { flex: none; padding-right: 8px; }
+.sc-steps:has(li:nth-child(5)) li.done > span { display: none; }
+/* Once the sprite is picked, its face is enough: the row is for what comes next. */
+.sc-steps li.pick.done > span:first-of-type, .sc-steps li.pick.done .nm { display: none; }
+.mc-studio .mc-sp-card.pick { border-color: var(--accent); background: #FFF0DD; animation: sc-nudge .9s ease-in-out infinite; }
 .how-btn { border: 2px solid var(--line-2); border-radius: 11px; padding: 5px 9px; background: #fff; }
 .how-btn.go { background: var(--go); border-color: var(--go); color: #fff; padding: 5px 13px; }
 .how-block { display: inline-grid; place-items: center; border-radius: 8px; padding: 6px 10px; color: #fff; font: 700 15px/1.1 var(--font-body); }

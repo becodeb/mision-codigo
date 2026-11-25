@@ -173,6 +173,7 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
             onAdd={() => setDialog('sprites')}
             onCostume={showcase ? () => setDialog('costume') : null}
             onRemoveCast={(id) => setDialog({ remove: id })}
+            pick={snap.on === 'pick' ? (snap.pick?.id ?? null) : null}
             snapRev={snap.rev}
           />
         </div>
@@ -446,10 +447,12 @@ interface SpritePanelProps {
   onCostume: (() => void) | null;
   /** Showcase games: a sprite the game needs is about to be removed. */
   onRemoveCast: (id: string) => void;
+  /** The sprite the open tutorial asks for. */
+  pick: string | null;
   snapRev: number;
 }
 
-function SpritePanel({ session, onAdd, onCostume, onRemoveCast }: SpritePanelProps) {
+function SpritePanel({ session, onAdd, onCostume, onRemoveCast, pick }: SpritePanelProps) {
   const doc = session.doc;
   const [armed, setArmed] = useState<string | null>(null);
   useEffect(() => {
@@ -483,7 +486,7 @@ function SpritePanel({ session, onAdd, onCostume, onRemoveCast }: SpritePanelPro
           <div
             key={s.id}
             data-sprite={s.id}
-            className={`mc-sp-card${s.id === doc.selected ? ' sel' : ''}`}
+            className={`mc-sp-card${s.id === doc.selected ? ' sel' : ''}${s.id === pick ? ' pick' : ''}`}
             role="button"
             tabIndex={0}
             aria-label={`Elegir a ${s.name}`}

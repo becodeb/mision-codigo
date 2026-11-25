@@ -11,6 +11,7 @@ import type { GameDefinition, GameStep } from '../games/types.ts';
 import { programOf } from './doc.ts';
 import { Modal } from './Modal.tsx';
 import { recapOf } from './recap.ts';
+import { pickHow } from './chips.ts';
 import type { SessionSnapshot, StudioSession } from './session.ts';
 import { mountExample } from './workspace.ts';
 
@@ -133,7 +134,10 @@ function Tutorial({ session, snap }: WallProps) {
   if (!step?.card) return null;
   const card = step.card;
   const celebrate = snap.celebrating?.stepId === step.id;
-  const at = Math.max(0, card.how.findIndex((h) => h.on === snap.on));
+  /* On another sprite, going to the right one is a step of its own, right before the one that needs it. */
+  const steps: { t: string; on: string }[] = [...card.how];
+  if (snap.pick) steps.splice(Math.max(0, steps.findIndex((h) => h.on === snap.pick!.before)), 0, { t: pickHow(snap.pick.id), on: 'pick' });
+  const at = Math.max(0, steps.findIndex((h) => h.on === snap.on));
   return (
     <section className={`sc-wall sc-tutorial${celebrate ? ' all' : ''}`} data-point="guide" aria-live="polite">
       <button type="button" className="sc-round" aria-label="Volver" onClick={() => session.openCard(null)}><span aria-hidden="true">←</span></button>
@@ -146,8 +150,8 @@ function Tutorial({ session, snap }: WallProps) {
         <p className="sc-yes">¡Lo lograste!</p>
       ) : (
         <ol className="sc-steps">
-          {card.how.map((h, i) => (
-            <li key={i} className={i < at ? 'done' : i === at ? 'on' : ''} aria-current={i === at ? 'step' : undefined}><How session={session} text={h.t} /></li>
+          {steps.map((h, i) => (
+            <li key={i} className={`${h.on === 'pick' ? 'pick ' : ''}${i < at ? 'done' : i === at ? 'on' : ''}`} aria-current={i === at ? 'step' : undefined}><How session={session} text={h.t} /></li>
           ))}
         </ol>
       )}

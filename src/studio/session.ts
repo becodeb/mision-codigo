@@ -18,7 +18,7 @@ import { plain } from './rich.tsx';
 import { ActiveClock, GuideTracker, hintRungs, type FlatStep } from './guide.ts';
 import { flattenScripts, irToBlockly } from '../language/convert.ts';
 import { addSpriteDoc, newDoc, parseDoc, programOf, scriptsOf, usesKeys, type ProjectDoc, type SpriteDoc } from './doc.ts';
-import { sayHow } from './chips.ts';
+import { pickHow, sayHow } from './chips.ts';
 import { cancelDemo, pointAt, runDemo, type DemoDeps } from './demo.ts';
 import { planDemo, type DemoPlan, type SpriteView } from './demoPlan.ts';
 import { Coach, type BubbleKind, type CoachView } from './coach.ts';
@@ -62,6 +62,8 @@ export interface SessionSnapshot {
   almost: boolean;
   /** What the hand is about in the open card (see `StepCard.how`): which step is the current one. */
   on: string | null;
+  /** The sprite the open card needs picked first, and the step that comes after it. Stays, as done, once it is picked. */
+  pick: CardPick | null;
   /**
    * Showcase games: an event block the game runs on was left empty, so nothing happens. Said after pressing
    * «Empezar», and only then: a child who took something out or changed the logic on purpose is told nothing.
@@ -71,6 +73,11 @@ export interface SessionSnapshot {
   undo: string | null;
   /** What the stage tells the child to press or click, and the answer to a wrong attempt. */
   coach: CoachView;
+}
+
+export interface CardPick {
+  id: string;
+  before: string;
 }
 
 export interface HealthIssue {
@@ -312,6 +319,7 @@ export class StudioSession {
       card: this.cardId,
       almost: !!this.cardStep?.card?.built(this.program) && !this.tried && !this.tracker.isDone(this.cardId!),
       on: this.cardOn,
+      pick: this.cardPick,
       health: this.healthAsked ? this.deadIssues().filter((h) => !this.healthDismissed.has(h.id)) : [],
       undo: this.undoable?.label ?? null,
       coach: this.coach.view(),
@@ -776,6 +784,7 @@ export class StudioSession {
     this.scheduleHand(900);
     this.machine && (this.machine.dirty = true);
     this.markChanged();
+    this.refreshOn();
   }
 
   addSprite(art: string): void {
@@ -1088,9 +1097,7 @@ export class StudioSession {
     this.celebrating = null;
     this.cardId = id;
     this.cardOn = null;
-    const card = this.cardStep?.card;
-    const target = card?.newSprite ? this.newSpriteId() : card?.sprite;
-    if (target) this.selectSprite(target);
+    this.cardPick = null;
     playSfx('pop');
     hush();
     this.emit();
@@ -1141,7 +1148,7 @@ export class StudioSession {
   }
 
   /** What is left to do in the open card, and which step it belongs to. */
-  private nextMove(): { on: string; show: (deps: DemoDeps) => Promise<void> } | null {
+  private nextMove(): { on: string; pick?: CardPick; show: (deps: DemoDeps) => Promise<void> } | null {
     const step = this.cardStep;
     const card = step?.card;
     const editor = this.editor;
@@ -1162,7 +1169,8 @@ export class StudioSession {
 
     const all = flattenScripts(editor.scripts());
     const here = (id: string): boolean => this.doc.selected === id;
-    const choose = (id: string) => (d: DemoDeps): Promise<void> => pointAt(d, `[data-sprite="${id}"]`);
+    /* The child goes to the sprite, it is not changed for them: that is how they see whose blocks they are changing. */
+    const choose = (id: string, before: string) => ({ on: 'pick', pick: { id, before }, show: (d: DemoDeps): Promise<void> => pointAt(d, `[data-sprite="${id}"]`) });
     const fromToolbox = (type: BlockType) => (d: DemoDeps): Promise<void> => {
       editor.openCategoryOf(type);
       const fresh = editor.flyoutBlock(type);
@@ -1177,7 +1185,7 @@ export class StudioSession {
     };
 
     if (card.block && target) {
-      if (!here(target)) return { on: 'change', show: choose(target) };
+      if (!here(target)) return choose(target, 'change');
       const want = card.block;
       const found = all.find((b) => b.type === want.type && (!want.where || want.where(b))) ?? all.find((b) => b.type === want.type);
       return { on: 'change', show: found ? pointIn(found.id) : fromToolbox(want.type) };
@@ -1197,30 +1205,38 @@ export class StudioSession {
         const inside = planDemo(goal, this.demoSprites(), part.sprite);
         if (inside.kind === 'try') continue;
         const on = inside.kind === 'hat' ? inside.hat.type : inside.kind === 'block' || inside.kind === 'move' ? inside.block.type : 'add';
-        if (!here(part.sprite)) return { on, show: choose(part.sprite) };
+        if (!here(part.sprite)) return choose(part.sprite, on);
         return { on, show: (d) => runDemo(d, inside) };
       }
       for (const v of card.values ?? []) {
-        if (!here(target)) return { on: v.type, show: choose(target) };
+        if (!here(target)) return choose(target, v.type);
         const holders = all.filter((b) => b.type === v.into);
         if (!holders.length || holders.some((b) => b.inputs[v.input]?.type === v.type)) continue;
         const owner = holders[0];
         return { on: v.type, show: (d) => runDemo(d, { kind: 'block', block: { type: v.type, fields: {}, inputs: {}, body: [], elseBody: [] }, slot: { parent: owner.id, kind: 'input', input: v.input, parentType: owner.type }, completes: null }) };
       }
     }
+    if (step.point && target && !here(target)) return choose(target, 'point');
     return step.point ? { on: 'point', show: (d) => pointAt(d, step.point!) } : null;
   }
 
   private cardOn: string | null = null;
+  private cardPick: CardPick | null = null;
 
   /** Works out the current step again. A new one is read aloud to the younger children. */
   private refreshOn(): void {
     let on: string | null = null;
-    try { on = this.cardId ? (this.nextMove()?.on ?? this.cardOn) : null; } catch { on = this.cardOn; }
-    if (on === this.cardOn) return;
+    let pick = this.cardPick;
+    try {
+      const move = this.cardId ? this.nextMove() : null;
+      on = this.cardId ? (move?.on ?? this.cardOn) : null;
+      pick = move?.pick ?? pick;
+    } catch { on = this.cardOn; }
+    if (on === this.cardOn && pick?.id === this.cardPick?.id && pick?.before === this.cardPick?.before) return;
     this.cardOn = on;
-    const how = this.cardStep?.card?.how.find((h) => h.on === on);
-    if (how && this.spoken && !this.celebrating) void this.say(sayHow(how.t, (id) => this.named(`{${id}}`)));
+    this.cardPick = pick;
+    const text = on === 'pick' && pick ? pickHow(pick.id) : this.cardStep?.card?.how.find((h) => h.on === on)?.t;
+    if (text && this.spoken && !this.celebrating) void this.say(sayHow(text, (id) => this.named(`{${id}}`)));
     this.emit();
   }
 

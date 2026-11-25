@@ -80,7 +80,7 @@ export interface StepCard {
   tap?: string;
   /** A question to explain it in their own words. */
   ask: string;
-  /** The sprite the tutorial is about: it is picked when the tutorial opens. */
+  /** The sprite the tutorial is about: picking it is the first step when the child is on another one. */
   sprite?: string;
   /** «Mostrame» for a change of a number or a menu: the hand points at that block of the sprite. */
   block?: { type: BlockType; caption: string; where?: (b: Block) => boolean };

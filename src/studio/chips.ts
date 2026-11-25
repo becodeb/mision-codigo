@@ -24,6 +24,9 @@ export function parseHow(text: string): HowPart[] {
   return out;
 }
 
+/** The step that asks for a sprite before working on its blocks. */
+export const pickHow = (id: string): string => `Elegí a {${id}}`;
+
 /** Short names for the chips of text blocks: the whole sentence of the block does not fit in a step. */
 const SHORT: Partial<Record<BlockType, string>> = {
   a_key: 'al presionar tecla', a_points: 'cuando los puntos…', a_touching: 'cuando toque a…', a_click: 'al hacer clic', a_backdrop: 'cambiar escenario', a_changevar: 'sumar a…',
