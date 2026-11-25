@@ -41,6 +41,13 @@ export const says = (p: P): string[] => blocksOf(p, ...SAY).map(saidBy).filter((
 export const sounds = (p: P): string[] => blocksOf(p, ...SOUND).map((b) => String(b.fields.S));
 export const numbers = (p: P, type: BlockType, key: string): number[] => blocksOf(p, type).map((b) => numField(b, key)).filter(Number.isFinite);
 
+/** «**10** » when a «cuando los puntos…» script wins at 10, or nothing: the goal line follows what the child changed. */
+export function winMark(p: P): string {
+  const sc = scriptsWith(p, 'a_points').find((s) => count(inside(s), 'a_win') > 0);
+  const n = sc ? numField(sc.hat, 'N') : NaN;
+  return Number.isFinite(n) ? `**${n}** ` : '';
+}
+
 export const newSprites = (p: P, base: P): SpriteProgram[] => p.sprites.filter((s) => !base.sprites.some((b) => b.id === s.id));
 
 /* ---------- cambiar el proyecto (para las pruebas) ---------- */
@@ -152,6 +159,7 @@ interface ShowcaseSpec {
   setup: P;
   toolbox: BlockType[];
   play: NonNullable<GameDefinition['showcase']>['play'];
+  goal: NonNullable<GameDefinition['showcase']>['goal'];
   pillars: Pillar[];
   cards: GameStep[];
 }
@@ -163,6 +171,6 @@ export function showcaseGame(s: ShowcaseSpec): GameDefinition {
     phases: [{ title: s.title, goal: s.pitch, steps: s.cards }],
     challenges: [],
     solution: { program: s.setup, play: () => undefined },
-    showcase: { play: s.play, cast: s.setup.sprites.map((x) => x.id), pillars: s.pillars },
+    showcase: { play: s.play, goal: s.goal, cast: s.setup.sprites.map((x) => x.id), pillars: s.pillars },
   };
 }

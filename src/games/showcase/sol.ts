@@ -20,6 +20,7 @@ export const ESTRELLA_FUGITIVA = showcaseGame({
     { icon: '⭐', text: 'Tocá la estrella: suma un punto y se escapa.' },
     { icon: '👆', text: 'Tocá también a los personajes.' },
   ],
+  goal: () => 'Tocá a {estrella} todas las veces que puedas',
   pillars: [
     { id: 'estrella', broken: 'Nada suma estrellas cuando lo tocás', ok: (p) => scriptsWith(p, 'f_click').some((s) => count(inside(s), 'f_star') > 0), restore: { sprite: 'estrella', script: fClick(fRandom(), fStar(), fSound('magia')) } },
   ],

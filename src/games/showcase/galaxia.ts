@@ -6,7 +6,7 @@ import {
 import type { Block, ProjectProgram } from '../../language/ir.ts';
 import { blocksForLevel } from '../../language/catalog.ts';
 import { blocksInList, numField } from '../checks.ts';
-import { addSprite, addTo, blocksOf, card, count, firstBlock, inside, lookCards, scriptsWith, showcaseGame, spriteOf } from './kit.ts';
+import { addSprite, addTo, blocksOf, card, count, firstBlock, inside, lookCards, scriptsWith, showcaseGame, spriteOf, winMark } from './kit.ts';
 
 const CLONE = () => onCloneStart(goTo(228, randomBetween(-140, 120)), show(), repeatUntil(lt(posX(), -215), changeX(sub(0, variable('velocidad')))), deleteClone());
 /** Cada rayo pega una sola vez: al tocar a Chispa se borra. */
@@ -47,10 +47,10 @@ export const VUELO_DE_CHISPA = showcaseGame({
   setup: base,
   toolbox: blocksForLevel(5),
   play: [
-    { icon: '⌨️', text: 'Volá con las flechas del teclado.' },
     { icon: '🪙', text: 'Juntá 10 monedas para ganar.' },
     { icon: '⚡', text: 'Cada rayo te saca una vida. Tenés 5.' },
   ],
+  goal: (p) => `Juntá ${winMark(p)}{moneda} y esquivá {rayo}`,
   pillars: [
     { id: 'mover', broken: '{chispa} ya no vuela con las flechas', ok: (p) => blocksOf(p, 'a_forever').some((b) => count(blocksInList(b.body), 'a_arrows') > 0) || scriptsWith(p, 'a_key').some((s) => s.body.length > 0), restore: { sprite: 'chispa', script: onFlag(forever(moveWithArrows(7))) } },
     { id: 'variables', broken: 'Falta decir cuántas vidas y qué velocidad hay al empezar', ok: (p) => ['vidas', 'velocidad'].every((v) => setOf(p, v).length > 0), restore: { sprite: 'chispa', script: onFlag(setVar('vidas', 5), setVar('velocidad', 4)) } },

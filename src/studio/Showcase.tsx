@@ -4,15 +4,13 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ART, ICON, type ArtId } from '../art/index.ts';
+import { ControlsLegend } from './Controls.tsx';
+import { controlsOf, hasControls } from './controls.ts';
+import { How } from './How.tsx';
 import type { GameDefinition, GameStep } from '../games/types.ts';
 import { programOf } from './doc.ts';
 import { Modal } from './Modal.tsx';
 import { recapOf } from './recap.ts';
-import { chipLabel, isBlockType, parseHow } from './chips.ts';
-import { blockImage } from '../language/blocks.ts';
-import type { BlockType } from '../language/catalog.ts';
-import { BLOCK_SPECS } from '../language/spec.ts';
-import { blocklyThemes } from '../language/themes.ts';
 import type { SessionSnapshot, StudioSession } from './session.ts';
 import { mountExample } from './workspace.ts';
 
@@ -27,14 +25,18 @@ export const signedTitle = (title: string, author: string | undefined, mine: boo
 
 interface IntroProps {
   game: GameDefinition;
+  /** The child's own program: a returning child sees the controls of their game. */
+  session: StudioSession;
+  touch: boolean;
   author?: string;
   mine: boolean;
   onPlay: () => void;
   onExit: () => void;
 }
 
-export function Intro({ game, author, mine, onPlay, onExit }: IntroProps) {
+export function Intro({ game, session, touch, author, mine, onPlay, onExit }: IntroProps) {
   const play = useRef<HTMLButtonElement>(null);
+  const controls = useMemo(() => controlsOf(session.program), [session]);
   useEffect(() => play.current?.focus({ preventScroll: true }), []);
   return (
     <div className="sc-intro" role="dialog" aria-modal="true" aria-label={game.title}>
@@ -42,6 +44,7 @@ export function Intro({ game, author, mine, onPlay, onExit }: IntroProps) {
         {author && <p className="sc-hello">¡Hola, {author}!</p>}
         <svg className="sc-cover" viewBox={ART[game.cover as ArtId].kind === 'object' ? '-40 -64 80 72' : '-64 -138 128 146'} aria-hidden="true" dangerouslySetInnerHTML={{ __html: ART[game.cover as ArtId].svg() }} />
         <h1>{signedTitle(game.title, author, mine)}</h1>
+        {hasControls(controls) && <ControlsLegend session={session} controls={controls} touch={touch} big />}
         <ul className="sc-how">
           {game.showcase!.play.map((p) => (
             <li key={p.text}><span aria-hidden="true">{p.icon}</span>{p.text}</li>
@@ -122,32 +125,6 @@ function Blocks({ session, scripts }: { session: StudioSession; scripts: Scripts
     }
   }, [session, scripts]);
   return <div className="mc-example-ws" ref={host} data-point="example" />;
-}
-
-/** One step drawn: words, buttons, blocks as they look in the toolbox, and sprites with their face. */
-function How({ session, text }: { session: StudioSession; text: string }) {
-  return (
-    <>
-      {parseHow(text).map((p, i) => {
-        if (p.kind === 'text') return <span key={i}>{p.value}</span>;
-        if (p.kind === 'button') return <span key={i} className={`how-btn${p.value === '▶' ? ' go' : ''}`}>{p.value}</span>;
-        if (p.kind === 'sprite') {
-          const art = session.doc.sprites.find((s) => s.id === p.value)?.art ?? session.game?.setup.sprites.find((s) => s.id === p.value)?.art;
-          return <span key={i} className="how-spr">{art && <svg viewBox="-60 -134 120 140" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ART[art as ArtId]?.svg() ?? '' }} />}{session.named(`{${p.value}}`)}</span>;
-        }
-        if (!isBlockType(p.value)) return null;
-        const type = p.value as BlockType;
-        const spec = BLOCK_SPECS[type];
-        const img = session.tier === 'picture' ? blockImage(type) : null;
-        const styles = (session.tier === 'picture' ? blocklyThemes().picture : blocklyThemes().text).blockStyles as Record<string, { colourPrimary: string } | undefined>;
-        return (
-          <span key={i} className={`how-block${spec.shape === 'hat' ? ' hat' : ''}${spec.shape === 'value' ? ' value' : ''}`} style={{ background: styles[spec.style]?.colourPrimary }}>
-            {img ? <img src={img} alt={chipLabel(type)} /> : chipLabel(type)}
-          </span>
-        );
-      })}
-    </>
-  );
 }
 
 /** The same row: the way back, which card it is, and its steps. The hand shows the rest by itself. */

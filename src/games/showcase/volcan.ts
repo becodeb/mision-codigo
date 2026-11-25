@@ -6,7 +6,7 @@ import {
 import type { Block } from '../../language/ir.ts';
 import { blocksForLevel, type BlockType } from '../../language/catalog.ts';
 import { blocksInList, numField } from '../checks.ts';
-import { addSprite, addTo, blocksOf, card, count, firstBlock, inside, lookCards, newSprites, scriptsWith, setNumber, showcaseGame, spriteOf } from './kit.ts';
+import { addSprite, addTo, blocksOf, card, count, firstBlock, inside, lookCards, newSprites, scriptsWith, setNumber, showcaseGame, spriteOf, winMark } from './kit.ts';
 
 /** Aparece arriba, en un lugar al azar, y baja de a poquito. */
 const fall = (times: number, speed: number): Block[] => [hide(), goToRandom(), changeY(400), show(), repeat(times, changeY(-speed))];
@@ -34,10 +34,10 @@ export const LLUVIA_DE_MANZANAS = showcaseGame({
   setup: base,
   toolbox: blocksForLevel(4),
   play: [
-    { icon: '⌨️', text: 'Movete con las flechas del teclado.' },
     { icon: '🍎', text: 'Atajá 10 manzanas para ganar.' },
     { icon: '💣', text: 'Cada bomba te saca un punto.' },
   ],
+  goal: (p) => `Atajá ${winMark(p)}{manzana} y esquivá {bomba}`,
   pillars: [
     { id: 'mover', broken: '{coni} ya no se mueve con las flechas', ok: (p) => blocksOf(p, 'a_forever').some((b) => count(blocksInList(b.body), 'a_arrows') > 0) || scriptsWith(p, 'a_key').some((s) => count(inside(s), ...TRAVEL) > 0), restore: { sprite: 'coni', script: onFlag(forever(moveWithArrows(8))) } },
     { id: 'caer', broken: '{manzana} ya no cae', ok: (p) => p.sprites.some((s) => s.id !== 'coni' && s.id !== 'bomba' && s.scripts.some((sc) => sc.hat.type === 'a_flag' && count(inside(sc), ...TRAVEL) > 0)), restore: { sprite: 'manzana', script: onFlag(forever(...fall(60, 5))) } },

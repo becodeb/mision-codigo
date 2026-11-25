@@ -110,6 +110,11 @@ export interface Pillar {
 export interface Showcase {
   /** How to play, one line each, with an emoji. */
   play: { icon: string; text: string }[];
+  /**
+   * The goal in one line, written with the marks of a step (`**10**`, `{estrella}`) so it is drawn, not read. It takes the
+   * program, so a number the child changed shows up changed.
+   */
+  goal: (program: ProjectProgram) => string;
   /** Sprites the game is made of: removing one asks first. */
   cast: string[];
   pillars: Pillar[];

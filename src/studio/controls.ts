@@ -91,16 +91,3 @@ export function controlsOf(program: ProjectProgram): Controls {
 
 /** Whether the program has anything a child can do at all. */
 export const hasControls = (c: Controls): boolean => c.arrows.length > 0 || c.space || c.taps.length > 0;
-
-/** The score that wins the game, from the program, or `null` when no «cuando los puntos…» script wins. */
-export function winPoints(program: ProjectProgram): number | null {
-  for (const sp of program.sprites) {
-    for (const sc of sp.scripts) {
-      if (sc.hat.type === 'a_points' && sc.body.some((b) => { let hit = false; walk(b, (x) => { if (x.type === 'a_win') hit = true; }); return hit; })) {
-        const n = Number(sc.hat.fields.N);
-        if (Number.isFinite(n)) return n;
-      }
-    }
-  }
-  return null;
-}

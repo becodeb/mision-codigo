@@ -6,6 +6,7 @@ import type { StudioProps } from './contract.ts';
 import { StudioErrorBoundary } from './ErrorBoundary.tsx';
 import { Guide } from './Guide.tsx';
 import { Modal } from './Modal.tsx';
+import { ControlsStrip, hasStrip } from './Controls.tsx';
 import { CardWall, RecapDialog, HealthBar, Intro, RemoveDialog, RepairDialog, signedTitle } from './Showcase.tsx';
 import { StudioSession } from './session.ts';
 import { lockPageGestures } from './touch.ts';
@@ -108,9 +109,12 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
   const mine = !!showcase && session.tracker.completedCount > 0;
   const title = game ? (showcase ? signedTitle(game.title, author, mine) : game.title) : 'Proyecto libre';
   const picture = session.tier === 'picture';
+  /* What to press or click, always in sight: under the bar on the whole screen, and in the editor of the showcase games. */
+  const stripOn = (show || !!showcase) && hasStrip(session, !!showcase);
+  const strip = stripOn ? <ControlsStrip session={session} touch={touch} goal={!!showcase} dark={show} /> : null;
 
   return (
-    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${snap.almost ? ' try-now' : ''}${snap.running ? ' running' : ''}`} data-level={level}>
+    <div ref={root} className={`mc-studio tier-${session.tier}${show ? ' show' : ''}${showcase ? ' showcase' : ''}${stripOn ? (show ? ' ct-on' : ' ct-on ct-edit') : ''}${snap.almost ? ' try-now' : ''}${snap.running ? ' running' : ''}`} data-level={level}>
       {!showcase && <header className="mc-topbar">
         <button type="button" className="mc-ibtn" aria-label="Volver al inicio" data-point="exit" onClick={onExit}>
           <Icon html={ICON.home} />
@@ -184,12 +188,15 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
             </button>
           </div>
 
+          {!show && strip}
+
           <StageBox
             stageRef={stageSvg}
             snap={snap}
             session={session}
             touch={touch}
             onInside={showcase && show ? closeShow : null}
+            strip={show ? strip : null}
             showBar={
               show ? (
                 <div className="mc-show-bar">
@@ -244,6 +251,8 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
       {intro && game && (
         <Intro
           game={game}
+          session={session}
+          touch={touch}
           author={author}
           mine={mine}
           onPlay={() => {
@@ -363,6 +372,8 @@ function StageBox(props: {
   session: StudioSession;
   touch: boolean;
   showBar: ReactNode;
+  /** What to press or click, under the bar on the whole screen. */
+  strip: ReactNode;
   /** Showcase games, on the whole screen: the way into the code from the end of the game. */
   onInside: (() => void) | null;
 }) {
@@ -372,6 +383,7 @@ function StageBox(props: {
   return (
     <div className="mc-stage-slot">
       {props.showBar}
+      {props.strip}
       <div className="mc-stage-box" data-point="stage">
         <svg ref={props.stageRef} className="mc-stage" viewBox="0 0 480 360" role="img" aria-label="Escenario" />
         {snap.ended && (

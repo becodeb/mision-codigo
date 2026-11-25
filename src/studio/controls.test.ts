@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SHOWCASE, showcaseFor } from '../games/showcase/index.ts';
 import { addScore, fClick, fJump, forever, ifThen, keyPressed, moveWithArrows, onClick, onFlag, onKey, project, setSize, sprite } from '../language/ir.ts';
 import type { ProjectProgram, Script } from '../language/ir.ts';
-import { controlsOf, hasControls, spriteIdOf, winPoints } from './controls.ts';
+import { controlsOf, hasControls, spriteIdOf } from './controls.ts';
 
 const clone = (p: ProjectProgram): ProjectProgram => JSON.parse(JSON.stringify(p)) as ProjectProgram;
 const setup = (level: 1 | 2 | 3 | 4 | 5): ProjectProgram => clone(showcaseFor(level).setup);
@@ -41,10 +41,8 @@ describe('controls of the showcase games', () => {
     expect(c.taps).toEqual([]);
   });
 
-  it('every showcase game has something to do, and the goal number comes from the program', () => {
+  it('every showcase game has something to do', () => {
     for (const g of SHOWCASE) expect(hasControls(controlsOf(g.setup)), g.id).toBe(true);
-    expect([3, 4, 5].map((l) => winPoints(setup(l as 3 | 4 | 5)))).toEqual([10, 10, 10]);
-    expect(winPoints(setup(1))).toBeNull();
   });
 });
 
@@ -100,5 +98,25 @@ describe('controls follow the edits', () => {
   it('a clone answers to its original', () => {
     expect(spriteIdOf('rayo#4')).toBe('rayo');
     expect(spriteIdOf('nova')).toBe('nova');
+  });
+});
+
+describe('goal line', () => {
+  const goal = (level: 1 | 2 | 3 | 4 | 5, p = setup(level)): string => showcaseFor(level).showcase!.goal(p);
+
+  it('names the goal of each game with marks the legend draws', () => {
+    expect(goal(1)).toBe('Tocá a {estrella} todas las veces que puedas');
+    expect(goal(2)).toBe('Tocá a {boo} antes de que se esconda');
+    expect(goal(3)).toBe('Juntá **10** {estrella} y esquivá {meteorito}');
+    expect(goal(4)).toBe('Atajá **10** {manzana} y esquivá {bomba}');
+    expect(goal(5)).toBe('Juntá **10** {moneda} y esquivá {rayo}');
+  });
+
+  it('takes the number from the program: changed, or left out when nothing wins', () => {
+    const p = setup(4);
+    p.sprites.find((s) => s.id === 'coni')!.scripts.find((s) => s.hat.type === 'a_points')!.hat.fields.N = 5;
+    expect(goal(4, p)).toBe('Atajá **5** {manzana} y esquivá {bomba}');
+    p.sprites.find((s) => s.id === 'coni')!.scripts = p.sprites.find((s) => s.id === 'coni')!.scripts.filter((s) => s.hat.type !== 'a_points');
+    expect(goal(4, p)).toBe('Atajá {manzana} y esquivá {bomba}');
   });
 });

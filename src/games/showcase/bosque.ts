@@ -6,7 +6,7 @@ import { blocksForLevel, type BlockType } from '../../language/catalog.ts';
 import type { Block } from '../../language/ir.ts';
 import { numField } from '../checks.ts';
 import type { Pillar } from '../types.ts';
-import { addSprite, addTo, blocksOf, card, count, differs, firstBlock, inside, lookCards, newSprites, numbers, scriptsWith, setNumber, showcaseGame } from './kit.ts';
+import { addSprite, addTo, blocksOf, card, count, differs, firstBlock, inside, lookCards, newSprites, numbers, scriptsWith, setNumber, showcaseGame, winMark } from './kit.ts';
 
 const STEPS: BlockType[] = ['a_changex', 'a_changey', 'a_move'];
 const ARROWS: [string, string, () => Block][] = [
@@ -40,10 +40,10 @@ export const NOVA_EN_EL_ESPACIO = showcaseGame({
   setup: base,
   toolbox: blocksForLevel(3),
   play: [
-    { icon: '⌨️', text: 'Movete con las flechas del teclado.' },
     { icon: '⭐', text: 'Juntá 10 estrellas para ganar.' },
     { icon: '☄️', text: 'Si te toca el meteorito, perdés un punto.' },
   ],
+  goal: (p) => `Juntá ${winMark(p)}{estrella} y esquivá {meteorito}`,
   pillars: [
     ...ARROWS.map(([key, where, step]): Pillar => ({
       id: `mover-${key}`, broken: `{nova} ya no va ${where}`,
