@@ -41,8 +41,8 @@ export function DrawnControls({ controls, who, touch, big = false }: { controls:
   const { arrows, space, movers, spacers, taps } = controls;
   const main = taps.filter((t) => t.main);
   const side = taps.filter((t) => !t.main);
-  /* At most three faces on the hand: the ones that matter first. */
-  const shown = [...main, ...side].slice(0, 3);
+  /* At most three faces on the hand, the ones that matter first; four when the point is exactly four of them (a band of four): then the faces go without their names, to fit. */
+  const shown = [...main, ...side].slice(0, main.length === 4 ? 4 : 3);
   return (
     <div className={`ct-legend${big ? ' big' : ''}`}>
       {arrows.length > 0 && (
@@ -64,7 +64,7 @@ export function DrawnControls({ controls, who, touch, big = false }: { controls:
         <span className="ct-group">
           <span className="ct-hand" aria-hidden="true" dangerouslySetInnerHTML={{ __html: HAND }} />
           <span className="ct-to">{touch ? 'Tocá a' : 'Hacé clic en'}</span>
-          {shown.map((t) => <span key={t.id} className={t.main ? undefined : 'ct-side'}><Who who={who} id={t.id} name={t.main} /></span>)}
+          {shown.map((t) => <span key={t.id} className={t.main ? undefined : 'ct-side'}><Who who={who} id={t.id} name={t.main && shown.length < 4} /></span>)}
         </span>
       )}
     </div>
