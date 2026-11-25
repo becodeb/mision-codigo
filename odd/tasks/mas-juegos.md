@@ -45,11 +45,12 @@ game per level and leaving it signs the child out. The five existing games are a
 
 ## Tasks
 
-- [ ] T1 Several showcases per level, choosing screen, finishing a game offers another one, teacher views.
+- [x] T1 Several showcases per level, choosing screen, finishing a game offers another one, teacher views. Commits 5831315 and the `fix(picker)` after it. `showcasesFor`, `Showcase.tapAll`, `GamePicker` + `picker.ts`, `ShowcaseFlow.tsx`, finishing dialog, `drawn.tsx` (controls without session or Blockly), demo routes `#/3`, `#/3/juegos`, `#/3/<id>`. Checked in the browser with two temporary copies of games (not committed): entry, picker at 1366x768, 1200x800, 1024x600 (3 and 4 cards) and 390x844, progress, re-entry, «No soy», finishing dialog once, demo. Route: delegated, one writer.
 - [ ] T2 Games of levels 1 and 2 (four), with proofs.
 - [ ] T3 Games of levels 3, 4 and 5 (six), with proofs.
 - [ ] T4 Browser pass of the ten games: controls, goal, every tutorial from every sprite, three screen sizes, touch.
 
 ## Progress
 
+- T1 done: typecheck clean, 54 files / 1276 tests pass, build passes; the entry chunk grew 10 KB (467 to 478 KB) with no Blockly in it.
 - Before this feature, on the same line of commits: backdrops shown large (0359c42), tutorials ask for the sprite first (5bdd916). 53 files / 1263 tests pass.
