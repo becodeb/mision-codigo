@@ -6,10 +6,12 @@ import { controlsOf } from './controls.ts';
 
 /** A coach over a program, with what the host would be told. */
 function rig(level: 1 | 2 | 3 | 4 | 5, program: ProjectProgram = showcaseFor(level).setup) {
-  const log = { changed: 0, said: [] as [BubbleKind, string][], hidden: false, program };
+  const log = { changed: 0, said: [] as [BubbleKind, string][], hidden: false, held: false, dead: false, program };
   const coach = new Coach({
     controls: () => controlsOf(log.program),
     hidden: () => log.hidden,
+    held: () => log.held,
+    dead: () => log.dead,
     changed: () => { log.changed++; },
     say: (kind, why) => { log.said.push([kind, why]); },
   });
@@ -217,5 +219,30 @@ describe('what covers the stage', () => {
     expect(coach.view()).toMatchObject({ keys: false, tap: false });
     vi.advanceTimersByTime(IDLE_MS);
     expect(coach.view()).toMatchObject({ keys: false, tap: false });
+  });
+
+  it('does not come back while a key is held', () => {
+    const { coach, log } = rig(4);
+    coach.start();
+    coach.key('ArrowRight');
+    log.held = true;
+    vi.advanceTimersByTime(IDLE_MS * 2);
+    expect(coach.view().keys).toBe(false);
+    log.held = false;
+    vi.advanceTimersByTime(IDLE_MS);
+    expect(coach.view().keys).toBe(true);
+  });
+
+  it('points at «Empezar» when the game is over and nothing is left to click', () => {
+    const { coach, log } = rig(2);
+    coach.start();
+    coach.click('boo');
+    log.dead = true;
+    vi.advanceTimersByTime(IDLE_MS);
+    expect(coach.view()).toMatchObject({ tap: false, flag: true, bubble: { kind: 'again' } });
+    vi.advanceTimersByTime(BUBBLE_MS);
+    expect(coach.view().flag).toBe(false);
+    vi.advanceTimersByTime(IDLE_MS - BUBBLE_MS);
+    expect(coach.view().flag).toBe(true);
   });
 });

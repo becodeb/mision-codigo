@@ -15,7 +15,7 @@ export const BUBBLE_MS = 2800;
 /** Wrong clicks in a row in a click game before the hand comes back. */
 const MISSES = 2;
 
-export type BubbleKind = 'keys' | 'tap' | 'flag';
+export type BubbleKind = 'keys' | 'tap' | 'flag' | 'again';
 
 export interface CoachView {
   /** The game is on: from «Empezar» until «Parar», a program change that reloads, or the end. */
@@ -34,6 +34,10 @@ export interface CoachHost {
   controls(): Controls;
   /** A modal, the entry screen, a question or a tutorial that is not running: the coach keeps quiet. */
   hidden(): boolean;
+  /** A key is being held down: the child is playing. */
+  held(): boolean;
+  /** Nothing runs and there is nothing left to click: the game is over without saying so. */
+  dead(): boolean;
   /** The view changed: draw again. */
   changed(): void;
   /** Says it aloud (the younger levels). Never called when the game starts. */
@@ -73,7 +77,7 @@ export class Coach {
       keys: this.on && this.keys && !quiet,
       tap: this.on && this.tap && !quiet,
       bubble: quiet ? null : this.bubble,
-      flag: !quiet && this.bubble?.kind === 'flag',
+      flag: !quiet && (this.bubble?.kind === 'flag' || this.bubble?.kind === 'again'),
     };
   }
 
@@ -155,7 +159,7 @@ export class Coach {
     return true;
   }
 
-  /** A press that did nothing: a sprite with no click script, a drag that is not allowed, the empty stage. */
+  /** A press that did nothing: a sprite with no click script, or the empty stage. */
   miss(instanceId: string | null): void {
     if (!this.on || this.host.hidden()) return;
     const c = this.host.controls();
@@ -169,7 +173,7 @@ export class Coach {
     }
   }
 
-  private show(kind: BubbleKind): void {
+  private show(kind: BubbleKind, why: 'miss' | 'idle' = 'miss'): void {
     this.bubble = { kind, n: ++this.seq };
     if (this.bubbleTimer) clearTimeout(this.bubbleTimer);
     this.bubbleTimer = setTimeout(() => {
@@ -178,7 +182,7 @@ export class Coach {
       this.host.changed();
     }, BUBBLE_MS);
     this.host.changed();
-    this.host.say(kind, 'miss');
+    this.host.say(kind, why);
   }
 
   /** The hints come back after a quiet while, unless something covers the stage. */
@@ -187,7 +191,11 @@ export class Coach {
     this.idle = setTimeout(() => {
       this.idle = null;
       if (!this.on) return;
-      if (this.host.hidden()) return this.armIdle();
+      if (this.host.hidden() || this.host.held()) return this.armIdle();
+      if (this.host.dead()) {
+        this.show('again', 'idle');
+        return this.armIdle();
+      }
       const c = this.host.controls();
       this.keys = hasKeys(c);
       this.tap = hasMainTap(c);

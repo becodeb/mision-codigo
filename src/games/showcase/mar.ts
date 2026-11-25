@@ -19,10 +19,10 @@ export const NOCHE_DE_BOO = showcaseGame({
   setup: base,
   toolbox: blocksForLevel(2),
   play: [
-    { icon: '👻', text: 'Boo aparece en cualquier lado. ¡Tocá antes de que se esconda!' },
+    { icon: '👻', text: 'Boo aparece en cualquier lado. ¡Atrapalo antes de que se esconda!' },
     { icon: '⭐', text: 'Cada vez que lo lográs, ganás una estrella.' },
   ],
-  goal: () => 'Tocá a {boo} antes de que se esconda',
+  goal: () => 'Atrapá a {boo} antes de que se esconda',
   pillars: [
     { id: 'aparece', broken: '{boo} ya no aparece y desaparece', ok: (p) => scriptsWith(p, 'f_flag').some((s) => count(inside(s), 'f_show', 'f_random') > 0), restore: { sprite: 'boo', script: GHOST() } },
     { id: 'estrella', broken: 'Nada suma estrellas cuando lo tocás', ok: (p) => scriptsWith(p, 'f_click').some((s) => count(inside(s), 'f_star') > 0), restore: { sprite: 'boo', script: CAUGHT() } },

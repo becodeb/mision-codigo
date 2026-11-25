@@ -451,7 +451,7 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 .ct-who { display: inline-flex; align-items: center; gap: 3px; }
 .ct-who svg { width: calc(var(--cap) * 1.2); height: calc(var(--cap) * 1.35); flex: none; }
 .ct-who b { font: 800 16px/1 var(--font-display); }
-.ct-side { opacity: .6; }
+.ct-side { opacity: .85; }
 .ct-side svg { width: calc(var(--cap) * .95); height: calc(var(--cap) * 1.08); }
 .ct-hand svg { width: calc(var(--cap) * 1); height: calc(var(--cap) * 1.12); display: block; }
 .ct-legend.big { --cap: 44px; justify-content: center; gap: 10px 26px; margin: 4px 0; padding: 10px 16px; border-radius: 22px; background: #fff2; }
@@ -460,14 +460,21 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 .ct-legend.big .ct-note { font-size: 14px; }
 .ct-strip { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 18px; padding: 6px 12px; border: 2px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); }
 .ct-goal { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 4px 8px; margin-left: auto; font: 800 19px/1.1 var(--font-display); text-align: right; }
-.ct-goal .how-spr svg { width: 30px; height: 34px; }
+.ct-goal .how-spr svg { width: 40px; height: 42px; }
+/* The face says who: the name stays for screen readers, so «10 Estrella» is never read. */
+.ct-goal .how-spr .nm { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .ct-strip.dark { border-color: #3D3380; background: #2A2260; color: #fff; }
 .ct-strip.dark .ct-key, .ct-strip.dark .how-btn { color: var(--ink); }
 .ct-strip.dark .how-btn { font-weight: 800; padding: 3px 9px; }
+/* A dark drawing (the bomb) is lost on the dark strip. */
+.ct-strip.dark .how-spr svg { background: #E9E4FF; border-radius: 10px; }
 /* On the whole screen the strip is one row of 60px (40px on a low window) and the stage gives it the height. */
 .mc-studio.show .ct-strip { flex-wrap: nowrap; height: 60px; padding: 0 14px; overflow: hidden; }
 .mc-studio.show .ct-strip .ct-legend { --cap: 26px; flex-wrap: nowrap; gap: 0 20px; }
-.mc-studio.show .ct-strip .ct-who b { font-size: 15px; }
+.mc-studio.show .ct-strip .ct-who b, .mc-studio.show .ct-to { font-size: 18px; }
+.mc-studio.show .ct-who svg { width: 44px; height: 50px; }
+.mc-studio.show .ct-side svg { width: 34px; height: 40px; }
+.mc-studio.show .ct-hand svg { width: 38px; height: 43px; }
 .mc-studio.ct-on.show { --ct-h: 68px; }
 .mc-studio.ct-on.show .mc-stage-slot { grid-template-rows: auto auto 1fr; }
 .mc-studio.ct-on.show .mc-stage-box { width: min(100%, calc((100dvh - 120px - var(--ct-h)) * 4 / 3)); }
@@ -478,7 +485,10 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
   .mc-studio.show .ct-strip .ct-legend { --cap: 18px; gap: 0 14px; }
   .mc-studio.show .ct-pad { gap: 2px; }
   .mc-studio.show .ct-to, .mc-studio.show .ct-goal { font-size: 13px; }
-  .mc-studio.show .ct-goal .how-spr svg { width: 22px; height: 26px; }
+  .mc-studio.show .ct-goal .how-spr svg { width: 24px; height: 28px; }
+  .mc-studio.show .ct-who svg, .mc-studio.show .ct-hand svg { width: 28px; height: 32px; }
+  .mc-studio.show .ct-side svg { width: 22px; height: 26px; }
+  .mc-studio.show .ct-strip .ct-who b { font-size: 13px; }
 }
 @media (max-width: 860px) {
   .mc-studio.show .ct-strip { height: auto; min-height: 60px; flex-wrap: wrap; padding: 4px 10px; }
@@ -496,11 +506,11 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 @keyframes co-cap { to { transform: scale(1.1); } }
 .co-bob { animation: co-bob .7s ease-in-out infinite alternate; }
 @keyframes co-bob { to { transform: translateY(-10px); } }
-.co-bubble { position: absolute; left: 50%; bottom: 12px; z-index: 7; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 10px; width: max-content; max-width: calc(100% - 16px); padding: 8px 14px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; color: var(--ink); font: 800 clamp(15px, 2.6cqw, 20px)/1.15 var(--font-display); box-shadow: 0 5px 0 rgba(0, 0, 0, .25); pointer-events: none; animation: co-pop .3s cubic-bezier(.2, 1.4, .4, 1); --cap: 26px; }
-.co-bubble.up { bottom: 78px; }
+/* At the top right: the points are on the left, and whoever the child moves is usually below. */
+.co-bubble { position: absolute; right: 8px; top: 8px; z-index: 7; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 10px; width: max-content; max-width: calc(100% - 16px); padding: 8px 14px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; color: var(--ink); font: 800 clamp(15px, 2.6cqw, 20px)/1.15 var(--font-display); box-shadow: 0 5px 0 rgba(0, 0, 0, .25); pointer-events: none; animation: co-pop .3s cubic-bezier(.2, 1.4, .4, 1); --cap: 26px; }
 .co-flag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px 3px 8px; border-radius: 12px; background: var(--go); color: #fff; }
 .co-flag .mc-icon svg { width: 22px; height: 22px; }
-@keyframes co-pop { from { transform: translateX(-50%) scale(.85); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+@keyframes co-pop { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
 .mc-studio.coach-keys .mc-key { animation: co-key 1s ease-in-out infinite alternate; }
 @keyframes co-key { to { background: var(--gold); transform: scale(1.08); } }
 .ct-pad .ct-key { padding: 0; min-width: 0; border-radius: 6px; border-bottom-width: 4px; font-size: max(9px, calc(var(--cap) * .45)); }

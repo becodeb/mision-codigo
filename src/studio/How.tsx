@@ -21,7 +21,7 @@ export function How({ session, text }: { session: StudioSession; text: string })
       {parseHow(text).map((p, i) => {
         if (p.kind === 'text') return <span key={i}>{p.value}</span>;
         if (p.kind === 'button') return <span key={i} className={`how-btn${p.value === '▶' ? ' go' : ''}`}>{p.value}</span>;
-        if (p.kind === 'sprite') return <span key={i} className="how-spr"><SpriteFace session={session} id={p.value} />{session.named(`{${p.value}}`)}</span>;
+        if (p.kind === 'sprite') return <span key={i} className="how-spr"><SpriteFace session={session} id={p.value} /><span className="nm">{session.named(`{${p.value}}`)}</span></span>;
         if (!isBlockType(p.value)) return null;
         const type = p.value as BlockType;
         const spec = BLOCK_SPECS[type];

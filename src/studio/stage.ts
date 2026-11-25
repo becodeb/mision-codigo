@@ -3,13 +3,13 @@
  * into taps and drags. It reads a `StageView` and holds no program logic of its own.
  */
 import { ART, BACKDROPS, CHARACTERS, faceSVG, type ArtId } from '../art/index.ts';
+import { HAND_PATH } from './hand.ts';
 import { HH, HW, clampXY } from '../runtime/geometry.ts';
 import type { StageView } from '../runtime/host.ts';
 import type { SpriteInstance } from '../runtime/instance.ts';
 import { toStr } from '../runtime/values.ts';
 
 const NS = 'http://www.w3.org/2000/svg';
-const HAND_PATH = 'M22 6c3.3 0 6 2.7 6 6v20.5l2.6-1.3c3-1.4 6.4-.2 7.6 2.6l.6 1.4 1.8-.8c3-1.3 6.3.1 7.4 3l.5 1.2c3-1 6.3.9 6.8 4l.7 4.4c1.4 9-2.6 17.2-10.5 21.4l-1.7.9c-2.9 1.5-6.1 2.3-9.4 2.3h-3.8c-6.5 0-12.5-3.4-15.8-9l-8-13.4c-1.6-2.7-.8-6.2 1.9-7.8 2.4-1.5 5.6-.9 7.3 1.4l2.9 4V12c0-3.3 2.7-6 6-6z';
 /** Where each arrow sits in the inverted T (column, row) and what is drawn on it. */
 const ARROW_CAP: Record<string, { col: number; row: number; glyph: string }> = {
   ArrowUp: { col: 1, row: 0, glyph: '▲' },
@@ -22,7 +22,7 @@ const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
 export interface StageCallbacks {
-  /** A sprite instance was pressed and released without moving. */
+  /** A sprite instance was pressed and released without being dragged. */
   onTap(instanceId: string): void;
   /** Whether the instance may be dragged now (only originals, only while stopped). */
   canDrag(instanceId: string): boolean;
@@ -30,8 +30,8 @@ export interface StageCallbacks {
   onPress(instanceId: string): void;
   onDrag(instanceId: string, x: number, y: number): void;
   onDragEnd(instanceId: string): void;
-  /** A press that did nothing: a drag that is not allowed (id), or the empty stage (null). */
-  onMiss(instanceId: string | null): void;
+  /** A press on the empty stage. */
+  onMiss(): void;
   /** Any pointer activity, for unlocking sound and counting the child as active. */
   onActivity(): void;
 }
@@ -152,7 +152,7 @@ export class StageRenderer {
     this.cb.onActivity();
     const g = (e.target as Element).closest('.spr') as SVGGElement | null;
     if (!g) {
-      this.cb.onMiss(null);
+      this.cb.onMiss();
       return;
     }
     const id = g.dataset.id!;
@@ -170,7 +170,7 @@ export class StageRenderer {
     const p = this.point(e);
     const dx = p.x - d.startX;
     const dy = p.y - d.startY;
-    if (Math.hypot(dx, dy) > 5) d.moved = true;
+    if (Math.hypot(dx, dy) > 10) d.moved = true;
     if (d.moved && this.cb.canDrag(d.id)) {
       const [x, y] = clampXY(d.ox + dx, d.oy + dy);
       this.cb.onDrag(d.id, x, y);
@@ -183,8 +183,8 @@ export class StageRenderer {
     this.drag = null;
     try { this.svg.releasePointerCapture(e.pointerId); } catch { /* already released */ }
     if (d.moved && this.cb.canDrag(d.id)) this.cb.onDragEnd(d.id);
-    else if (!d.moved && !cancelled) this.cb.onTap(d.id);
-    else if (d.moved && !cancelled) this.cb.onMiss(d.id);
+    /* A small hand or a touchpad moves while it clicks: a press that could not drag is still a tap. */
+    else if (!cancelled && (!d.moved || !this.cb.canDrag(d.id))) this.cb.onTap(d.id);
   }
 
   setBackdrop(id: string): void {
@@ -305,10 +305,11 @@ export class StageRenderer {
     const g = n.g;
     const inst = this.last.get(n.id);
     const def = inst ? (ART as Record<string, (typeof ART)[ArtId] | undefined>)[inst.artId] : undefined;
-    if (!g || !inst || !def) return;
-    const show = inst.visible;
+    if (!g) return;
+    /* A sprite that is hidden, or that was taken out, has nothing to point at. */
+    const show = inst?.visible === true && def !== undefined;
     if (g.style.display !== (show ? '' : 'none')) g.style.display = show ? '' : 'none';
-    if (!show) return;
+    if (!inst || !def || !show) return;
     const sc = inst.size / 100;
     const px = HW + inst.x;
     const cy = HH - inst.y - inst.jy - inst.bob - (def.h * sc) / 2;

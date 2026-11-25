@@ -35,7 +35,7 @@ screen says them, and click games (levels 1 and 2) look the same as keyboard gam
 - [x] T1 `controls.ts`: pure derivation of keys, movers and clickable sprites from a program, with tests. Commit 798861c; `controls.test.ts` (12 tests). Route: delegated, one writer.
 - [x] T2 Legend: drawn controls and goal on the entry screen, always visible while playing and in the editor. Commit 8dd6fbd; `Controls.tsx`, `How.tsx`, `Showcase.goal` per game; checked in the browser at 1366x768, 1200x800 and a 440px-high window. Route: delegated, one writer.
 - [x] T3 Coach: on-stage keys or hand until the child does it, back after idling, and an answer to wrong attempts. Commit 73a1ee0; `coach.ts` (headless state machine, 19 tests with fake timers), `session.coach.test.ts`, drawing in `stage.ts`. Route: delegated, one writer.
-- [ ] T4 Verify in the browser the five games: mouse, keyboard, touch, 1366x768 and 1200x800.
+- [x] T4 Verify in the browser the five games: mouse, keyboard, touch, 1366x768 and 1200x800.
 
 ## Acceptance
 
@@ -48,3 +48,12 @@ screen says them, and click games (levels 1 and 2) look the same as keyboard gam
 
 - Baseline: typecheck clean, 48 files / 1219 tests pass.
 - T1-T3 done on the branch; typecheck clean, 51 files / 1256 tests pass, build passes. T4 (browser pass of all five games with mouse, keyboard and touch) is still the parent's.
+- T4: browser pass on the five games at 1366x768, 1200x800 and 1024x600, mouse, keyboard and touch emulation: 0 failures.
+  Fixed on the way: a click that moved more than 5 stage units was a drag and never counted (14 px: 0 of 11 clicks before;
+  0 to 30 px: 32 of 32 after); Boo's game ended in silence with Boo hidden (now points at «Empezar»); hints of a removed sprite;
+  hints while a key is held; wording and small drawings. Typecheck clean, 52 files / 1262 tests, build passes.
+- Not verified: a real Chromebook, a real finger, the voice, and games outside the showcase in show mode.
+
+## Next step
+
+Owner decides push to `becode/muestra-final` and deploy, between classes.

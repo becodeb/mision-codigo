@@ -105,8 +105,8 @@ describe('goal line', () => {
   const goal = (level: 1 | 2 | 3 | 4 | 5, p = setup(level)): string => showcaseFor(level).showcase!.goal(p);
 
   it('names the goal of each game with marks the legend draws', () => {
-    expect(goal(1)).toBe('Tocá a {estrella} todas las veces que puedas');
-    expect(goal(2)).toBe('Tocá a {boo} antes de que se esconda');
+    expect(goal(1)).toBe('Atrapá a {estrella} todas las veces que puedas');
+    expect(goal(2)).toBe('Atrapá a {boo} antes de que se esconda');
     expect(goal(3)).toBe('Juntá **10** {estrella} y esquivá {meteorito}');
     expect(goal(4)).toBe('Atajá **10** {manzana} y esquivá {bomba}');
     expect(goal(5)).toBe('Juntá **10** {moneda} y esquivá {rayo}');

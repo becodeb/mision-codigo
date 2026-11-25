@@ -154,6 +154,8 @@ export class StudioSession {
   readonly coach = new Coach({
     controls: () => this.controls,
     hidden: () => this.coachHidden(),
+    held: () => (this.machine?.keys.size ?? 0) > 0,
+    dead: () => this.nothingLeft(),
     changed: () => {
       if (!this.mounted) return;
       if (this.machine) this.machine.dirty = true;
@@ -246,6 +248,14 @@ export class StudioSession {
     return !!this.cardId && !this.fullScreen && !(this.tried && (this.machine?.threadCount ?? 0) > 0);
   }
 
+  /** Nothing runs and every character to click is hidden: only «Empezar» brings the game back. */
+  private nothingLeft(): boolean {
+    const m = this.machine;
+    if (!m || m.threadCount > 0) return false;
+    const main = this.controls.taps.filter((t) => t.main);
+    return main.length > 0 && !m.instances.some((i) => i.visible && main.some((t) => t.id === i.spriteId));
+  }
+
   /** The younger levels hear the answer too. */
   private coachSay(kind: BubbleKind, why: 'miss' | 'idle'): void {
     if (!this.spoken) return;
@@ -253,6 +263,7 @@ export class StudioSession {
     const mover = this.named(`{${c.movers[0] ?? c.spacers[0]}}`);
     const target = this.named(`{${c.taps.find((t) => t.main)?.id}}`);
     const text = kind === 'flag' ? 'Primero tocá Empezar'
+      : kind === 'again' ? 'Para jugar otra vez, tocá Empezar'
       : kind === 'keys' ? `${mover} se mueve con ${this.touch ? 'las flechas de la pantalla' : 'las flechas'}`
       : why === 'idle' ? (this.touch ? `Tocá a ${target}` : `Hacé clic en ${target}`) : `Acá se juega ${this.touch ? 'tocando a' : 'haciendo clic en'} ${target}`;
     void this.say(text);
@@ -347,7 +358,7 @@ export class StudioSession {
       onActivity: () => { this.clock.input(); unlockAudio(); },
       onPress: (id) => this.pressInstance(id),
       onTap: (id) => this.tapInstance(id),
-      onMiss: (id) => this.coach.miss(id),
+      onMiss: () => this.coach.miss(null),
       canDrag: (id) => this.canDrag(id),
       onDrag: (id, x, y) => this.dragInstance(id, x, y),
       onDragEnd: (id) => this.dragEnd(id),
@@ -658,7 +669,8 @@ export class StudioSession {
 
   private canDrag(id: string): boolean {
     const m = this.machine;
-    return !!m && m.threadCount === 0 && !this.ask && this.doc.sprites.some((s) => s.id === id);
+    /* On the whole screen a press is always part of the game: nothing is being placed. */
+    return !!m && !this.fullScreen && m.threadCount === 0 && !this.ask && this.doc.sprites.some((s) => s.id === id);
   }
 
   private pressInstance(id: string): void {

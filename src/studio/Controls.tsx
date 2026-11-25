@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 import { ICON } from '../art/index.ts';
 import type { BubbleKind } from './coach.ts';
 import { controlsOf, hasControls, type ArrowKey, type Controls } from './controls.ts';
-import { HAND } from './demo.ts';
+import { HAND } from './hand.ts';
 import { How, SpriteFace } from './How.tsx';
 import type { StudioSession } from './session.ts';
 
@@ -83,13 +83,13 @@ export function ControlsStrip({ session, touch, goal, dark }: { session: StudioS
 /** Whether the studio has a strip to show for this game and mode (used to size the stage around it). */
 export const hasStrip = (session: StudioSession, goal: boolean): boolean => hasControls(controlsOf(session.program)) || (goal && !!session.showcase);
 
-/** The answer to a wrong attempt, near the bottom of the stage. It never takes a click. */
+/** The answer to a wrong attempt, at the top of the stage. It never takes a click. */
 export function CoachBubble({ session, kind, touch }: { session: StudioSession; kind: BubbleKind; touch: boolean }) {
   const c = session.controls;
   const mover = c.movers[0] ?? c.spacers[0];
   const target = (c.taps.find((t) => t.main) ?? c.taps[0])?.id;
   return (
-    <div className={`co-bubble${touch ? ' up' : ''}`} role="status">
+    <div className="co-bubble" role="status">
       {kind === 'keys' && mover && (
         <>
           <Who session={session} id={mover} />
@@ -105,9 +105,9 @@ export function CoachBubble({ session, kind, touch }: { session: StudioSession; 
           <Who session={session} id={target} />
         </>
       )}
-      {kind === 'flag' && (
+      {(kind === 'flag' || kind === 'again') && (
         <>
-          <span>Primero tocá</span>
+          <span>{kind === 'flag' ? 'Primero tocá' : 'Para jugar otra vez, tocá'}</span>
           <span className="co-flag"><span className="mc-icon" dangerouslySetInnerHTML={{ __html: ICON.flagw }} />Empezar</span>
         </>
       )}
