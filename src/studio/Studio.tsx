@@ -285,7 +285,7 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
         </Modal>
       )}
       {dialog === 'places' && (
-        <Modal title="Elegí el fondo" className="mc-wide" onClose={() => setDialog(null)}>
+        <Modal title="Elegí el fondo" className="mc-places-modal" onClose={() => setDialog(null)}>
           <PlaceStrip current={doc.backdrop} onPick={(id) => { session.setBackdrop(id); setDialog(null); }} />
           <div className="mc-modal-actions"><button type="button" className="mc-mbtn" onClick={() => setDialog(null)}>Cancelar</button></div>
         </Modal>

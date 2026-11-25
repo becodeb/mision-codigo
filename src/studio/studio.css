@@ -158,6 +158,13 @@
 .mc-modal { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; background: rgba(20, 16, 50, .5); }
 .mc-modal-card { width: min(520px, 100%); max-height: calc(100% - 16px); overflow: auto; background: var(--card); color: var(--ink); border-radius: 28px; padding: 24px 24px 20px; box-shadow: 0 10px 0 rgba(0, 0, 0, .15), 0 30px 60px rgba(0, 0, 0, .3); animation: mc-pop .3s cubic-bezier(.2, 1.4, .4, 1); display: grid; gap: 14px; }
 .mc-modal-card.mc-wide { width: min(700px, 100%); }
+/* Four pictures in a row, as large as three rows let them be without scrolling. The name goes under the picture, and the way out next to the title. */
+.mc-modal-card.mc-places-modal { --pic: clamp(120px, calc((100dvh - 274px) / 2.25), 270px); position: relative; width: min(calc(var(--pic) * 4 + 84px), 100%); }
+.mc-places-modal .mc-modal-actions { position: absolute; top: 14px; right: 24px; }
+.mc-places-modal .mc-bd-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+.mc-places-modal .mc-bd { aspect-ratio: auto; border-radius: 16px; }
+.mc-places-modal .mc-bd svg { height: auto; aspect-ratio: 4 / 3; }
+.mc-places-modal .mc-bd span { position: static; display: block; padding: 4px 2px 5px; font: 800 17px/1.1 var(--font-display); }
 @keyframes mc-pop { from { transform: scale(.88); opacity: 0; } to { transform: none; opacity: 1; } }
 .mc-modal-card h3 { font-size: 30px; font-weight: 800; }
 .mc-lead { color: var(--ink-soft); font-size: 17px; }
@@ -270,7 +277,8 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 @media (max-width: 640px) {
   .mc-robi, .mc-robi svg.robi { width: 48px; }
   .mc-robi svg.robi { height: 52px; }
-  .mc-bd-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mc-bd-strip, .mc-places-modal .mc-bd-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .mc-places-modal .mc-bd span { font-size: 14px; }
   .mc-showbtn span { display: none; }
   .mc-hint { display: none; }
   .mc-bar { width: 70px; }
