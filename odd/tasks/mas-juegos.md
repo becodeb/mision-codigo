@@ -46,6 +46,7 @@ game per level and leaving it signs the child out. The five existing games are a
 ## Tasks
 
 - [x] T1 Several showcases per level, choosing screen, finishing a game offers another one, teacher views. Commits 5831315 and the `fix(picker)` after it. `showcasesFor`, `Showcase.tapAll`, `GamePicker` + `picker.ts`, `ShowcaseFlow.tsx`, finishing dialog, `drawn.tsx` (controls without session or Blockly), demo routes `#/3`, `#/3/juegos`, `#/3/<id>`. Checked in the browser with two temporary copies of games (not committed): entry, picker at 1366x768, 1200x800, 1024x600 (3 and 4 cards) and 390x844, progress, re-entry, «No soy», finishing dialog once, demo. Route: delegated, one writer.
+- [ ] T5 Progress reset from /docente, per child and per game, that cannot come back from an open game or an old local copy (owner request, 2026-11-25). The owner also asked to push and deploy everything when it is done.
 - [ ] T2 Games of levels 1 and 2 (four), with proofs.
 - [ ] T3 Games of levels 3, 4 and 5 (six), with proofs.
 - [ ] T4 Browser pass of the ten games: controls, goal, every tutorial from every sprite, three screen sizes, touch.
