@@ -1,7 +1,7 @@
 // «Probar»: enters as one of the test names, which children never see in their list.
 import { useEffect, useState } from 'react';
 import { isTestGroup, TEST_GROUP, type AdminStudent } from '../shared/api.ts';
-import { SHOWCASE } from '../games/showcase/index.ts';
+import { showcasesFor } from '../games/showcase/index.ts';
 import { teamName } from '../shared/levels.ts';
 import { startSession } from '../workshop/api.ts';
 import * as adminApi from './adminApi.ts';
@@ -44,7 +44,7 @@ export function TryTab() {
               <tr key={s.id}>
                 <th scope="row">{s.name}</th>
                 <td>{s.level} · {teamName(s.level)}</td>
-                <td>{SHOWCASE.find((g) => g.level === s.level)?.title}</td>
+                <td>{showcasesFor(s.level).map((g) => g.title).join(' · ')}</td>
                 <td><button className="t-btn t-btn-primary" disabled={busy} onClick={() => void enter(s.id)}>Entrar</button></td>
               </tr>
             ))}

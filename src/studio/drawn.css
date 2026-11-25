@@ -1,0 +1,19 @@
+/* Controls drawn with keycaps and the hand: shared by the studio and the game picker (which loads without the studio). */
+.ct-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px; --cap: 30px; }
+.ct-group { display: inline-flex; align-items: center; gap: 8px; }
+.ct-pad { display: grid; grid-template-columns: repeat(3, var(--cap)); grid-auto-rows: var(--cap); gap: 3px; }
+.ct-key { display: grid; place-items: center; min-width: var(--cap); height: var(--cap); padding: 0 6px; border: 2px solid var(--ink); border-bottom-width: 5px; border-radius: 9px; background: #fff; color: var(--ink); font: 800 calc(var(--cap) * .42)/1 var(--font-display); }
+.ct-key.wide { min-width: calc(var(--cap) * 2.6); }
+.ct-to { font: 700 15px/1.1 var(--font-body); }
+.ct-note { font: 600 12px/1.1 var(--font-hud); opacity: .75; max-width: 6em; }
+.ct-who { display: inline-flex; align-items: center; gap: 3px; }
+.ct-who svg { width: calc(var(--cap) * 1.2); height: calc(var(--cap) * 1.35); flex: none; }
+.ct-who b { font: 800 16px/1 var(--font-display); }
+.ct-side { opacity: .85; }
+.ct-side svg { width: calc(var(--cap) * .95); height: calc(var(--cap) * 1.08); }
+.ct-hand svg { width: calc(var(--cap) * 1); height: calc(var(--cap) * 1.12); display: block; }
+.ct-legend.big { --cap: 44px; justify-content: center; gap: 10px 26px; margin: 4px 0; padding: 10px 16px; border-radius: 22px; background: #fff2; }
+.ct-legend.big .ct-to { font-size: 20px; }
+.ct-legend.big .ct-who b { font-size: 20px; }
+.ct-legend.big .ct-note { font-size: 14px; }
+.ct-pad .ct-key { padding: 0; min-width: 0; border-radius: 6px; border-bottom-width: 4px; font-size: max(9px, calc(var(--cap) * .45)); }

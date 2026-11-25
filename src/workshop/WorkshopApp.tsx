@@ -4,6 +4,7 @@ import { buildChooser } from './chooser.ts';
 import type { Chooser as ChooserModel } from './chooser.ts';
 import { ApiError } from '../net/http.ts';
 import { showcaseFor } from '../games/showcase/index.ts';
+import { hasChoice } from './picker.ts';
 import { SHOWCASE_ON } from '../shared/showcase.ts';
 import type { SessionResponse, StudentListItem } from '../shared/api.ts';
 import { endSession, getSession, listProjects, listStudents, saveProject, saveProjectKeepalive, startSession } from './api.ts';
@@ -11,6 +12,7 @@ import { createAutosave, createAutosaveRegistry, localKey } from './autosave.ts'
 import { Boundary } from './Boundary.tsx';
 import { Chooser } from './Chooser.tsx';
 import { sameSession, sameStudents } from './live.ts';
+import { EntryContainer, PickerContainer } from './ShowcaseFlow.tsx';
 import { NameScreen } from './NameScreen.tsx';
 import type { NamesState } from './NameScreen.tsx';
 import { StudioHost } from './StudioHost.tsx';
@@ -112,8 +114,16 @@ function SignedIn({ session: initial, onSignedOut }: SignedInProps) {
       ),
     [student.id, storage],
   );
-  /* In the open class the child goes straight to the game of their level, and leaves it for the names. */
-  const [gameId, setGameId] = useState<string | null>(SHOWCASE_ON ? showcaseFor(student.level).id : null);
+  /*
+   * In the open class the child goes straight to a game of their level. With one game, leaving it goes to the names;
+   * with several, leaving goes to the picker, and entering opens the game played last (asked from the server first).
+   */
+  const several = SHOWCASE_ON && hasChoice(student.level);
+  const [gameId, setGameId] = useState<string | null>(SHOWCASE_ON && !several ? showcaseFor(student.level).id : null);
+  const [stage, setStage] = useState<'entry' | 'picker'>(several ? 'entry' : 'picker');
+  const choose = useCallback(() => { setGameId(null); setStage('picker'); }, []);
+  /* A level with one game (the teacher moved the child there from the picker) goes straight to it. */
+  const openId = gameId ?? (SHOWCASE_ON && !several ? showcaseFor(student.level).id : null);
 
   useEffect(() => {
     const hide = () => registry.flushAllOnHide();
@@ -144,22 +154,28 @@ function SignedIn({ session: initial, onSignedOut }: SignedInProps) {
     else setGameId(null);
   }, [signOut]);
 
-  if (gameId !== null) {
+  if (openId !== null) {
     return (
-      <Boundary onBack={backToChooser}>
+      <Boundary onBack={several ? choose : backToChooser}>
         <StudioHost
+          key={openId}
           studentId={student.id}
           level={student.level}
-          gameId={gameId}
+          gameId={openId}
           author={SHOWCASE_ON ? student.name : undefined}
           registry={registry}
           storage={storage}
           onExit={backToChooser}
+          onChoose={several ? choose : undefined}
           onOpenGame={setGameId}
           onSignedOut={forget}
         />
       </Boundary>
     );
+  }
+  if (SHOWCASE_ON && stage === 'entry' && several) return <EntryContainer level={student.level} onOpen={setGameId} onSignedOut={forget} />;
+  if (SHOWCASE_ON && several) {
+    return <PickerContainer student={student} activeClass={activeClass} onOpen={setGameId} onNotMe={signOut} onSignedOut={forget} onSessionChange={setSession} />;
   }
   return (
     <ChooserContainer

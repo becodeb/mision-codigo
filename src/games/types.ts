@@ -115,6 +115,8 @@ export interface Showcase {
    * program, so a number the child changed shows up changed.
    */
   goal: (program: ProjectProgram) => string;
+  /** Every clickable sprite is the point of the game (a quiz must never single out the right answer). */
+  tapAll?: true;
   /** Sprites the game is made of: removing one asks first. */
   cast: string[];
   pillars: Pillar[];

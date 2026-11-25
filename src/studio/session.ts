@@ -231,7 +231,7 @@ export class StudioSession {
 
   /** What a child can press or click in the program as it is now. */
   get controls(): Controls {
-    if (this.controlsFor?.program !== this.program) this.controlsFor = { program: this.program, controls: controlsOf(this.program) };
+    if (this.controlsFor?.program !== this.program) this.controlsFor = { program: this.program, controls: controlsOf(this.program, this.showcase?.tapAll === true) };
     return this.controlsFor.controls;
   }
 

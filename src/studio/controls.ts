@@ -28,8 +28,8 @@ export interface Controls {
   late: string[];
 }
 
-/** A click that scores, wins or sends a message is what the game is about; the rest is play. */
-const MAIN_BLOCKS = new Set<string>(['f_star', 'a_addscore', 'a_win', 'f_send', 'a_send']);
+/** A click that scores, wins, sends a message or counts coins is what the game is about; the rest is play. */
+const MAIN_BLOCKS = new Set<string>(['f_star', 'a_addscore', 'a_win', 'f_send', 'a_send', 'a_changevar']);
 const CLICK_HATS = new Set<string>(['f_click', 'a_click']);
 
 const walk = (b: Block, fn: (b: Block) => void): void => {
@@ -48,7 +48,8 @@ const blocksOfScript = (sc: Script): Block[] => {
 
 export const spriteIdOf = (instanceId: string): string => instanceId.split('#')[0];
 
-export function controlsOf(program: ProjectProgram): Controls {
+/** `tapAll`: every clickable sprite is the point (a quiz, where pointing at one answer would give it away). */
+export function controlsOf(program: ProjectProgram, tapAll = false): Controls {
   const hatKeys = new Set<string>();
   const used = new Set<string>();
   const movers = new Set<string>();
@@ -84,7 +85,7 @@ export function controlsOf(program: ProjectProgram): Controls {
     space: used.has(' '),
     movers: [...movers],
     spacers: [...spacers],
-    taps: [...clicks].map(([id, main]) => ({ id, main: keys ? main : anyMain ? main : true })),
+    taps: [...clicks].map(([id, main]) => ({ id, main: tapAll || (keys ? main : anyMain ? main : true) })),
     late: [...used].filter((k) => !hatKeys.has(k)),
   };
 }

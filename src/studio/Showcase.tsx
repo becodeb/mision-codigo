@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ART, ICON, type ArtId } from '../art/index.ts';
 import { ControlsLegend } from './Controls.tsx';
-import { controlsOf, hasControls } from './controls.ts';
+import { hasControls } from './controls.ts';
 import { How } from './How.tsx';
 import type { GameDefinition, GameStep } from '../games/types.ts';
 import { programOf } from './doc.ts';
@@ -32,12 +32,15 @@ interface IntroProps {
   author?: string;
   mine: boolean;
   onPlay: () => void;
+  /** «No soy …»: signs out. */
   onExit: () => void;
+  /** «Otro juego»: the level has more than one. */
+  onChoose?: () => void;
 }
 
-export function Intro({ game, session, touch, author, mine, onPlay, onExit }: IntroProps) {
+export function Intro({ game, session, touch, author, mine, onPlay, onExit, onChoose }: IntroProps) {
   const play = useRef<HTMLButtonElement>(null);
-  const controls = useMemo(() => controlsOf(session.program), [session]);
+  const controls = session.controls;
   useEffect(() => play.current?.focus({ preventScroll: true }), []);
   return (
     <div className="sc-intro" role="dialog" aria-modal="true" aria-label={game.title}>
@@ -52,7 +55,10 @@ export function Intro({ game, session, touch, author, mine, onPlay, onExit }: In
           ))}
         </ul>
         <button ref={play} type="button" className="sc-play" onClick={onPlay}><Icon html={ICON.flagw} /> ¡Jugar!</button>
-        {author && <button type="button" className="sc-notme" onClick={onExit}>No soy {author}</button>}
+        <div className="sc-intro-more">
+          {onChoose && <button type="button" className="sc-other" onClick={onChoose}>Otro juego</button>}
+          {author && <button type="button" className="sc-notme" onClick={onExit}>No soy {author}</button>}
+        </div>
       </div>
     </div>
   );
@@ -63,8 +69,11 @@ export function Intro({ game, session, touch, author, mine, onPlay, onExit }: In
 interface WallProps {
   session: StudioSession;
   snap: SessionSnapshot;
+  /** Leaves the game: to the picker when the level has several, else to the names. */
   onExit: () => void;
   onRecap: () => void;
+  /** The level has other games: the way out goes to the picker, and a finished game points at it. */
+  several?: boolean;
 }
 
 export function CardWall(props: WallProps) {
@@ -72,7 +81,7 @@ export function CardWall(props: WallProps) {
 }
 
 /** One row: the way out, the cards, and how many are done. */
-function Wall({ session, snap, onExit, onRecap }: WallProps) {
+function Wall({ session, snap, onExit, onRecap, several }: WallProps) {
   const { tracker } = session;
   const steps = tracker.steps.map((s) => s.step);
   const done = steps.filter((s) => tracker.isDone(s.id)).length;
@@ -103,9 +112,10 @@ function Wall({ session, snap, onExit, onRecap }: WallProps) {
   };
   return (
     <section className={`sc-wall${done === steps.length ? ' all' : ''}`} data-point="guide" aria-live="polite">
-      <button type="button" className="sc-round" aria-label="Volver al inicio" data-point="exit" onClick={onExit}><Icon html={ICON.home} /></button>
+      <button type="button" className="sc-round" aria-label={several ? 'Elegir otro juego' : 'Volver al inicio'} title={several ? 'Elegir otro juego' : undefined} data-point="exit" onClick={onExit}><Icon html={several ? ICON.games : ICON.home} /></button>
       {group('look', 'Cambiá cómo es')}
       {group('code', 'Programá qué pasa')}
+      {several && done === steps.length && <button type="button" className="sc-another" onClick={onExit}>Otro juego</button>}
       <button type="button" className="sc-sum" aria-label={`${done} de ${steps.length} hechos. Ver cómo lo programé`} title="Cómo lo programé" onClick={onRecap}>
         <strong>{done}<i>/{steps.length}</i></strong>
         <span className="sc-bar"><i style={{ width: `${(done / steps.length) * 100}%` }} /></span>

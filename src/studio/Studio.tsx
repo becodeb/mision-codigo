@@ -35,9 +35,9 @@ export function Studio(props: StudioProps) {
   );
 }
 
-type Dialog = null | 'sprites' | 'variable' | 'list' | 'finish' | 'costume' | 'places' | 'repair' | 'recap' | { remove: string };
+type Dialog = null | 'sprites' | 'variable' | 'list' | 'finish' | 'gamedone' | 'costume' | 'places' | 'repair' | 'recap' | { remove: string };
 
-function StudioView({ game, level, initial, onSave, onExit, next, author }: StudioProps) {
+function StudioView({ game, level, initial, onSave, onExit, onChoose, next, author }: StudioProps) {
   const showcase = game?.showcase ?? null;
   const session = useMemo(() => new StudioSession({ game, level, initial, onSave }), []); // eslint-disable-line react-hooks/exhaustive-deps
   const snap = useSyncExternalStore(session.subscribe, session.getSnapshot);
@@ -92,10 +92,21 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
   });
 
   /* A small laptop loses a quarter of its screen to the browser's bars: the game takes it back while it is open. */
-  const leave = (): void => {
+  const leaveFullscreen = (): void => {
     if (showcase && document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-    onExit();
   };
+  const leave = (): void => { leaveFullscreen(); onExit(); };
+  /** The way out of the wall: the picker when there is one. */
+  const toPicker = (): void => { leaveFullscreen(); (onChoose ?? onExit)(); };
+  const goNext = (): void => { leaveFullscreen(); next?.open(); };
+
+  /* The last card ends its celebration: the child is offered another game, once (an already finished game opens without it). */
+  const celebrated = useRef<string | null>(null);
+  useEffect(() => {
+    const was = celebrated.current;
+    celebrated.current = snap.celebrating?.phaseDone ? snap.celebrating.stepId : null;
+    if (showcase && was && !snap.celebrating && session.tracker.finished && (onChoose || next)) setDialog('gamedone');
+  }, [snap.celebrating]); // eslint-disable-line react-hooks/exhaustive-deps
   const openShow = (): void => {
     setShow(true);
     session.fullScreen = !!showcase;
@@ -139,7 +150,7 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
         </button>
       </header>}
 
-      {showcase ? <CardWall session={session} snap={snap} onExit={leave} onRecap={() => setDialog('recap')} /> : game ? <Guide session={session} snap={snap} next={next} onFinish={() => { session.markDone(); setDialog('finish'); }} /> : <FreePrompt />}
+      {showcase ? <CardWall session={session} snap={snap} onExit={toPicker} several={!!onChoose} onRecap={() => setDialog('recap')} /> : game ? <Guide session={session} snap={snap} next={next} onFinish={() => { session.markDone(); setDialog('finish'); }} /> : <FreePrompt />}
 
       <div className="mc-main">
         <div className="mc-code" data-point="workspace">
@@ -268,6 +279,7 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
             session.flag();
           }}
           onExit={leave}
+          onChoose={onChoose ? toPicker : undefined}
         />
       )}
 
@@ -304,6 +316,18 @@ function StudioView({ game, level, initial, onSave, onExit, next, author }: Stud
         </Modal>
       )}
       {(dialog === 'variable' || dialog === 'list') && <NameDialog session={session} kind={dialog} onClose={() => setDialog(null)} />}
+      {dialog === 'gamedone' && (
+        <Modal title="¡Terminaste este juego!" className="mc-final" onClose={() => setDialog(null)}>
+          <div className="mc-robi big" dangerouslySetInnerHTML={{ __html: robiSVG() }} />
+          <p className="mc-lead">Hiciste todos los cambios. ¿Querés jugar otro juego?</p>
+          <div className="mc-modal-actions">
+            {next && <button type="button" className="mc-mbtn primary" onClick={goNext}>Jugar: {next.title}</button>}
+            {onChoose && <button type="button" className={`mc-mbtn${next ? '' : ' primary'}`} onClick={toPicker}>{next ? 'Ver todos los juegos' : 'Elegir otro juego'}</button>}
+            <button type="button" className="mc-mbtn" onClick={() => setDialog('recap')}>Cómo lo programé</button>
+            <button type="button" className="mc-mbtn" onClick={() => setDialog(null)}>Seguir acá</button>
+          </div>
+        </Modal>
+      )}
       {dialog === 'finish' && (
         <Modal title="¡Lo lograste!" className="mc-final" onClose={() => setDialog(null)}>
           <div className="mc-robi big" dangerouslySetInnerHTML={{ __html: robiSVG() }} />

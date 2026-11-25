@@ -2,13 +2,14 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { gameById } from '../games/catalog.ts';
 import { ApiError } from '../net/http.ts';
-import type { GameProgress } from '../shared/api.ts';
+import type { GameProgress, ProjectSummary } from '../shared/api.ts';
 import type { LevelId } from '../shared/levels.ts';
 import type { StudioProps } from '../studio/contract.ts';
-import { getProject } from './api.ts';
+import { getProject, listProjects } from './api.ts';
 import { loadProject, localKey } from './autosave.ts';
 import type { AutosaveRegistry, SaveStatus } from './autosave.ts';
 import { FREE_GAME_ID, nextGame } from './chooser.ts';
+import { nextToPlay } from './picker.ts';
 import { SaveNotice } from './SaveNotice.tsx';
 
 const Studio = lazy(() => import('../studio/Studio.tsx').then((module) => ({ default: module.Studio })));
@@ -21,8 +22,10 @@ interface Props {
   author?: string;
   registry: AutosaveRegistry;
   storage: Storage | null;
-  /** Back to the chooser. */
+  /** Back to the chooser, or out to the names in the open class. */
   onExit: () => void;
+  /** Showcase games when the level has several: to the picker. */
+  onChoose?: () => void;
   onOpenGame: (gameId: string) => void;
   /** The session is gone: back to the name screen. */
   onSignedOut: () => void;
@@ -33,7 +36,7 @@ type Load =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; initial: StudioProps['initial'] };
 
-export function StudioHost({ studentId, level, gameId, author, registry, storage, onExit, onOpenGame, onSignedOut }: Props) {
+export function StudioHost({ studentId, level, gameId, author, registry, storage, onExit, onChoose, onOpenGame, onSignedOut }: Props) {
   const game = useMemo(() => (gameId === FREE_GAME_ID ? null : (gameById(gameId) ?? null)), [gameId]);
   const autosave = registry.get(gameId);
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
@@ -74,10 +77,23 @@ export function StudioHost({ studentId, level, gameId, author, registry, storage
     void registry.flushAll().then(onExit);
   }, [registry, onExit]);
 
+  const choose = useMemo(() => (onChoose ? () => void registry.flushAll().then(onChoose) : undefined), [registry, onChoose]);
+
+  /* Showcase games: what the other games of the level look like, to offer the next unfinished one when this one ends. */
+  const [peers, setPeers] = useState<ProjectSummary[] | null>(null);
+  useEffect(() => {
+    if (!game?.showcase || !onChoose) return;
+    let cancelled = false;
+    listProjects().then((r) => !cancelled && setPeers(r.projects)).catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [game, onChoose]);
+
   const next = useMemo(() => {
-    const following = nextGame(game);
-    return following ? { title: following.title, open: () => onOpenGame(following.id) } : null;
-  }, [game, onOpenGame]);
+    const following = game?.showcase ? (onChoose && peers ? nextToPlay(game, peers) : null) : nextGame(game);
+    return following ? { title: following.title, open: () => void registry.flushAll().then(() => onOpenGame(following.id)) } : null;
+  }, [game, onChoose, peers, registry, onOpenGame]);
 
   if (load.kind === 'loading') {
     return (
@@ -96,7 +112,7 @@ export function StudioHost({ studentId, level, gameId, author, registry, storage
             <p>{load.message} Tu trabajo no se perdió. Probá de nuevo.</p>
             <div className="w-row">
               <button className="btn btn-primary" onClick={() => setAttempt((n) => n + 1)}>Probar de nuevo</button>
-              <button className="btn" onClick={onExit}>Volver</button>
+              <button className="btn" onClick={onChoose ?? onExit}>Volver</button>
             </div>
           </div>
         </div>
@@ -120,6 +136,7 @@ export function StudioHost({ studentId, level, gameId, author, registry, storage
           initial={load.initial}
           onSave={onSave}
           onExit={exit}
+          onChoose={choose}
           next={next}
           author={author}
         />

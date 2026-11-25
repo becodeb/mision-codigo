@@ -6,6 +6,7 @@ const I = (p: string) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">
 
 export const ICON = {
   home: I('<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'),
+  games: I('<rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.8"/>'),
   sound: I('<path class="f" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.6 6.4a8 8 0 0 1 0 11.2"/>'),
   mute: I('<path class="f" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>'),
   stop: I('<rect class="f" x="6" y="6" width="12" height="12" rx="2.5"/>'),

@@ -9,7 +9,7 @@ import { applyPlan, planDemo, type SpriteView } from '../../studio/demoPlan.ts';
 import { Pilot, centerOf, touchingNow } from '../level4/autopilot.ts';
 import { stepsOf } from '../proof.ts';
 import type { GameStep, StepContext } from '../types.ts';
-import { SHOWCASE, showcaseFor } from './index.ts';
+import { SHOWCASE, showcaseFor, showcasesFor } from './index.ts';
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
@@ -38,8 +38,28 @@ function mark(scripts: Script[]): void {
 }
 
 describe('showcase games', () => {
-  it('has one for each level', () => {
-    for (const level of LEVEL_IDS) expect(showcaseFor(level)?.level).toBe(level);
+  it('has at least one for each level, and the entry game is the first of its list', () => {
+    for (const level of LEVEL_IDS) {
+      expect(showcaseFor(level)?.level).toBe(level);
+      expect(showcasesFor(level)[0]).toBe(showcaseFor(level));
+      expect(showcasesFor(level).every((g) => g.level === level)).toBe(true);
+    }
+    expect(new Set(SHOWCASE.map((g) => g.id)).size).toBe(SHOWCASE.length);
+  });
+
+  it('lists the games of a level by order, then in the order of the catalog', () => {
+    const level = SHOWCASE[0].level;
+    const entry = SHOWCASE.find((g) => g.level === level)!;
+    const second = { ...entry, id: 'fake-second', order: 2 };
+    const zero = { ...entry, id: 'fake-first', order: 0 };
+    SHOWCASE.push(second, zero);
+    try {
+      expect(showcasesFor(level).map((g) => g.id)).toEqual(['fake-first', ...SHOWCASE.filter((g) => g.level === level && g.order === 1).map((g) => g.id), 'fake-second']);
+      expect(showcaseFor(level).id).toBe('fake-first');
+    } finally {
+      SHOWCASE.splice(SHOWCASE.indexOf(second), 1);
+      SHOWCASE.splice(SHOWCASE.indexOf(zero), 1);
+    }
   });
 
   describe.each(SHOWCASE.map((g) => [g.id, g] as const))('%s', (_id, game) => {

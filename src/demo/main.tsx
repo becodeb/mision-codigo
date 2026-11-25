@@ -15,13 +15,15 @@ import '../workshop/workshop.css';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gameById } from '../games/catalog.ts';
-import { showcaseFor } from '../games/showcase/index.ts';
+import { showcasesFor } from '../games/showcase/index.ts';
 import { SHOWCASE_ON } from '../shared/showcase.ts';
 import type { GameProgress, ProjectSummary } from '../shared/api.ts';
 import { LEVELS, isLevelId, type LevelId } from '../shared/levels.ts';
 import { Studio } from '../studio/Studio.tsx';
 import { FREE_GAME_ID, buildChooser, nextGame } from '../workshop/chooser.ts';
 import { Chooser } from '../workshop/Chooser.tsx';
+import { GamePicker } from '../workshop/GamePicker.tsx';
+import { buildPicker, firstToOpen, hasChoice, nextToPlay } from '../workshop/picker.ts';
 import { TEAM_COLORS } from '../workshop/teamColors.ts';
 
 const GRADES: Record<LevelId, string> = { 1: '1.º y 2.º grado', 2: '2.º y 3.º grado', 3: '3.º y 4.º grado', 4: '4.º y 5.º grado', 5: '6.º y 7.º grado' };
@@ -51,7 +53,7 @@ function store(level: LevelId, gameId: string, value: Saved): void {
   }
 }
 
-/** #/3 es el equipo 3; #/3/m3-teclado es una misión abierta. */
+/** #/3 es el equipo 3 (entra al juego que dejó); #/3/m3-teclado abre un juego; #/3/juegos muestra a cuál jugar. */
 function readHash(): { level: LevelId | null; gameId: string | null } {
   const [, l, g] = location.hash.split('/');
   const n = Number(l);
@@ -60,6 +62,16 @@ function readHash(): { level: LevelId | null; gameId: string | null } {
 
 function go(level: LevelId | null, gameId: string | null = null): void {
   location.hash = level === null ? '' : gameId ? `/${level}/${encodeURIComponent(gameId)}` : `/${level}`;
+}
+
+const PICKER_ROUTE = 'juegos';
+
+/** What this browser has saved of the showcase games of a level, as the server would list it. */
+function savedOf(level: LevelId): ProjectSummary[] {
+  return showcasesFor(level).flatMap((g) => {
+    const s = load(level, g.id);
+    return s ? [{ gameId: g.id, progress: s.progress, updatedAt: s.updatedAt }] : [];
+  });
 }
 
 function Teams() {
@@ -102,11 +114,24 @@ function App() {
 
   const { level } = route;
   if (level === null) return <Teams />;
-  const gameId = route.gameId ?? (SHOWCASE_ON ? showcaseFor(level).id : null);
+  const several = SHOWCASE_ON && hasChoice(level);
+  if (several && route.gameId === PICKER_ROUTE) {
+    return (
+      <GamePicker
+        student={{ id: 0, name: 'visitante', group: '', level }}
+        picker={buildPicker(level, savedOf(level))}
+        problem={null}
+        onOpen={(id) => go(level, id)}
+        onNotMe={() => go(null)}
+      />
+    );
+  }
+  const gameId = route.gameId ?? (SHOWCASE_ON ? firstToOpen(level, savedOf(level)).id : null);
 
   if (gameId) {
     const game = gameId === FREE_GAME_ID ? null : (gameById(gameId) ?? null);
-    const next = nextGame(game);
+    const following = game?.showcase ? (several ? nextToPlay(game, savedOf(level)) : null) : nextGame(game);
+    const next = following ? { title: following.title, open: () => go(level, following.id) } : null;
     return (
       <Studio
         key={`${level}:${gameId}`}
@@ -115,7 +140,8 @@ function App() {
         initial={load(level, gameId)}
         onSave={(project, progress) => store(level, gameId, { project, progress, updatedAt: new Date().toISOString() })}
         onExit={() => go(SHOWCASE_ON ? null : level)}
-        next={next ? { title: next.title, open: () => go(level, next.id) } : null}
+        next={next}
+        onChoose={game?.showcase && several ? () => go(level, PICKER_ROUTE) : undefined}
       />
     );
   }

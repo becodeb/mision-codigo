@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GameDefinition } from '../games/types.ts';
 import type { AdminStudent, ProgressEntry } from '../shared/api.ts';
+import { SHOWCASE } from '../games/showcase/index.ts';
 import { formatClock, formatMinutes, gameRows, gameTitle, groupsOf, notStarted, progressRows, stepTitle, totalSteps } from './progressView.ts';
 
 const tesoro = {
@@ -122,5 +123,16 @@ describe('formatClock', () => {
     expect(formatClock(new Date(2026, 10, 4, 15, 5, 9))).toBe('15:05:09');
     expect(formatClock(new Date(2026, 10, 4, 0, 0, 0))).toBe('00:00:00');
     expect(formatClock(new Date(2026, 10, 4, 12, 30, 45))).toBe('12:30:45');
+  });
+});
+
+describe('a child with several showcase games', () => {
+  it('gets one row per game, each named and counted against its own cards', () => {
+    const [a, b] = SHOWCASE;
+    const rows = progressRows([entry({ gameId: a.id, completedCount: 3 }), entry({ gameId: b.id, completedCount: 5, updatedAt: '2026-11-05T19:00:00.000Z' })]);
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.gameTitle).sort()).toEqual([a.title, b.title].sort());
+    for (const r of rows) expect(r.totalSteps).toBe(SHOWCASE.find((g) => g.id === r.gameId)!.phases.reduce((n, p) => n + p.steps.length, 0));
+    expect(new Set(rows.map((r) => r.key)).size).toBe(2);
   });
 });

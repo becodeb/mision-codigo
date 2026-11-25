@@ -1,4 +1,4 @@
-/** Los juegos de la muestra: uno por equipo, ya armados, para que cada chico lo haga suyo. */
+/** Los juegos de la muestra: varios por equipo, ya armados, para que cada chico elija y lo haga suyo. */
 import type { LevelId } from '../../shared/levels.ts';
 import type { GameDefinition } from '../types.ts';
 import { NOVA_EN_EL_ESPACIO } from './bosque.ts';
@@ -7,6 +7,12 @@ import { NOCHE_DE_BOO } from './mar.ts';
 import { ESTRELLA_FUGITIVA } from './sol.ts';
 import { LLUVIA_DE_MANZANAS } from './volcan.ts';
 
+/** To add a game: a file here, its export in this list and its id in `shared/gameIds.ts`. Its `order` sets its place in the level. */
 export const SHOWCASE: GameDefinition[] = [ESTRELLA_FUGITIVA, NOCHE_DE_BOO, NOVA_EN_EL_ESPACIO, LLUVIA_DE_MANZANAS, VUELO_DE_CHISPA];
 
-export const showcaseFor = (level: LevelId): GameDefinition => SHOWCASE.find((g) => g.level === level)!;
+/** The games of a level, entry game first: by `order`, then in the order of `SHOWCASE`. */
+export const showcasesFor = (level: LevelId): GameDefinition[] =>
+  SHOWCASE.filter((g) => g.level === level).sort((a, b) => a.order - b.order);
+
+/** The entry game of a level: where a child goes the first time. */
+export const showcaseFor = (level: LevelId): GameDefinition => showcasesFor(level)[0];

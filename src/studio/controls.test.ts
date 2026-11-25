@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SHOWCASE, showcaseFor } from '../games/showcase/index.ts';
-import { addScore, fClick, fJump, forever, ifThen, keyPressed, moveWithArrows, onClick, onFlag, onKey, project, setSize, sprite } from '../language/ir.ts';
+import { addScore, changeVar, fClick, fJump, forever, ifThen, keyPressed, moveWithArrows, onClick, onFlag, onKey, project, send, setSize, sprite } from '../language/ir.ts';
 import type { ProjectProgram, Script } from '../language/ir.ts';
 import { controlsOf, hasControls, spriteIdOf } from './controls.ts';
 
@@ -76,6 +76,20 @@ describe('controls follow the edits', () => {
   it('with no keys and nothing that scores, every tap is the point', () => {
     const p = project('parque', [sprite('a', 'toby', [fClick(fJump())]), sprite('b', 'michi', [fClick(fJump())])]);
     expect(controlsOf(p).taps).toEqual([{ id: 'a', main: true }, { id: 'b', main: true }]);
+  });
+
+  it('a click that sends a message or counts coins is the point', () => {
+    const p = project('parque', [sprite('a', 'toby', [onClick(send('go'))]), sprite('b', 'michi', [onClick(changeVar('monedas', 1))]), sprite('c', 'michi', [onClick(setSize(50))])]);
+    p.sprites.push(sprite('d', 'michi', [onKey('ArrowLeft', setSize(50))]));
+    expect(controlsOf(p).taps).toEqual([{ id: 'a', main: true }, { id: 'b', main: true }, { id: 'c', main: false }]);
+  });
+
+  it('tapAll makes every clickable sprite the point, so a quiz points at no answer', () => {
+    const quiz = project('aula', [sprite('a', 'toby', [onClick(addScore(1))]), sprite('b', 'michi', [onClick(setSize(50))]), sprite('c', 'michi', [onClick(setSize(60))])]);
+    expect(controlsOf(quiz).taps.map((t) => t.main)).toEqual([true, false, false]);
+    expect(controlsOf(quiz, true).taps.map((t) => t.main)).toEqual([true, true, true]);
+    const keys = project('aula', [sprite('a', 'toby', [onKey('ArrowLeft', setSize(50)), onClick(setSize(50))])]);
+    expect(controlsOf(keys, true).taps).toEqual([{ id: 'a', main: true }]);
   });
 
   it('removing the scripts removes the controls; empty hats do not count', () => {

@@ -414,3 +414,65 @@
     font-size: 24px;
   }
 }
+
+/* ---------- Game picker (open class): one big card per game of the level, on the dark look of the showcase ---------- */
+.pk-screen { height: 100dvh; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 10px; padding: 14px max(18px, env(safe-area-inset-right)) 8px max(18px, env(safe-area-inset-left)); background: linear-gradient(160deg, #2A1F6B, #120D2E); color: #fff; overflow: hidden; }
+.pk-head { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.pk-robi { width: 56px; flex: none; animation: hover 2.4s ease-in-out infinite alternate; }
+.pk-robi svg { width: 100%; height: auto; display: block; }
+.pk-head h1 { margin: 0; font: 800 clamp(26px, 3.6vw, 42px)/1.05 var(--font-display); text-wrap: balance; }
+.pk-problem { margin: 0; justify-self: center; padding: 6px 14px; border-radius: 14px; background: #fff2; font-weight: 700; }
+.pk-grid { min-height: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: clamp(10px, 1.8vw, 22px); width: 100%; max-width: 1240px; margin: 0 auto; }
+.pk-card { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; border-radius: 28px; overflow: hidden; background: #fff; color: var(--ink); box-shadow: 0 8px 0 #0006; transition: transform .15s; }
+.pk-card:hover { transform: translateY(-3px); }
+.pk-card:focus-within { outline: 5px solid var(--gold); outline-offset: 3px; }
+.pk-card.last { box-shadow: 0 0 0 4px var(--gold), 0 8px 0 #0006; }
+.pk-scene { position: relative; flex: 1 1 0; min-height: 70px; background: #CFE3FF; }
+.pk-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pk-flag { position: absolute; top: 10px; left: 10px; padding: 5px 14px 4px; border-radius: 99px; background: var(--gold); color: var(--ink); font: 800 17px/1.1 var(--font-display); box-shadow: 0 3px 0 #0003; }
+.pk-tick { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; background: var(--go); color: #fff; font: 800 24px/38px var(--font-body); text-align: center; box-shadow: 0 3px 0 #0003; }
+.pk-body { flex: none; display: grid; gap: 7px; padding: 12px 16px 14px; }
+.pk-body h2 { margin: 0; font: 800 clamp(22px, 2.3vw, 30px)/1.05 var(--font-display); text-wrap: balance; }
+.pk-body .ct-legend { --cap: 28px; gap: 4px 14px; padding: 5px 10px; border-radius: 16px; background: #F4EEFF; }
+.pk-body .ct-to { font-size: 15px; }
+.pk-body .ct-who b { font-size: 15px; }
+.pk-pitch { margin: 0; font-size: 17px; line-height: 1.2; color: var(--ink-soft); }
+.pk-prog { display: flex; align-items: center; gap: 10px; }
+.pk-prog strong { flex: none; font: 800 24px/1 var(--font-display); }
+.pk-prog strong i { font-style: normal; font-size: 17px; color: var(--ink-soft); }
+.pk-card.done .pk-prog strong { color: #2B6B38; font-size: 19px; }
+.pk-bar { flex: 1; height: 12px; border-radius: 99px; background: #EADFC9; overflow: hidden; }
+.pk-bar i { display: block; height: 100%; min-width: 0; background: var(--go); }
+/* The whole card takes the click; the button carries the name and the focus. */
+.pk-go { min-height: 54px; border: 0; border-radius: 18px; background: var(--go); color: #fff; font: 800 24px/1 var(--font-display); box-shadow: 0 5px 0 var(--go-deep); cursor: pointer; }
+.pk-go::after { content: ''; position: absolute; inset: 0; }
+.pk-card:active .pk-go { transform: translateY(3px); box-shadow: 0 2px 0 var(--go-deep); }
+.pk-go:focus-visible { outline: none; }
+.pk-card.done .pk-go { background: var(--accent); box-shadow: 0 5px 0 var(--accent-deep); }
+.pk-foot { text-align: center; }
+.pk-notme { border: 0; background: none; color: #CFC8F5; font: 700 16px/1 var(--font-body); text-decoration: underline; padding: 10px 14px; min-height: 44px; cursor: pointer; }
+
+/* Four games: two by two on a laptop. */
+@media (min-width: 761px) and (max-width: 1199px) {
+  .pk-grid:is([style*="--n: 4"], [style*="--n:4"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* A low window (a small laptop with the browser bars): the card gives the picture back its height to the text. */
+@media (max-height: 680px) and (min-width: 761px) {
+  .pk-screen { padding-top: 8px; gap: 6px; }
+  .pk-robi { width: 42px; }
+  .pk-body { gap: 5px; padding: 8px 14px 10px; }
+  .pk-pitch { font-size: 15px; }
+  .pk-go { min-height: 46px; font-size: 21px; }
+  .pk-prog strong { font-size: 20px; }
+}
+/* A phone: one column, and the page scrolls. */
+@media (max-width: 760px) {
+  .pk-screen { height: auto; min-height: 100dvh; overflow: visible; grid-template-rows: auto auto auto auto; }
+  .pk-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .pk-scene { flex: none; height: 150px; }
+  .pk-robi { width: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pk-robi { animation: none; }
+  .pk-card { transition: none; }
+}

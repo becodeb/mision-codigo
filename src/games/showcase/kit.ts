@@ -158,6 +158,9 @@ interface ShowcaseSpec {
   cover: string;
   setup: P;
   toolbox: BlockType[];
+  /** Position among the games of its level; the first one is the entry game. */
+  order?: number;
+  tapAll?: true;
   play: NonNullable<GameDefinition['showcase']>['play'];
   goal: NonNullable<GameDefinition['showcase']>['goal'];
   pillars: Pillar[];
@@ -166,11 +169,11 @@ interface ShowcaseSpec {
 
 export function showcaseGame(s: ShowcaseSpec): GameDefinition {
   return {
-    id: s.id, level: s.level, class: 2, order: 1, kind: 'game', title: s.title, pitch: s.pitch, concept: 'Cambiar un juego que ya funciona.', cover: s.cover,
+    id: s.id, level: s.level, class: 2, order: s.order ?? 1, kind: 'game', title: s.title, pitch: s.pitch, concept: 'Cambiar un juego que ya funciona.', cover: s.cover,
     setup: s.setup, toolbox: s.toolbox,
     phases: [{ title: s.title, goal: s.pitch, steps: s.cards }],
     challenges: [],
     solution: { program: s.setup, play: () => undefined },
-    showcase: { play: s.play, goal: s.goal, cast: s.setup.sprites.map((x) => x.id), pillars: s.pillars },
+    showcase: { play: s.play, goal: s.goal, tapAll: s.tapAll, cast: s.setup.sprites.map((x) => x.id), pillars: s.pillars },
   };
 }
