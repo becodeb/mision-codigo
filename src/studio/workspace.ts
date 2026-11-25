@@ -436,7 +436,7 @@ export class BlockEditor {
 
 /** A small read-only workspace showing example scripts. Returns a function that removes it. */
 /** `scale` makes the drawing smaller than usual, for places where the whole program has to fit (the finished program of a card). */
-export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Script[], scale = 1): () => void {
+export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Script[], scale?: number): () => void {
   registerBlocks();
   installBlocklyTouchFixes();
   const themes = blocklyThemes();
@@ -446,7 +446,7 @@ export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Sc
     renderer: 'zelos',
     theme: picture ? themes.picture : themes.text,
     sounds: false,
-    zoom: ZOOM((picture ? 0.7 : 0.62) * scale),
+    zoom: ZOOM((picture ? 0.7 : 0.62) * (scale ?? 1)),
     move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: true },
   } as Blockly.BlocklyOptions);
   Blockly.Events.disable();
@@ -457,7 +457,16 @@ export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Sc
   } finally {
     Blockly.Events.enable();
   }
-  const observer = new ResizeObserver(() => { try { Blockly.svgResize(ws); } catch { /* detached */ } });
+  /* «Así queda»: the whole program, as large as its box lets it be. */
+  const fit = (): void => {
+    if (scale === undefined || !host.clientWidth || !host.clientHeight) return;
+    const box = ws.getBlocksBoundingBox();
+    const size = Math.max(0.4, Math.min((host.clientWidth - 40) / (box.right - box.left), (host.clientHeight - 40) / (box.bottom - box.top), 1.1));
+    if (!Number.isFinite(size)) return;
+    ws.setScale(size);
+    ws.scroll(16 - box.left * size, 16 - box.top * size);
+  };
+  const observer = new ResizeObserver(() => { try { Blockly.svgResize(ws); fit(); } catch { /* detached */ } });
   observer.observe(host);
   return () => {
     observer.disconnect();
