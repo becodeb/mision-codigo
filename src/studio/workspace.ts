@@ -435,7 +435,8 @@ export class BlockEditor {
 }
 
 /** A small read-only workspace showing example scripts. Returns a function that removes it. */
-export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Script[]): () => void {
+/** `scale` makes the drawing smaller than usual, for places where the whole program has to fit (the finished program of a card). */
+export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Script[], scale = 1): () => void {
   registerBlocks();
   installBlocklyTouchFixes();
   const themes = blocklyThemes();
@@ -445,7 +446,7 @@ export function mountExample(host: HTMLElement, tier: Tier, scripts: readonly Sc
     renderer: 'zelos',
     theme: picture ? themes.picture : themes.text,
     sounds: false,
-    zoom: ZOOM(picture ? 0.7 : 0.62),
+    zoom: ZOOM((picture ? 0.7 : 0.62) * scale),
     move: { scrollbars: { horizontal: true, vertical: true }, drag: true, wheel: true },
   } as Blockly.BlocklyOptions);
   Blockly.Events.disable();

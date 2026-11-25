@@ -6,6 +6,7 @@
  * completes the program, or alone when nothing is missing. The animation lives in demo.ts and never edits the
  * project.
  */
+import { flattenScripts } from '../language/convert.ts';
 import { KEYS } from '../language/options.ts';
 import type { Block, Script } from '../language/ir.ts';
 import { BLOCK_SPECS, hasBody } from '../language/spec.ts';
@@ -371,6 +372,17 @@ export function planDemo(goal: DemoGoal, sprites: readonly SpriteView[], selecte
   }
   const next = planCore(goal, after, selectedId);
   return next.kind === 'try' ? { ...plan, completes: { hat: next.hat, spriteId: next.spriteId } } : plan;
+}
+
+/**
+ * The step of a card a piece of the demo belongs to: its type, or `type#n` when the card tells apart the n-th block of
+ * that type in its program (the two «fijar tamaño» of a «si… si no»), so each sentence matches what the hand is doing.
+ */
+export function stepOn(how: readonly { on: string }[], scripts: readonly Script[], piece: Block): string {
+  const same = flattenScripts(scripts).filter((b) => b.type === piece.type);
+  const at = same.indexOf(piece);
+  const named = `${piece.type}#${at + 1}`;
+  return at >= 0 && how.some((h) => h.on === named) ? named : piece.type;
 }
 
 /* ---------- words ---------- */

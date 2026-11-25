@@ -30,8 +30,8 @@ export const pickHow = (id: string): string => `Elegí a {${id}}`;
 /** Short names for the chips of text blocks: the whole sentence of the block does not fit in a step. */
 const SHORT: Partial<Record<BlockType, string>> = {
   a_key: 'al presionar tecla', a_points: 'cuando los puntos…', a_touching: 'cuando toque a…', a_click: 'al hacer clic', a_backdrop: 'cambiar escenario', a_changevar: 'sumar a…',
-  a_ifelse: 'si… si no', a_if: 'si…', a_setsize: 'fijar tamaño', v_gt: '>', v_score: 'puntos', v_random: 'número al azar', v_answer: 'respuesta', v_key: '¿tecla presionada?', a_ask: 'preguntar',
-  a_sayfor: 'decir', a_addscore: 'sumar a puntos', a_random: 'posición aleatoria',
+  a_ifelse: 'si… si no', a_if: 'si…', a_setsize: 'fijar tamaño', v_gt: '>', v_score: 'puntos', v_var: 'variable', v_random: 'número al azar', v_answer: 'respuesta', v_key: '¿tecla presionada?', a_ask: 'preguntar',
+  a_sayfor: 'decir', a_addscore: 'sumar a puntos', a_random: 'posición aleatoria', a_arrows: 'mover con flechas', a_glide: 'deslizar',
 };
 
 export const chipLabel = (type: string): string => SHORT[type as BlockType] ?? blockLabel(type) ?? type;
@@ -39,14 +39,21 @@ export const chipLabel = (type: string): string => SHORT[type as BlockType] ?? b
 /** How the voice names a picture block. */
 const SPOKEN: Partial<Record<BlockType, string>> = {
   f_star: 'la estrella', f_shrink: 'achicar', f_spin: 'el giro', f_jump: 'el salto', f_face: 'la carita', f_backdrop: 'cambiar de lugar', f_click: 'la manito', f_wait: 'el reloj',
-  f_repeat: 'las vueltas', f_note: 'la nota', f_send: 'mandar el sobre', f_recv: 'llega el sobre', f_say: 'la frase', f_sound: 'el sonido',
+  f_repeat: 'las vueltas', f_right: 'el paso', f_left: 'el paso para atrás', f_up: 'subir', f_down: 'bajar', f_grow: 'agrandar', f_hide: 'esconder', f_show: 'mostrar', f_random: 'el dado', f_note: 'la nota', f_send: 'mandar el sobre', f_recv: 'llega el sobre', f_say: 'la frase', f_sound: 'el sonido',
 };
 
 /** The step in words, for the voice. */
 export function sayHow(text: string, nameOf: (id: string) => string): string {
   return parseHow(text)
     .map((p) => (p.kind === 'sprite' ? nameOf(p.value) : p.kind === 'block' ? (SPOKEN[p.value as BlockType] ?? chipLabel(p.value)) : p.kind === 'button' && p.value === '▶' ? 'Empezar' : p.value.replace(/^[^\p{L}\d-]+/u, '')))
-    .join(' ');
+    .join(' ')
+    /* «del» + «el giro» is one article, not two. */
+    .replace(/\b(del|al)\s+el\b/g, '$1')
+    .replace(/\bdel\s+la\b/g, 'de la')
+    .replace(/\bal\s+la\b/g, 'a la')
+    .replace(/\b(de|a)\s+la\s+la\b/g, '$1 la')
+    .replace(/\b(otro|otra|un|una)\s+(el|la)\s+/g, '$1 ')
+    .replace(/\bdos\s+la nota\b/g, 'dos notas');
 }
 
 export const isBlockType = (value: string): boolean => blockInfo(value) !== undefined;

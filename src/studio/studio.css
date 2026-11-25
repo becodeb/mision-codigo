@@ -348,16 +348,17 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 .sc-tutorial { padding-top: 6px; padding-bottom: 6px; }
 .sc-lines { flex: 1; min-width: 0; display: grid; gap: 3px; align-content: center; }
 .sc-aimrow { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.sc-aim { margin: 0; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0 5px; font: 800 15px/1.2 var(--font-display); color: var(--ink-soft); }
+.sc-aim { margin: 0; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 0 5px; font: 800 16px/1.2 var(--font-display); color: var(--ink-soft); }
 .sc-aim .how-spr svg { width: 22px; height: 26px; }
 .sc-aim .how-block { padding: 2px 6px; font-size: 12px; }
 .sc-aim .how-block img { width: 22px; height: 22px; }
 .sc-aim .how-btn { padding: 1px 6px; border-radius: 8px; }
-.sc-dots { flex: none; display: flex; gap: 5px; margin: 0; padding: 0; list-style: none; }
-.sc-dots li { width: 15px; height: 15px; border-radius: 50%; background: #D5CFE4; display: grid; place-items: center; font: 800 10px/1 var(--font-body); color: #fff; transition: background .25s, transform .25s; }
+.sc-dots { flex: none; display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; counter-reset: dot; }
+.sc-dots li { counter-increment: dot; width: 19px; height: 19px; border-radius: 50%; background: #D5CFE4; display: grid; place-items: center; font: 800 12px/1 var(--font-body); color: #fff; transition: background .25s, transform .25s; }
+.sc-dots li::before { content: counter(dot); }
 .sc-dots li.done { background: var(--go); }
 .sc-dots li.done::before { content: "✓"; }
-.sc-dots li.on { background: var(--accent); transform: scale(1.35); box-shadow: 0 0 0 3px #FFE1BC; }
+.sc-dots li.on { background: var(--accent); transform: scale(1.2); box-shadow: 0 0 0 3px #FFE1BC; }
 .sc-now { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 3px 7px; padding: 4px 12px; border-radius: 16px; background: #FFF0DD; font: 800 20px/1.2 var(--font-display); width: fit-content; max-width: 100%; }
 .sc-now .how-block img { width: 30px; height: 30px; }
 .sc-now .how-spr svg { width: 30px; height: 36px; }
@@ -369,8 +370,8 @@ html.mc-touch-lock, html.mc-touch-lock body { touch-action: pan-x pan-y; overscr
 .sc-fin-parts.many { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 .sc-fin-parts figure { margin: 0; min-width: 0; }
 .sc-fin-parts figcaption { font: 800 17px/1.1 var(--font-display); display: flex; align-items: center; gap: 6px; }
-.sc-finished .mc-example-ws { height: clamp(160px, 34dvh, 280px); }
-.sc-fin-parts.many .mc-example-ws { height: clamp(130px, 22dvh, 200px); }
+.sc-finished .mc-example-ws { height: clamp(170px, calc(100dvh - 320px), 420px); }
+.sc-fin-parts.many .mc-example-ws { height: clamp(170px, calc(100dvh - 350px), 420px); }
 @media (max-width: 1150px) {
   .sc-now { font-size: 19px; }
   .how-block { padding: 5px 8px; font-size: 13px; }

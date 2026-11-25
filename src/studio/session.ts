@@ -9,7 +9,7 @@ import type { GameDefinition, GameStep, StepContext } from '../games/types.ts';
 import { setProjectContext } from '../language/blocks.ts';
 import type { BlockType } from '../language/catalog.ts';
 import { BLOCKS } from '../language/catalog.ts';
-import type { ProjectProgram, Script } from '../language/ir.ts';
+import type { Block, ProjectProgram, Script } from '../language/ir.ts';
 import { buildToolbox, tierOf } from '../language/toolbox.ts';
 import { Machine, type Host, type StageView, type TimeSource } from '../runtime/index.ts';
 import type { GameProgress } from '../shared/api.ts';
@@ -20,7 +20,7 @@ import { flattenScripts, irToBlockly } from '../language/convert.ts';
 import { addSpriteDoc, newDoc, parseDoc, programOf, scriptsOf, usesKeys, type ProjectDoc, type SpriteDoc } from './doc.ts';
 import { pickHow, sayHow } from './chips.ts';
 import { cancelDemo, pointAt, runDemo, type DemoDeps } from './demo.ts';
-import { planDemo, type DemoPlan, type SpriteView } from './demoPlan.ts';
+import { planDemo, stepOn, type DemoPlan, type SpriteView } from './demoPlan.ts';
 import { Coach, type BubbleKind, type CoachView } from './coach.ts';
 import { controlsOf, type Controls } from './controls.ts';
 import { StageRenderer, type CoachDraw } from './stage.ts';
@@ -1197,10 +1197,11 @@ export class StudioSession {
 
     const demo = step.demoScript ? (Array.isArray(step.demoScript) ? [...step.demoScript] : [step.demoScript as Script]) : [];
     if (demo.length && target) {
-      const tune = card.tune;
-      if (tune && here(target)) {
-        const pending = [...all].reverse().find((b) => b.type === tune.type && tune.when(b, this.program, all));
-        if (pending) return { on: 'tune', show: pointIn(pending.id, tune.field) };
+      if (here(target)) {
+        for (const tune of card.tune === undefined ? [] : Array.isArray(card.tune) ? card.tune : [card.tune]) {
+          const pending = [...all].reverse().find((b) => b.type === tune.type && tune.when(b, this.program, all));
+          if (pending) return { on: tune.on ?? 'tune', show: pointIn(pending.id, tune.field) };
+        }
       }
       /* An example with several sprites is done one sprite at a time. */
       const parts = (step.example?.length ?? 0) > 1 ? step.example! : [{ sprite: target, scripts: demo }];
@@ -1208,14 +1209,22 @@ export class StudioSession {
         const goal = { scripts: part.scripts, sprite: part.sprite };
         const inside = planDemo(goal, this.demoSprites(), part.sprite);
         if (inside.kind === 'try') continue;
-        const on = inside.kind === 'hat' ? inside.hat.type : inside.kind === 'block' || inside.kind === 'move' ? inside.block.type : 'add';
+        const piece = inside.kind === 'hat' ? inside.hat : inside.kind === 'block' || inside.kind === 'move' ? inside.block : null;
+        const on = piece ? stepOn(card.how, part.scripts, piece) : 'add';
         if (!here(part.sprite)) return choose(part.sprite, on);
         return { on, show: (d) => runDemo(d, inside) };
       }
+      /* A value that goes inside another value goes into the one the child just placed, not into any other of that kind. */
+      const placed = new Map<string, Block>();
       for (const v of card.values ?? []) {
         if (!here(target)) return choose(target, v.type);
-        const holders = all.filter((b) => b.type === v.into);
-        if (!holders.length || holders.some((b) => b.inputs[v.input]?.type === v.type)) continue;
+        const mine = placed.get(v.into);
+        const holders = mine ? [mine] : all.filter((b) => b.type === v.into);
+        const filled = holders.find((b) => b.inputs[v.input]?.type === v.type);
+        if (!holders.length || filled) {
+          if (filled) placed.set(v.type, filled.inputs[v.input]);
+          continue;
+        }
         const owner = holders[0];
         return { on: v.type, show: (d) => runDemo(d, { kind: 'block', block: { type: v.type, fields: {}, inputs: {}, body: [], elseBody: [] }, slot: { parent: owner.id, kind: 'input', input: v.input, parentType: owner.type }, completes: null }) };
       }

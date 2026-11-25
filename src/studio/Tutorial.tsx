@@ -21,7 +21,7 @@ export function tutorialSteps(card: StepCard, pick: { id: string; before: string
 
 /** What «Ver cómo queda» draws: one program per sprite, or the whole demo for the sprite the card is about. `null` when the card has nothing to show. */
 export function finishedOf(step: GameStep): { sprite: string | null; scripts: Scripts }[] | null {
-  if (step.example?.length) return step.example.map((e) => ({ sprite: e.sprite, scripts: e.scripts }));
+  if (step.example?.length) return step.example.map((e) => ({ sprite: step.card?.newSprite ? null : e.sprite, scripts: e.scripts }));
   const demo = step.demoScript;
   if (!demo || !step.card) return null;
   const scripts = Array.isArray(demo) ? [...demo] : [demo as Scripts[number]];
@@ -37,7 +37,7 @@ function Finished({ session, step, onClose }: { session: StudioSession; step: Ga
         {parts.map((p, i) => (
           <figure key={i}>
             {p.sprite ? <figcaption className="how-spr"><SpriteFace session={session} id={p.sprite} /><span className="nm">{session.named(`{${p.sprite}}`)}</span></figcaption> : parts.length > 1 || step.card?.newSprite ? <figcaption>Tu personaje nuevo</figcaption> : null}
-            <Blocks session={session} scripts={p.scripts} />
+            <Blocks session={session} scripts={p.scripts} scale={0.8} />
           </figure>
         ))}
       </div>

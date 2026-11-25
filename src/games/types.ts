@@ -89,8 +89,11 @@ export interface StepCard {
   sprite?: string;
   /** «Mostrame» for a change of a number or a menu: the hand points at that block of the sprite. */
   block?: { type: BlockType; caption: string; where?: (b: Block) => boolean };
-  /** A menu left to choose once the block is in: the hand points at that field while `when` holds. */
-  tune?: { type: BlockType; field: string; when: (b: Block, program: ProjectProgram, all: readonly Block[]) => boolean };
+  /**
+   * A menu or number left to choose once the block is in: the hand points at that field while `when` holds. Several, in
+   * the order the child does them: each one after the first needs its own `on`, so the sentence of the step can tell them apart.
+   */
+  tune?: CardTune | CardTune[];
   /** Value blocks that go inside a socket, in order, once the rest is built. */
   values?: { type: BlockType; into: BlockType; input: string }[];
   /** The tutorial starts by adding a sprite, and its demo script is for that new one. */
@@ -99,6 +102,15 @@ export interface StepCard {
   built: (program: ProjectProgram) => boolean;
   /** One way of doing it. Used by the tests. */
   solve: (program: ProjectProgram) => void;
+}
+
+/** A field the hand points at once its block is in. */
+export interface CardTune {
+  type: BlockType;
+  field: string;
+  when: (b: Block, program: ProjectProgram, all: readonly Block[]) => boolean;
+  /** What the step is called in `how` (default `tune`). */
+  on?: string;
 }
 
 /** Something the game needs to keep working. A missing one is offered back, never forced. */

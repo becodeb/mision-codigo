@@ -60,3 +60,19 @@ describe('the bar of an open card', () => {
     expect(html).not.toContain('Ver cómo queda');
   });
 });
+
+describe('«Así queda»', () => {
+  it('draws one program per sprite when the card has several, and the whole demo otherwise', () => {
+    const boo = SHOWCASE.find((g) => g.id === 'muestra-boo')!;
+    const msg = stepsOf(boo).find((c) => c.id === 'mensaje')!;
+    const parts = finishedOf(msg)!;
+    expect(parts.map((p) => p.sprite)).toEqual(['boo', 'coni']);
+    const own = finishedOf(byId('baile'))!;
+    expect(own).toHaveLength(1);
+    expect(own[0].sprite).toBe('toby');
+  });
+
+  it('shows the new sprite without a face, since the child chose it', () => {
+    expect(finishedOf(byId('amigo'))![0].sprite).toBeNull();
+  });
+});
